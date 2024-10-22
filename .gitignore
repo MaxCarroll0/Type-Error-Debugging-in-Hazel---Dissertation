@@ -314,4 +314,7 @@ TSWLatexianTemp*
 # minted cache
 _minted-*/
 
+# diff files
+_diff/
+
 # End of https://www.toptal.com/developers/gitignore/api/tex
