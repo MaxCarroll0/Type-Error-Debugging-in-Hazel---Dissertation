@@ -1,12 +1,10 @@
-@echo off
-setlocal
 
-REM Loop through all subdirectories
-for /r %%d in (.) do (
-        echo Running command in: %%d
-        cd /d %%d
-        latexmk -c
+latexmk -c -bibtex
+for /d %%d in (*) do (
+        if /i not "%%d" == ".git%" (
+        echo "%cd%"
+        cd "%cd%/%%d"
+        latexmk -c -bibtex
+        )
 )
-
-endlocal
 pause
