@@ -1,0 +1,51 @@
+\usepackage{graphicx}
+\usepackage[utf8]{inputenc}
+\usepackage[backend=biber]{biblatex}
+\usepackage{amsmath}
+
+\usepackage{minted}
+\usemintedstyle{colorful}
+
+
+\usepackage{xcolor}
+\usepackage[normalem]{ulem}
+\makeatletter
+\def\uwave{\bgroup \markoverwith{\lower3.5\p@\hbox{\sixly \textcolor{red}{\char58}}}\ULon}
+\font\sixly=lasy6 % does not re-load if already loaded, so no memory problem.
+\makeatother
+
+\usepackage{soul}
+\newcommand{\hlc}[2][yellow]{{%
+    \colorlet{foo}{#1}%
+    \sethlcolor{foo}\hl{#2}}%
+}
+\newcommand{\error}[1]{\hlc[pink!50]{#1}}
+\newcommand{\hlcmaths}[2][yellow!50]{\colorbox{#1}{$\displaystyle #2$}}
+
+\newcommand{\code}[1]{\text{\mintinline[escapeinside=||]{reason}{#1}}}
+\newcommand{\casthl}[4][yellow!50]{\ensuremath{\code{#4}^{\text{\hlc[#1]{${\langle$\code{#2}$ \Rightarrow $\code{#3}$\rangle}$}}}}}
+\newcommand{\cast}[3]{\casthl[red!0]{#1}{#2}{#3}}
+\newcommand{\casterror}[3]{\casthl[pink!50]{#1}{#2}{#3}}
+
+
+\addbibresource{References/refs.bib}
+\makeindex
+
+
+\usepackage{hyperref}
+\hypersetup{
+    colorlinks=true,
+    linkcolor=blue,
+    filecolor=magenta,      
+    urlcolor=cyan,
+    pdftitle={\theauthor: \thetitle},
+    pdfpagemode=FullScreen,
+    }
+
+\urlstyle{same}
+
+%TC:group tabular 1 1
+%TC:group table 0 1
+%TC:macro \footnote [text]
+
+\newcommand{\wordcount}{\input{|"texcount -inc -sum -0 \jobname.tex"}}

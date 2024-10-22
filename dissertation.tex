@@ -1,0 +1,46 @@
+\documentclass[a4paper, 12pt, oneside, final, ebook]{memoir}
+
+\input{dissertation-info}
+\input{preamble}
+
+\input{pageformat}
+
+\begin{document}
+
+%TC:ignore
+\frontmatter
+\include{Cover Page/coverpage}
+\pdfbookmark[1]{Declaration}{Declaration of Originality}
+\input{Declaration/declaration}
+\pdfbookmark[1]{Proforma}{Proforma}
+\input{Proforma/proforma}
+\input{Acknowledgements/acknowledgements}
+
+\newpage
+\pdfbookmark[1]{Contents}{Contents}
+\tableofcontents*
+%TC:endignore
+
+\mainmatter
+
+\pagestyle{chapter}
+\include{Introduction/introduction}
+\include{Preparation/preparation}
+\include{Implementation/implementation}
+\include{Evaluation/evaluation}
+\include{Conclusions/conclusions}
+
+
+%TC:ignore
+\printbibliography
+
+\appendix
+\include{Appendices/formalsemantics}
+\include{Appendices/appendix2}
+
+\backmatter
+\printindex
+\include{Proposal/proposal}
+%TC:endignore
+
+\end{document}

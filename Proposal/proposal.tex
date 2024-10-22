@@ -1,0 +1,129 @@
+\chapter{Project Proposal}
+\section{Description}
+This project will add some features to the Hazel language \cite{Hazel}. Hazel is a functional research language that makes use of gradual types to support unusual features such as: holes (code placeholders) to give type meaning to incomplete programs. Importantly for this project, all Hazel programs, even ill-typed or incomplete programs, are evaluable. This allows dynamic reasoning about ill-typed programs via evaluation traces with the potential to improve the user's understanding of \textit{why ill-typed programs go wrong}. See example below:\par
+\begin{minted}[escapeinside=||]{reason}
+let rec sum : Int -> Int = fun n ->
+  if n == 0 then
+    |\error{\texttt{true}}|    // Type error statically caught and correctly localised
+  else
+    n + sum(n - 1)
+in sum(2)
+\end{minted}
+But evaluation is still possible; see below a (compressed) trace to a stuck value exhibiting a cast error:
+\[\code{sum(2)} \mapsto^* \code{2 + sum(1)} \mapsto^* \code{2 + (1 + }\casterror{Bool}{Int}{ true}\code{)}\]
+ 
+This project aims to exploit further this potential by providing some extra features to both: aid with finding values/inputs that demonstrate why type-errors were found (type-error witnesses) and linking the evaluation traces back to source code. But is not expected to directly measure the usefulness of such evaluation traces themselves in debugging, nor is the design space for a Hazel debugger inspecting and interacting with traces to be explored.\par 
+Searching for type-error witnesses automatically is the main feature provided by this project, inspired by Seidel et al.\  \cite{SearchProc}. The intended use of this is to automatically generate values (for example, function arguments) that cause ill-typed programs to `go wrong' (lead to a cast error). More specifically, the search procedure can be thought of as evaluating a \textit{special hole} which refines its type dynamically and non-deterministically instantiates itself to values of this type to find a value whose evaluation leads to a \textit{general} cast error -- `general' meaning excluding trivial cast errors such as generating a value that doesn't actually have the refined expected type.  \par 
+Such a search procedure is undecidable and subject to path explosion, hence the success criteria (detailed below) does not expect witnesses to be provided in general, even if they do exist. Sophisticated heuristics and methods to limit path explosion to support large code samples is not a core goal.\par 
+
+Formal semantics of this procedure and associated proofs is an extension goal, consisting of preservation proofs and witness generality proofs (formalising the notion of generality mentioned previously).\par
+
+Secondly, \textit{cast slicing} will track source code that contributed to any cast throughout the cast elaboration and evaluation phases.  In particular, this allows a cast involved in a cast error relating to a type-error witness to point back to offending code. This is expected in some sense to be similar to blame tracking \cite{Blame}, error and dynamic program slicing \cite{ErrSlice, DynProgSlice}, although these are not directly relevant for this project.\par 
+
+Work required for the creation of an evaluation corpus of ill-typed hazel programs, requiring manual work or creation of automated translation and/or fuzzing tools, is timetabled.
+
+\section{Starting Point}
+Only background research and exploration has been conducted. This consists of reading the Hazel research papers \cite{Hazel} and various other related research topics including: gradual types, bidirectional types, symbolic evaluation, OCaml error localisation and visualisation techniques.\par 
+More research, into the Hazel codebase in particular, and concrete planning is required and is timetabled accordingly.
+
+\section{Success Criteria}
+Core goals are the minimum expected goals that must be completed to consider this project a success. This corresponds to a working tool for a large portion of Hazel.\par 
+Extension goals will be timetabled in, but are relatively more difficult and not required for the project to be considered a success.\par 
+
+First, I give some definitions of terms:
+\begin{itemize}
+\item \textbf{Core Calculus} -- The formal semantics core of Hazel as referred to by the Hazel research papers \cite{HazelLivePaper}.
+\item \textbf{Basic Hazel} -- A Hazel subset consisting of the core calculus, product and sum types, type aliases, bindings, (parametric) lists, bools, int, floats, strings, and their corresponding standard operations.
+\item \textbf{Full Hazel} -- Hazel, including \textbf{Basic Hazel} plus pattern matching, explicit impredicative system-F style polymorphism and explicitly recursive types.
+\item \textbf{Core Corpus} -- A corpus of ill-typed Hazel programs that are similar in complexity and size to student programs being taught a functional language, \textit{e.g. (incorrect) solutions to the ticks in FoCS}. This will include examples in \textbf{Basic} or \textbf{Full Hazel} as required.
+\item \textbf{Extended Corpus} -- A corpus of ill-typed Hazel programs that are larger in size, more akin to real-world code.
+\item \textbf{Evaluation Criteria} -- Conditions for the search procedure to meet upon evaluation:
+\begin{enumerate}
+\item Must have reasonable coverage --  success in finding an \textit{existing} witness which is correct and general.
+\item Must find witnesses in an amount of time suitable for interactive debugging -- in-line with build-times for a debug build of existing languages.
+\end{enumerate}
+\end{itemize}
+\subsection{Core Goals}
+\begin{itemize}
+\item Success criteria for Cast Slicing -- Cast slicing must be \textit{correct} (slices must include all code involved in the cast) and work for \textit{all casts}, including casts involved in cast errors. Informal reasoning in evidence of satisfying these conditions is all that will be required. 
+\item Success criteria for the Search Procedure -- The procedure must work for \textbf{Basic Hazel}, meeting the \textbf{Evaluation Criteria} over the \textbf{Core Corpus}. Analysis of some classes of programs for which witnesses could not be generated is also expected.
+\end{itemize}
+\subsection{Extension Goals}
+\begin{itemize}
+\item Search Procedure Extensions -- Support for \textbf{Full Hazel} under the same criteria as above.
+\item Search Procedure Performance Extensions -- Meeting of the \textbf{Evaluation Criteria} over an \textbf{Extended Corpus}
+\item Formal Semantics -- The specification of a formal evaluation semantics for the search procedure over the \textbf{Core Calculus}. Additionally, a preservation and witness generality proof should be provided.
+\end{itemize}
+
+\section{Work Plan}
+\subsection*{21st Oct \textit{(Proposal Deadline)} -- 3rd Nov}
+Background research \& research into the Hazel semantics, cast elaboration, type system, and codebase. Produce implementation plan for cast slicing and the search procedure for the \textbf{Core Calculus}. This includes an interaction design plan, expected to be very minimal.\par
+\textit{Milestone 1: Plan Confirmed with Supervisors}
+
+\subsection*{4th Nov -- 17th Nov}
+Complete implementation of Cast Slicing for the \textbf{Core Calculus}. Write detailed reasoning for correctness, including plan for \textbf{Basic Hazel}. Add unit testing.\par 
+\textit{Milestone 2: Cast slicing is complete for the \textbf{Core Calculus}.}
+
+\subsection*{18th Nov -- 1st Dec \textit{(End of Full Michaelmas Term)}}
+Complete implementation of the search procedure for the \textbf{Core Calculus}. \par 
+\textit{Milestone 3: Search Procedure is complete for the \textbf{Core Calculus}.}
+
+\subsection*{2nd Dec -- 20th Dec}
+Extension of both cast slicing and the search procedure to \textbf{Basic Hazel}.\par 
+\textit{Milestone 4: Cast slicing \& search procedure are complete for \textbf{Basic Hazel}}
+
+\subsection*{21st Dec -- 24th Jan \textit{(Full Lent Term starting 16th Jan)}}
+Basic UI interaction for the project. Drafts of Implementation chapter. Slack time. Expecting holiday, exam revision, and module exam revision. Should time be available, the \textbf{Formal Semantics} extension will be attempted.\par
+\textit{Milestone 5: Implementation chapter draft complete.}
+
+\subsection*{25th Jan -- 7th Feb \textit{(Progress Report Deadline)}}
+Writing of Progress Report. Planning of evaluation, primarily including decisions and design of tools to be used to collect/create the \textbf{Core Corpus} and planning the specific statistical tests to conduct on the corpus. Collected corpus and translation method will be one of:
+\begin{enumerate}
+\item Manual translation of a small ill-typed OCaml program corpus into ill-typed Hazel.
+\item Manual insertion of type-errors into a well-typed Hazel corpus.
+\item Collection of a well-typed Hazel corpus.\\ 
+Tools: A Hazel type fuzzer to make the corpus ill-typed.
+\item Collection of a well-typed OCaml corpus.
+\\Tools: OCaml -> Hazel translator/annotator which works with well-typed OCaml. A Hazel type fuzzer.
+\item Collection of an ill-typed OCaml corpus. 
+\\Tools: OCaml -> Hazel translator which works with ill-typed OCaml. \textit{This would NOT be expected to be an implicitly typed Hazel front-end which maintains desireable properties like parametricity.} 
+\end{enumerate}
+\textit{Milestone 6: Evaluation plan and corpus creation method confirmed with supervisors.}\\
+\textit{Milestone 7: Underlying corpus (critical resource) collected.}
+
+\subsection*{8th Feb -- 28th Feb}
+Implementation of the required tools for evaluation as planned. Some existing code or tools may be re-used, such as the OCaml type-checker.\par
+\textit{Milestone 8: \textbf{Core Corpus} has been collected.}
+
+\subsection*{1st Mar -- 15th Mar \textit{(End of Full Lent Term)}}
+Conducting of evaluation tests and write-up of evaluation draft including results.\par
+\textit{Milestone 9: Evaluation results documented.}\\
+\textit{Milestone 10: Evaluation draft complete.}
+
+\subsection*{16th Mar -- 30th Mar}
+Drafts of remaining dissertation chapters. If possible, collection and evaluation of \textbf{Extended Corpus} using the same tools as the \textbf{Core Corpus}.\par
+
+\textit{Milestone 11: Full dissertation draft complete and sent to supervisors for feedback.}
+
+\subsection*{31st Mar -- 13th Apr}
+Act upon dissertation feedback. Exam revision.\par
+\textit{Milestone 12: Second dissertation draft complete and send to supervisors for feedback.}
+
+\subsection*{14th Apr -- 23rd Apr \textit{(Start of Full Easter Term)}}
+Act upon feedback. Final dissertation complete. Exam revision.\par
+
+\textit{Milestone 13: Dissertation submitted.}
+
+\subsection*{24th Apr -- 16th May \textit{(Final Deadline)}}
+Exam revision.\par
+\textit{Milestone 14: Source code submitted.}
+
+\section{Resource Declaration}
+\begin{itemize}
+\item Underlying Corpus of either: Well-typed OCaml programs, Ill-typed OCaml programs, Hazel programs. For use in evaluation. The required tools or manual translation to convert these into the ill-typed Hazel \textbf{Core Corpus} are detailed and allocated time in the timetable.
+
+\item Hazel source code. Openly available with MIT licence on GitHub \cite{HazelCode}.
+
+\item My personal laptop will be used for development, using GitHub for version control and backup of both code and dissertation. I accept full responsibility for this machine and I have made contingency plans to protect myself against hardware and/or software failure. A backup pc is available in case of such failure.
+
+\end{itemize}
