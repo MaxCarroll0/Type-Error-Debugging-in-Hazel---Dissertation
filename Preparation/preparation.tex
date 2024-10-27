@@ -1,2 +1,140 @@
 \chapter{Preparation}
-Preparation Here.
+\textit{In this chapter I present the core semantics and a larger overview of the Hazel language.}
+\section{The Hazel Language}
+\index{Hazel}
+\textit{What is Hazel and who is developing it here.}
+
+\subsection{Overview \& Vision}
+\textit{Detail the vision of the Hazel project and main features of Hazel.}\par 
+\textit{Finish with the state of the subset of Hazel for which the project was implemented.}
+
+\subsection{\textbf{Core Hazel}: Formal Semantics}
+For reference, the established semantics and type system for Hazel is presented. Derived from Omar et al.\ \cite{HazelLivePaper}.
+\index{\textbf{Core Hazel}}
+\subsubsection{Syntax}
+
+\par The syntax, in Fig. \ref{fig:syntax}, consists of \textit{types} $\tau$, \textit{external expressions} $e$, and \textit{internal expressions} $d$. Here, $?$ is the \textit{dynamic type}, $\hole[e]$ is a \textit{non-empty hole} containing $e$, and $\scast{\tau_1}{\tau_2}$,  $\scastfail{\tau_1}{\tau_2}$ are casts and cast errors from $\tau_1$ to $\tau_2$ respectively.
+The \textit{external language} is a locally inferred \cite{LocalInference} surface syntax for the language, and is statically elaborated to (explicitly typed) \textit{internal expressions}, in a similar way to Harper and Stone's \cite{StandardMLTypeTheory} approach to defining Standard ML as elaboration to an explicitly typed internal langauge, \textit{XML} \cite{CoreXML}.
+\begin{figure}[h]
+\begin{align*}
+\tau &::= b \mid \tau \to \tau \mid\  ?\\
+e &::= c \mid x \mid \lambda x : \tau.e \mid \lambda x. e \mid e(e) \mid \hole^u \mid \hole[e]^u \mid e : \tau\\
+d &::= c \mid x \mid \lambda x : \tau d \mid d(d) \mid \hole^u_\sigma \mid \hole[d]^u_\sigma \mid d\scast{\tau}{\tau} \mid d\scastfail{\tau}{\tau}
+\end{align*}
+\caption{Syntax: \textit{types} $\tau$, \textit{external expressions} $e$, \textit{internal expressions} $d$. With $x$ ranging over variables, $u$ over hole names, $\sigma$ over $x \to d$ \textit{internal language} substitutions, $b$ over base types and $c$ over constants.}
+\label{fig:syntax}
+\end{figure}
+
+\subsubsection{External Language: Type System}
+The static semantics in Fig. \ref{fig:typing} of the \textit{external language} is a bidirectionally typed system in the style of Pierce and Turner \cite{LocalInference}, and Dunfield and Krishnaswami \cite{BidirectionalTypes}. There are two typing judgement modes: $\synthesis{e}{\tau}$ which synthesises a type $\tau$, algorithmically thought of as an output, and $\analysis{e}{\tau}$ which analyses against a type $\tau$ as an input.\par 
+\begin{figure}[H]
+\small
+\fbox{$\synthesis{e}{\tau}$}\ \ \ $e$ synthesises type $\tau$ under context $\Gamma$
+\tiny
+\[\inference[\tiny SConst]{}{\synthesis{c}{b}} \quad
+\inference[\tiny SVar]{x : \tau \in \Gamma}{\synthesis{x}{\tau}} \quad 
+\inference[\tiny SFun]{\synthesis[\Gamma,x:\tau_1]{e}{\tau_2}}{\synthesis{\lambda x:\tau_1.e}{\tau_1 \to \tau_2}}\]
+\[\inference[\tiny SApp]{\synthesis{e_1}{\tau_1} & \tau_1 \funmatch \tau_2 \to \tau \\ \analysis{e_2}{\tau_2}}{\synthesis{e_1(e_2)}{\tau}} \quad 
+\inference[\tiny SEHole]{}{\synthesis{\hole^u}{?}} \quad \]
+\[\inference[\tiny SNEHole]{\synthesis{e}{\tau}}{\synthesis{\hole[e]^u}{?}}\quad 
+\inference[\tiny SAsc]{\analysis{e}{\tau}}{\synthesis{e : \tau}{\tau}}\]
+
+\small
+\fbox{$\analysis{e}{\tau}$}\ \ \ $e$ analyses against type $\tau$ under context $\Gamma$
+
+\tiny
+\[\inference[\tiny AFun]{\tau \funmatch \tau_1 \to \tau_2\\ \analysis[\Gamma, x:\tau_1]{e}{\tau_2}}{\analysis{\lambda x.e}{\tau}} \quad 
+\inference[\tiny ASubsume]{\synthesis{e}{\tau}\\ \tau \sim \tau'}{\analysis{e}{\tau'}}\]
+
+\caption{Bidirectional typing judgements for \textit{external expressions}}
+\label{fig:typing}
+\end{figure} 
+These rules use a type consistency relation, $\sim$ in Fig. \ref{fig:consistency}, with types being consistent if they are equivalent up to the locations of the dynamic type. The type consistency relation is standard in gradual type systems \cite{GradualFunctional, GradualObjects}, and is similar to a subtyping relation but is \textit{not} transitive.
+
+\begin{figure}[H]
+\small
+\fbox{$\tau_1 \sim \tau_2$}\ \ \ $\tau_1$ is consistent with $\tau_2$
+\tiny
+\[\inference[\tiny TCDyn1]{}{? \sim \tau} \quad \inference[\tiny TCDyn2]{}{\tau \sim ?} \quad \inference[\tiny TCRfl]{}{\tau \sim \tau} \quad \inference[\tiny TCFun]{\tau_1 \sim \tau_1' & \tau_2 \sim \tau_2'}{\tau_1 \to \tau_2 \sim \tau_1' \to \tau_2'}\]
+\caption{Type consistency}
+\label{fig:consistency}
+\end{figure}
+Finally, a (function) type matching relation, $\funmatch$ in Fig. \ref{fig:typematching}, matches the argument and return types from a function type, which for the dynamic type is $? \funmatch ? -> ?$. 
+\begin{figure}[h]
+\small
+\fbox{$\tau \funmatch \tau_1 \to \tau_2$}\ \ \ $\tau$ has arrow type $\tau_1 \to \tau_2$
+\tiny
+\[\inference[\tiny MADyn]{}{? \funmatch ? \to ?} \quad 
+\inference[\tiny MAFun]{}{\tau_1 \to \tau_2 \funmatch \tau_1 \to \tau_2}\]
+\caption{Type Matching}
+\label{fig:typematching}
+\end{figure}
+
+
+\subsubsection{Elaboration}
+Elaboration to the \textit{internal language} is possible for well-typed \textit{external expressions} and consists of inserting casts, hole contexts and hole substitutions for use in the dynamic semantics and internal language type assignment $\typeassignment{e}{\tau}$ where. Fig. \ref{fig:elaboration} defines the elaboration judgements and Fig. \ref{fig:typeassignment} defines the internal language type assignment judgement. 
+
+\begin{figure}[h]
+\small
+\fbox{$\elaborationSynthesis{e}{\tau}{d}{\Delta}$}\ \ \ $e$ syntheses type $\tau$ and elaborates to $d$
+\tiny 
+\[\inference[\tiny ESConst]{}{\elaborationSynthesis{c}{b}{c}{\emptyset}} \quad 
+\inference[\tiny ESVar]{x : \tau \in \Gamma}{\elaborationSynthesis{x}{\tau}{x}{\emptyset}}\]
+\[\inference[\tiny ESFun]{\elaborationSynthesis[\Gamma,x:\tau_1]{e}{\tau_2}{d}{\Delta}}{\elaborationSynthesis{\lambda x:\tau_1.e}{\tau_1 \to \tau_2}{\lambda x:\tau_1. d}{\Delta}}\]
+\[\inference[\tiny ESApp]{\synthesis{e_1}{\tau_1} & \tau_1 \funmatch \tau_2 \to \tau \\ \elaborationAnalysis{e_1}{\tau_2 \to \tau}{d_1}{\tau_1'}{\Delta_1} & \elaborationAnalysis{e_1}{\tau_2}{d_2}{\tau_2'}{\Delta_2}}{\elaborationSynthesis{e_1(e_2)}{\tau}{(d_1\scast{\tau_1}{\tau_2 \to \tau})(d_2\scast{\tau_2'}{\tau_2})}{\Delta_1 \cup \Delta_2}}\]
+\[\inference[\tiny ESEHole]{}{\elaborationSynthesis{\hole^u}{?}{\hole^u_{\mathrm{id}(\Gamma)}}{u :: \hole[] [\Gamma]}}\]
+\[\inference[\tiny ESNEHole]{\elaborationSynthesis{e}{\tau}{d}{\Delta}}{\elaborationSynthesis{\hole[e]^u}{?}{\hole[d]^u_{\mathrm{id}(\Gamma)}}{\Delta, u :: \hole[] [\Gamma]}}\]
+\[\inference[\tiny ESAsc]{\elaborationAnalysis{e}{\tau}{d}{\tau'}{\Delta}}{\elaborationSynthesis{e:\tau}{\tau}{d\scast{\tau'}{\tau}}{\Delta}}\]
+\small
+\fbox{$\elaborationAnalysis{e}{\tau_1}{d}{\tau_2}{\Delta}$}\ \ \ $e$ analyses against type $\tau$ and elaborates to $d$ of consistent type $\tau_2$
+\tiny 
+\[\inference[\tiny EAFun]{\tau \funmatch \tau_1 \to \tau_2 \\ \elaborationAnalysis[\Gamma,x:\tau_1]{e}{\tau_2}{d}{\tau_2}{\Delta}}{\elaborationAnalysis{\lambda x. e}{\tau}{\lambda x:\tau_1. d : \tau_1 \to \tau_2'}{\Delta}}\]
+\[\inference[\tiny EASubsume]{e \neq \hole^u & e \neq \hole[e']^u \\ \elaborationSynthesis{e}{\tau'}{d}{\Delta} & \tau \sim \tau'}{\elaborationAnalysis{e}{\tau}{d}{\tau'}{\Delta}}\]
+\[\inference[\tiny EAEHole]{}{\elaborationAnalysis{\hole^u}{\tau}{\hole^u_{\mathrm{id}(\Gamma)}}{\tau}{u::\tau[\Gamma]}}\]
+\[\inference[\tiny EANEHole]{\elaborationSynthesis{e}{\tau'}{d}{\Delta}}{\elaborationAnalysis{\hole[e]^u}{\tau}{\hole[d]^u_{\mathrm{id}(\Gamma)}}{\tau}{u::\tau[\Gamma]}}\]
+
+\caption{Elaboration judgements} 
+\label{fig:elaboration}
+\end{figure}
+
+\begin{figure}
+\small
+\fbox{$\typeassignment{d}{\tau}$}\ \ \ $d$ is assigned type $\tau$
+\tiny
+\[\inference[\tiny TACons]{}{\typeassignment{c}{b}}\quad
+\inference[\tiny TAVar]{x : \tau \in \Gamma}{\typeassignment{x}{\tau}}\quad
+\inference[\tiny TAFun]{\typeassignment[\Delta;\Gamma,x:\tau_1]{d}{\tau_2}}{\typeassignment{\lambda x:\tau_1. d}{\tau_1 \to \tau_2}}\]
+\[\inference[\tiny TAApp]{\typeassignment{d_1}{\tau_2 \to \tau} \\ \typeassignment{d_2}{\tau_2}}{\typeassignment{d_1(d_2)}{\tau}} \quad 
+\inference[\tiny TAEHole]{u :: \tau[\Gamma'] \in \Delta \\ \typeassignment{\sigma}{\Gamma'}}{\typeassignment{\hole^u_\sigma}{\tau}}\]
+\[
+\inference[\tiny TANEHole]{\typeassignment{d}{\tau'} \\ u :: \tau[\Gamma' \in \Delta & \typeassignment{\sigma}{\Gamma'}]}{\typeassignment{\hole[d]^u_\sigma}{\tau}}\quad 
+\inference[\tiny TACast]{\typeassignment{d}{\tau_1} & \tau_1 \sim \tau_2}{\typeassignment{d\scast{\tau_1}{\tau_2}{\tau_2}}}\]
+\[\inference[TACastError]{\typeassignment{d}{\tau_1} & \tau_1\text{ ground} & \tau_2\text{ ground} & \tau_1 \neq \tau_2}{\typeassignment{d\scastfail{\tau_1}{\tau_2}}{\tau_2}}\]
+\caption{Type assignment judgement for \textit{internal expressions}}
+\label{fig:typeassignment}
+\end{figure}
+Notice how failed casts are still well-typed as if the cast succeeded.
+
+\subsubsection{Internal Language: Dynamic Semantics}
+
+%\subsection{System F}  % Only include this section if actually used, other potential sections could be on pattern matching etc.
+%\textit{System F and how it is adapted to Hazel}
+
+\subsection{Hazel Codebase}
+
+\section{The Project}
+\subsection{Cast Slicing}
+\textit{Design of cast slicing and it's motivations}
+
+
+\subsection{Search Procedure}
+\textit{Design of search procedure and it's motivations}
+
+\section{Starting Point}
+
+
+\section{Requirement Analysis}
+
+\section{Software Engineering Methodology}
+
+\section{Legality}
