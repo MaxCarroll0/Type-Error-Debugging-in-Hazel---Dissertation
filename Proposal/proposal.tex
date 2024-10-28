@@ -10,7 +10,7 @@ let rec sum : Int -> Int = fun n ->
 in sum(2)
 \end{minted}
 But evaluation is still possible; see below a (compressed) trace to a stuck value exhibiting a cast error:
-\[\code{sum(2)} \mapsto^* \code{2 + sum(1)} \mapsto^* \code{2 + (1 + }\casterror{Bool}{Int}{ true}\code{)}\]
+\[\code{sum(2)} \mapsto^{*} \code{2 + sum(1)} \mapsto^{*} \code{2 + (1 + } \casterror{Bool}{Int}{ true}\code{)}\]
  
 This project aims to exploit further this potential by providing some extra features to both: aid with finding values/inputs that demonstrate why type-errors were found (type-error witnesses) and linking the evaluation traces back to source code. But is not expected to directly measure the usefulness of such evaluation traces themselves in debugging, nor is the design space for a Hazel debugger inspecting and interacting with traces to be explored.\par 
 Searching for type-error witnesses automatically is the main feature provided by this project, inspired by Seidel et al.\  \cite{SearchProc}. The intended use of this is to automatically generate values (for example, function arguments) that cause ill-typed programs to `go wrong' (lead to a cast error). More specifically, the search procedure can be thought of as evaluating a \textit{special hole} which refines its type dynamically and non-deterministically instantiates itself to values of this type to find a value whose evaluation leads to a \textit{general} cast error -- `general' meaning excluding trivial cast errors such as generating a value that doesn't actually have the refined expected type.  \par 
