@@ -230,16 +230,20 @@ Context syntax:
 
 \section{The Project}
 \subsection{Cast Slicing}
-\textit{Design of cast slicing and it's motivations}
-
+Cast slicing is, to my knowledge, a new concept and is a method in which selected casts can be linked back to source code by creating a slice of all code contributing to the cast.\par 
+Slicing methods have been researched extensively since Wadler first proposed static program slicing \cite{ProgSlice}, and later others proposed dynamic program slicing \cite{DynProgSlice} and error slicing \cite{ErrSlice}. Cast slicing combines ideas from both dynamic slicing, tracking of casts during evaluation, and error slicing, tracking casts during static elaboration. But is relatively less expressive in terms of slicing criterion, only considering casts, and no other expressions.
 
 \subsection{Search Procedure}
-\textit{Design of search procedure and it's motivations}
-\par 
-Frame the problem as adding dynamic inference to holes, and nondeterministic holl filling. Where hole filling could be formalised with \textbf{contextual modal type theory}.
+Search procedure for witnesses of type errors has been considered by Seidel et al. \cite{SearchProc} for OCaml. Their approach creates a non-deterministic semantics for ill-typed OCaml with a hole in place of a function argument being dynamically type inferred and instantiated in a most general manner until evaluation gets stuck. The hole instantiation at this point is the error witness.\par 
+Adapting this search procedure to Hazel, which natively supports evaluation of ill-typed expressions, and hole substitution analogously to contextual modal type theory \cite{CMTT}\footnote{Explore}.\par 
+Further, the use of dynamic types, casts, and the more general notion of holes will allow better handling of non-parametric function types -- stated as a problem in Seidel et al's. paper. Hence, very different semantics will need to be devised, but the general principle of dynamic inference and hole instantiation will remain the same.\footnote{Talk more deeply about CMTT and how hole substitution is efficient in Hazel.}
 
 \section{Starting Point}
+\subsubsection{Concepts}
+The foundations of most concepts in understanding Hazel from Part IB Semantics of Programming (and Part II Types later). The concept of gradual typing briefly appeared in Part IB Concepts of Programming Languages, but was not formalised. Dynamic typing, gradual typing, holes, and contextual modal type theory were not covered in Part IB, so were partially researched leading up to the project, then researched further in greater depth during the early stages. Similarly, Part IB Artificial Integlligence provided some context to search procedures, however nothing was directly relevant. Primarily, the OCaml search procedure for ill-typed witnesses Seidel et al. \cite{SearchProc} and the Hazel core language \cite{HazelLivePaper} were researched over the preceding summer.
 
+\subsubsection{Tools and Source Code}
+My experience in OCaml was mostly from the Part IA Foundations of Computer Science course and small-scale personal projects. The Hazel source code had not been inspected in detail until after starting the project.
 
 \section{Requirement Analysis}
 
