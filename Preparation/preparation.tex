@@ -14,7 +14,7 @@ For reference, the established semantics and type system for Hazel is presented.
 \footnote{
 \textbf{Come up with and detail some good intuitions of what each type of value \& expression is and what the cast calculus and elaboration does.}}
 \subsubsection{Syntax}
-
+\index{\textbf{Core Hazel} syntax}
 \par The syntax, in Fig. \ref{fig:syntax}, consists of \textit{types} $\tau$, \textit{external expressions} $e$, and \textit{internal expressions} $d$. Here, $?$ is the \textit{dynamic type}, $\hole[e]$ is a \textit{non-empty hole} containing $e$, and $\scast{\tau_1}{\tau_2}$,  $\scasterror{\tau_1}{\tau_2}$ are casts and cast errors from $\tau_1$ to $\tau_2$ respectively.
 The \textit{external language} is a locally inferred \cite{LocalInference} surface syntax for the language, and is statically elaborated to (explicitly typed) \textit{internal expressions}, in a similar way to Harper and Stone's \cite{StandardMLTypeTheory} approach to defining Standard ML as elaboration to an explicitly typed internal langauge, \textit{XML} \cite{CoreXML}.
 \begin{figure}[h]
@@ -28,6 +28,7 @@ d &::= c \mid x \mid \lambda x : \tau d \mid d(d) \mid \hole^u_\sigma \mid \hole
 \end{figure}
 
 \subsubsection{External Language: Type System}
+\index{External language type system}
 The static semantics in Fig. \ref{fig:typing} of the \textit{external language} is a bidirectionally typed system in the style of Pierce and Turner \cite{LocalInference}, and Dunfield and Krishnaswami \cite{BidirectionalTypes}. There are two typing judgement modes: $\synthesis{e}{\tau}$ which synthesises a type $\tau$, algorithmically thought of as an output, and $\analysis{e}{\tau}$ which analyses against a type $\tau$ as an input.\par 
 \begin{figure}[H]
 \small
@@ -74,9 +75,9 @@ Finally, a (function) type matching relation, $\funmatch$ in Fig. \ref{fig:typem
 
 
 \subsubsection{Elaboration}
-Elaboration to the \textit{internal language} is possible for well-typed \textit{external expressions} and consists of cast insertion, maintaining a hole context, and inserting initial identity hole environments. Each of these are used in the internal language type assignment $\typeassignment{e}{\tau}$ and the dynamic semantics. Fig. \ref{fig:elaboration} defines the elaboration judgements and Fig. \ref{fig:typeassignment} defines the internal language type assignment judgement.
+Elaboration to the \textit{internal language} is possible for well-typed \textit{external expressions} and consists of cast insertion, maintaining a hole context, and inserting initial identity hole environments. Each of these are used in the internal language type assignment $\typeassignment{e}{\tau}$ and the dynamic semantics. Fig. \ref{fig:elaboration} defines the elaboration judgements and Fig. \ref{fig:typeassignment} defines the internal language type assignment categorical judgement \cite{ModalJudgements}.
 
-\begin{figure}[h]
+\begin{figure}[H]
 \small
 \fbox{$\elaborationSynthesis{e}{\tau}{d}{\Delta}$}\ \ \ $e$ syntheses type $\tau$ and elaborates to $d$
 \tiny 
@@ -99,7 +100,7 @@ Elaboration to the \textit{internal language} is possible for well-typed \textit
 \label{fig:elaboration}
 \end{figure}
 
-\begin{figure}
+\begin{figure}[H]
 \small
 \fbox{$\typeassignment{d}{\tau}$}\ \ \ $d$ is assigned type $\tau$
 \tiny
@@ -115,7 +116,8 @@ Elaboration to the \textit{internal language} is possible for well-typed \textit
 \caption{Type assignment judgement for \textit{internal expressions}}
 \label{fig:typeassignment}
 \end{figure}
-Notice that cast errors -- casts between distinct ground types -- are well typed, where ground types are base types or one-level unrollings of the dynamic type (each being the \textit{least specific} type for each compound type).
+Where ground types are base types or one-level unrollings of the dynamic type (each being the \textit{least specific} type for each compound type).
+
 \begin{figure}
 \tiny
 \[id(x_1:\tau_1, \dots, x_n:\tau_n) := [x_1/x_1, \dots, x_n/x_n]\]
@@ -125,7 +127,7 @@ Notice that cast errors -- casts between distinct ground types -- are well typed
 \label{fig:substitutiontyping}
 \end{figure}
 
-\begin{figure}
+\begin{figure}[h]
 \tiny
 \fbox{$\tau$ ground}\ \ \ $\tau$ is a ground type
 \[\inference[\tiny GBase]{}{b\text{ ground}}\quad \inference[\tiny GDynFun]{}{? \to ?\text{ ground}}\]
@@ -143,7 +145,7 @@ In order to support the ability to evaluate expressions around holes and cast er
 \item Final -- All final forms.
 \end{itemize}
 
-\begin{figure}[h]
+\begin{figure}[H]
 \small
 \fbox{$\final$}\ \ \ $d$ is final
 \tiny
@@ -178,7 +180,7 @@ In order to support the ability to evaluate expressions around holes and cast er
 
 The small-step contextual dynamics \cite{PracticalFoundations} is defined on the internal expressions. The general idea is to consider two classes of casts: injections -- casts from a ground type to the dynamic types, and projections -- casts from the dynamic type to a ground type. These two classes of casts can be eliminated upon meeting if the ground types are equal or to a cast error if not. Function casts are dealt with by separating into two casts on the argument and return value. Finally, compound types can be cast to their least specific ground type specified by the ground matching relation in Fig. \ref{fig:groundmatch}.
 
-\begin{figure}
+\begin{figure}[H]
 \small
 \fbox{$\tau \groundmatch \tau'$}\ \ \ $\tau$ matches ground type $\tau'$
 \tiny
@@ -187,9 +189,7 @@ The small-step contextual dynamics \cite{PracticalFoundations} is defined on the
 \label{fig:groundmatch}
 \end{figure}
 
-The instruction transitions, Fig. \ref{fig:instructions}, and evaluation context, Fig. \ref{fig:dynamics}, specify a non-deterministic evaluation order, which is a more suitable choice for supporting dynamic hole instantiation, as will be used by the search procedure.\footnote{\textbf{Define Substitution in appendices?}}\par 
-Casts are associative, so bracketing is omitted.
-\begin{figure}
+\begin{figure}[H]
 \small
 \fbox{$d \longrightarrow d'$}\ \ \ $d$ takes and instruction transition to $d'$
 \tiny
@@ -204,7 +204,9 @@ Casts are associative, so bracketing is omitted.
 \label{fig:instructions}
 \end{figure}
 
-\begin{figure}
+Variable substitution, used in ITFun, is capture avoiding and also substitutions are recorded in each hole's environment $\sigma$ by (over)writing $[d/x]\sigma$.\footnote{Create a figure for this, maybe in appendix.}
+
+\begin{figure}[H]
 Context syntax:
 \[E ::= \circ \mid E(d) \mid d(E) \mid \hole[E]^u_\sigma \mid E\scast{\tau}{\tau} \mid E\scasterror{\tau}{\tau}\]
 \small
@@ -223,8 +225,37 @@ Context syntax:
 \caption{Contextual dynamics of the internal language}
 \label{fig:dynamics}
 \end{figure}
-%\subsection{System F}  % Only include this section if actually used, other potential sections could be on pattern matching etc.
-%\textit{System F and how it is adapted to Hazel}
+
+The instruction transitions, Fig. \ref{fig:instructions}, and evaluation context, Fig. \ref{fig:dynamics}, specify a non-deterministic evaluation order, which is a more suitable choice for supporting dynamic hole instantiation, as will be used by the search procedure.\footnote{\textbf{Define Substitution in appendices?}}\par 
+Casts are associative, so bracketing is omitted.
+
+\subsubsection{Hole Substitutions}
+Hole substitutions will be extensively used by the search procedure, so their semantics is given here. These correspond to contextual substitutions for meta-variables in closures in contextual modal type theory \cite{CMTT}. Intuitively, these are delayed substitutions with the holes being closures with environment $\sigma$ and meta-variable/hole name $u$. A hole $\hole^u_\sigma$ being substituted with $d$ (written $\contextualsub \hole_\sigma^u$) is $d$ with it's environment assignment $\sigma$ applied, after first substituting the hole ($\contextualsub \sigma$) in $\sigma$.\par Hole/contextual substitutions are mostly similar variable substitutions, except the substituted values may refer to bound variables without restriction. See Fig. \ref{fig:holesubstitution} for full definition. 
+\begin{figure}[H]
+\small
+\fbox{$\contextualsub d' = d''$}\ \ \ $d''$ is $d'$ with each hole $u$ substituted with $d$ in the respective hole's environment $\sigma$.
+\begin{align*}
+&\contextualsub c &&= c\\
+&\contextualsub x &&= x\\
+&\contextualsub \lambda x:\tau.d' &&= \lambda x:\tau. \contextualsub d'\\
+&\contextualsub d_1(d_2) &&= (\contextualsub d_1)(\contextualsub d_2)\\
+&\contextualsub \hole^u_\sigma &&= [\contextualsub  \sigma]d\\
+&\contextualsub \hole^v_\sigma &&= \hole^b_{\contextualsub \sigma} && \text{if $u \neq v$}\\
+&\contextualsub \hole[d']^u_\sigma &&= [\contextualsub  \sigma]d\\
+&\contextualsub \hole[d']^v_\sigma &&= \hole[\contextualsub d']^b_{\contextualsub \sigma} && \text{if $u \neq v$}\\
+&\contextualsub d'\scast{\tau}{\tau'} &&= (\contextualsub d')\scast{\tau}{\tau'}\\
+&\contextualsub d'\scasterror{\tau}{\tau'} &&= (\contextualsub d')\scasterror{\tau}{\tau'}\\
+\end{align*}
+
+\fbox{$\contextualsub \sigma = \sigma'$}\ \ \ $\sigma'$ is $\sigma$ with each hole $u$ in $\sigma$ substituted with $d$ in the respective hole's environment.
+\begin{align*}
+\contextualsub \cdot &= \cdot\\ 
+\contextualsub \sigma, d'/x &= \contextualsub \sigma, (\contextualsub d')/x
+\end{align*}
+\caption{Hole substitution}
+\label{fig:holesubstitution}
+\end{figure} 
+\textbf{Think in detail about CMTT and hole refinement. It is very relevant to the search procedure. In particular think about \texttt{box} and \texttt{letbox} in CMTT.} 
 
 \subsection{Hazel Codebase}
 
@@ -235,8 +266,8 @@ Slicing methods have been researched extensively since Wadler first proposed sta
 
 \subsection{Search Procedure}
 Search procedure for witnesses of type errors has been considered by Seidel et al. \cite{SearchProc} for OCaml. Their approach creates a non-deterministic semantics for ill-typed OCaml with a hole in place of a function argument being dynamically type inferred and instantiated in a most general manner until evaluation gets stuck. The hole instantiation at this point is the error witness.\par 
-Adapting this search procedure to Hazel, which natively supports evaluation of ill-typed expressions, and hole substitution analogously to contextual modal type theory \cite{CMTT}\footnote{Explore}.\par 
-Further, the use of dynamic types, casts, and the more general notion of holes will allow better handling of non-parametric function types -- stated as a problem in Seidel et al's. paper. Hence, very different semantics will need to be devised, but the general principle of dynamic inference and hole instantiation will remain the same.\footnote{Talk more deeply about CMTT and how hole substitution is efficient in Hazel.}
+Adapting this search procedure to Hazel, which natively supports evaluation of ill-typed expressions and hole substitution allows for stronger semantic foundations. In particular hole substitution and refinement, borrowing from contextual modal type theory\footnote{See Chapter 5 of \cite{HazelLivePaper}}.\par 
+Further, the use of dynamic types, casts, and the more general notion of holes will allow better handling of non-parametric function types -- stated as a problem in Seidel et al's. paper. Hence, very different semantics will need to be devised, but the general principle of dynamic inference and hole instantiation will remain the same.
 
 \section{Starting Point}
 \subsubsection{Concepts}
