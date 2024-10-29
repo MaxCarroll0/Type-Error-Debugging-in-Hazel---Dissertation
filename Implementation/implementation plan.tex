@@ -1,1 +1,100 @@
 \chapter{TEMPORARY: Implementation Plan}
+\section{Cast Slicing}
+Consider options of: annotating typing derivations, annotating casts (and splitting in evaluation), or reverse unevaluating casts \cite{FunctionalProgExplain}.\par
+See constraint free error slicing \cite{ConstraintFreeErrSlice}.\par
+\textbf{See the gradualizer to understand how casts work }\cite{Gradualizer}.\par
+See Blame tracking to see how common type location transfer is handled \cite{Blame}.\\ \par
+Casting:\par 
+Casting goes from the terms actual type to coerce it into a new type. Casts are inserted by elaboration at appropriate points (where the type system uses consistency or pattern matching\footnote{See the gradualizer for intuition and direction of consistency casts}). Casts between compound types may be decomposed by the cast calculus. See gradualizer dynamic semantics \cite{GradualizerDynamic} for intuition and \cite{Blame} for intuition on polarity affecting blame. \par 
+Consider deeply type constructor polarities \cite[pg.473]{TAPL}. Covariant types give positive blame (blame value) and contravariant give negative (blame context).
+
+\\
+\textbf{GENERAL STRUCTURE:}\par 
+More work needed on the treatment of type analysis. Understanding type flows, input/output mode, and type polarity will likely help. Also when considering types derived from joins.
+\begin{itemize}
+\item Slice code contributing to a type. In particular, compound types should each have their own sub-slice. e.g. with $\tau = \tau_1 \to \tau_2$ then $\tau$ would have a slice consisting of $\tau_1$'s slice and $\tau_2$' slice.
+\item Annotate slices onto the types themselves.
+\item Casts are then the combination of the two slices. 
+\item Cast calculus (splitting of casts etc.) can be done easily.
+\end{itemize}
+Might be better to change this from slicing to marking, allowing marking of parts of terms (which are not terms themselves), i.e. lambda abstraction annotations
+
+\subsubsection{Why are casts elaborated}
+A cast is inserted at a point of either, for a subexpression $e : \tau$:
+\begin{itemize}
+\item Pattern Matching $\tau \blacktriangleright \tau'$ -- Wrap $e$ in a cast $\scast{\tau}{\tau''}$ where $\tau''$ is the \textit{cast destination of $\tau'$}
+\item  Flows $\tau \rightsquigarrow \tau'$ -- Wrap $e$ in a cast $\scast{\tau}{\tau'}$
+\end{itemize}
+A \textit{cast destination} for $\tau$ is the result of applying flows recursively on all positive type positions and reversed flows on negative type positions in $\tau$.\par
+Flows relate to invocations of consistency and joins, with direction dictated by type polarity and modality:
+\begin{itemize}
+\item Producers flow to their final type 
+\item Final types flow to the consumers
+\item Input variables are replaced with the final type.
+\end{itemize}
+Where the final type is an annotated \textit{type}, output consumers, or the join of all producers. Note also that final types have output mode.
+\par 
+
+\subsubsection{Slicing of Producers, Consumers, Final Types}
+Producer types correspond to synthesised types. Consumer types correspond to analysed types. Final types are one of the above or additionally, joins of types.\par 
+A slice should be all the code that contributes to the cast. Formally\footnote{\textbf{This is the key thing to define in a useful way. Think in more detail}}:
+\begin{itemize}
+\item If any subterm in the slice were removed (replaced with hole or dynamic annotation etc.), then the cast would not be required or be different. The slice should ideally be minimal.
+\end{itemize}
+The source of any cast on a sub-term $d$ is $\tau$ such that $d$ has type $\tau$, that $\typeassignment{d}{\tau}$. The destination is as dependent on pattern matching and flows as above. \par 
+A cast being different/unneeded for a slice would imply that either the source or destination have different types. By the gradual guarantee, the new source must be more general but consistent. \textit{Also the destination would be more general}\foornote{Check.}.\par 
+Obtaining slices for producers:\par 
+Obtaining slices for consumers:\par 
+Obtaining slices for joins:\par 
+
+\subsubsection{Why are casts evaluated}
+\newpage 
+REDO THIS!
+\subsubsection{Elaboration}
+First I will list the ways in which casts can be inserted by the elaboration judgements (\ref{fig:elaboration}):
+\begin{enumerate}
+\item Ascription -- An annotation trivially inserts a cast by ESAsc.
+\item Function Application -- A term $e_1(e_2)$ is elaborated by type synthesis for $e_1$ giving $\tau_1$, decomposed to $\tau_1 \funmatch \tau_2 \to \tau$. Both $e_1$ and $e_2$ are then analysed to $d_1, d_2$ of consistent types $\tau_1$ and $\tau_2'$. Hence, the corresponding casts on the function: $\scast{\tau_1'}{\tau_2 \to \tau}$ and argument $\scast{\tau_2'}{\tau_2}$, are inserted.\par 
+\end{enumerate}
+
+Blaming the annotation for ascriptions is perfectly reasonable. However, simply blaming the function and argument for their inserted casts respectively is too general. A better solution would be to somehow describe \textit{why} a consistent, but different, type is produced under elaboration.\par 
+Notably, consistent but different types are produced during elaboration by use of the subsumption (EASubsume) rule. In a sense, type synthesis needs to produce a slice itself.\par 
+Consider EASubsume, then, as $\tau$ is an input it doesn't need a slice, it is obtained via some outer context. But $\tau'$ is synthesised via $\elaborationSynthesis{e}{\tau'}{d}{\Delta}$, or equivalently via external typing directly $\synthesis{e}{\tau'}$ (by elaboration generality Theorem 3.4 in paper).\par 
+As some rules (e.g. ESApp) use synthesis directly, the slice generation must be added to \textit{\textbf{external typing}}, but may be reused for elaboration.
+
+\subsubsection{Type synthesis slices in External Typing}
+Listing a reasonable idea for each rule. I will draft a  with a slice output, which may allow proofs about slicing.\par  
+I will represent slices simply as an expression with holes for terms which don't contribute to the type. \textit{More sophisticated methods including: dependencies between sub-slices or overlapping slices, tagging with type and/or type context, may be needed?}
+\begin{itemize}
+\item $\inference[SConstS]{}{\synthesisSlice{c}{b}{c}}$ -- $c$ is clearly the only expression to blame here.
+\item $\inference[SVarS]{x:\tau \in \Gamma}{\synthesisSlice{x}{\tau}{x}}$ -- similar
+\item $\inference[SLamS]{\synthesisSlice[\Gamma, x:\tau_1]{e}{\tau_2}{s}}{\synthesisSlice{\lambda x:\tau_1.e}{\tau_1 \to \tau_2}{\lambda x:\tau_1. s}}$
+\item $\inference[SAppS]{\synthesisSlice{e_1}{\tau_1}{s_1} & \tau_1 \funmatch \tau_2 \to \tau\\ \analysis{e_2}{\tau_2}}{\synthesisSlice{e_1(e_2)}{\tau}{s_1(\hole^u)}}$ -- for fresh $u$. Discarding the argument potentially makes sense, in that the function contains synthesises the type information.
+\item $\inference[SEHoleS]{}{\synthesisSlice{\hole^u}{?}{\hole^u}}$
+\item $\inference[SNEHoleS]{\synthesis{e}{\tau}}{\synthesisSlice{\hole[e]^u}{?}{\hole[e]^u}}$
+\item $\inference[SAsc]{\analysis{e}{\tau}}{\synthesisSlice{e}{\tau}{\hole^u : \tau}}$ -- For fresh $u$.
+\item $\inference[ALamS]{\tau \funmatch \tau_1 \to \tau_2 & \analysisSlice[\Gamma, x:\tau]{e}{\tau_2}{s}}{\analysisSlice{\lambda x. e}{\tau}{\lambda x. s}}$ -- DEBATABLE
+\item $\inference[ASubsumeS]{\synthesisSlice{e}{\tau}{s} & \tau \sim \tau'}{\analysisSlice{e}{\tau'}{s}}$ --Somehow a notion of slicing why subsumption is used is needed.
+\end{itemize}
+In a sense this can be thought of as replacing annotated expressions with holes, and recording uses of subsumption.
+
+\subsubsection{Properties for proof:} 
+Clearly the sliced term should synthesise the same type.\par 
+\textit{Any change of a subterm to an inconsistent type should result in type checking failing or producing an inconsistent type. \textbf{This requires slices to be passed through analysis mode. Look into Haack to see what they define, probably not this.}}\par
+It should also be in some sense minimal -- maybe that replacing any sub-expression with a hole results in a less specific type synthesised.\par 
+It should ideally also be the smallest term by size -- but this is probably strictly dependent on the slicing method, other ways seem possible, including using constraints; the best idea is probably to conform with the bidirectional type checking method.
+
+\subsubsection{Cast Insertion}
+Simply annotate casts with slices. An ascription cast gets $\hole^u : \tau$ as a slice.
+\par 
+There will be a lot of redundancy so a good data-structure will be required for minimising duplicate sub-terms in AST forests. Further, use of holes (which has overhead) could be replaced with a simpler non-substitutable hole construct.
+
+\subsubsection{Dynamics}
+Splitting of casts can't really work with the slices defined above. But dependencies between casts can be traced and then unevaluated e.g. as in \cite{FuctionalProgExplain}.\par
+Maybe one idea is to have casts inherit their slices, then also produce an accompanying cast dependency graph tracking back to the original cast where the slice originates. \textbf{Ideally, simplification of slices upon cast splitting would be conducted, but this may be difficult. Consider how this would generalise to sum, product types, operations etc.}.
+
+
+\section{Search Procedure}
+Track dynamic type refinement via provenances, so the same dynamic type is always refined in the same manner \cite{MarkedLocalisation}.\par 
+Look into Idris etc. etc.
+

@@ -35,6 +35,7 @@ Explicit substitutions for efficiency
 Pretty printing, eliding irrelevant detail
 More evaluation stepping options, trace compression
 Implicit Typing -- retaining parametricity and modularity
+Extend cast slicing with constraint slicing for implicitly typed external language
 
 # Papers to Print
 Contextual Modal Type Theory

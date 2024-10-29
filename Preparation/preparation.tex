@@ -84,14 +84,14 @@ Elaboration to the \textit{internal language} is possible for well-typed \textit
 \[\inference[\tiny ESConst]{}{\elaborationSynthesis{c}{b}{c}{\emptyset}} \quad 
 \inference[\tiny ESVar]{x : \tau \in \Gamma}{\elaborationSynthesis{x}{\tau}{x}{\emptyset}}\]
 \[\inference[\tiny ESFun]{\elaborationSynthesis[\Gamma,x:\tau_1]{e}{\tau_2}{d}{\Delta}}{\elaborationSynthesis{\lambda x:\tau_1.e}{\tau_1 \to \tau_2}{\lambda x:\tau_1. d}{\Delta}}\]
-\[\inference[\tiny ESApp]{\synthesis{e_1}{\tau_1} & \tau_1 \funmatch \tau_2 \to \tau \\ \elaborationAnalysis{e_1}{\tau_2 \to \tau}{d_1}{\tau_1'}{\Delta_1} & \elaborationAnalysis{e_1}{\tau_2}{d_2}{\tau_2'}{\Delta_2}}{\elaborationSynthesis{e_1(e_2)}{\tau}{(d_1\scast{\tau_1}{\tau_2 \to \tau})(d_2\scast{\tau_2'}{\tau_2})}{\Delta_1 \cup \Delta_2}}\]
+\[\inference[\tiny ESApp]{\synthesis{e_1}{\tau_1} & \tau_1 \funmatch \tau_2 \to \tau \\ \elaborationAnalysis{e_1}{\tau_2 \to \tau}{d_1}{\tau_1'}{\Delta_1} & \elaborationAnalysis{e_1}{\tau_2}{d_2}{\tau_2'}{\Delta_2}}{\elaborationSynthesis{e_1(e_2)}{\tau}{(d_1\scast{\tau_1'}{\tau_2 \to \tau})(d_2\scast{\tau_2'}{\tau_2})}{\Delta_1 \cup \Delta_2}}\]
 \[\inference[\tiny ESEHole]{}{\elaborationSynthesis{\hole^u}{?}{\hole^u_{\mathrm{id}(\Gamma)}}{u :: \hole[] [\Gamma]}}\]
 \[\inference[\tiny ESNEHole]{\elaborationSynthesis{e}{\tau}{d}{\Delta}}{\elaborationSynthesis{\hole[e]^u}{?}{\hole[d]^u_{\mathrm{id}(\Gamma)}}{\Delta, u :: \hole[] [\Gamma]}}\]
 \[\inference[\tiny ESAsc]{\elaborationAnalysis{e}{\tau}{d}{\tau'}{\Delta}}{\elaborationSynthesis{e:\tau}{\tau}{d\scast{\tau'}{\tau}}{\Delta}}\]
 \small
 \fbox{$\elaborationAnalysis{e}{\tau_1}{d}{\tau_2}{\Delta}$}\ \ \ $e$ analyses against type $\tau$ and elaborates to $d$ of consistent type $\tau_2$
 \tiny 
-\[\inference[\tiny EAFun]{\tau \funmatch \tau_1 \to \tau_2 \\ \elaborationAnalysis[\Gamma,x:\tau_1]{e}{\tau_2}{d}{\tau_2}{\Delta}}{\elaborationAnalysis{\lambda x. e}{\tau}{\lambda x:\tau_1. d : \tau_1 \to \tau_2'}{\Delta}}\]
+\[\inference[\tiny EAFun]{\tau \funmatch \tau_1 \to \tau_2 \\ \elaborationAnalysis[\Gamma,x:\tau_1]{e}{\tau_2}{d}{\tau_2}{\Delta}}{\elaborationAnalysis{\lambda x. e}{\tau}{\lambda x:\tau_1. d}{\tau_1 \to \tau_2'}{\Delta}}\]
 \[\inference[\tiny EASubsume]{e \neq \hole^u & e \neq \hole[e']^u \\ \elaborationSynthesis{e}{\tau'}{d}{\Delta} & \tau \sim \tau'}{\elaborationAnalysis{e}{\tau}{d}{\tau'}{\Delta}}\]
 \[\inference[\tiny EAEHole]{}{\elaborationAnalysis{\hole^u}{\tau}{\hole^u_{\mathrm{id}(\Gamma)}}{\tau}{u::\tau[\Gamma]}}\]
 \[\inference[\tiny EANEHole]{\elaborationSynthesis{e}{\tau'}{d}{\Delta}}{\elaborationAnalysis{\hole[e]^u}{\tau}{\hole[d]^u_{\mathrm{id}(\Gamma)}}{\tau}{u::\tau[\Gamma]}}\]
