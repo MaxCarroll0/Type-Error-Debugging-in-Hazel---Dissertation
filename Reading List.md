@@ -8,7 +8,7 @@ Idris Holes & Hole Refinement -- See also OLEG metavariables and Beluga holes
 Explicit Substitutions -- Abadi 1991
 
 # Slicing
-Errors Slicing
+Errors Slicing -- Haack
 Dynamic Program Slicing
 Blame Tracking & Provenances
 
@@ -29,3 +29,13 @@ Fuzzing overview
 
 # Symbolic Execution
 Overview -- Consider weak head normal forms
+
+# Further Directions
+Explicit substitutions for efficiency
+Pretty printing, eliding irrelevant detail
+More evaluation stepping options, trace compression
+Implicit Typing -- retaining parametricity and modularity
+
+# Papers to Print
+Contextual Modal Type Theory
+Categorical Judgements 
