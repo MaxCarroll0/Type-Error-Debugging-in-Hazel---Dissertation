@@ -318,6 +318,6 @@ _minted-*/
 _diff/
 
 # SAVE-ERRORS
-*.bbl-SAVE-ERROR
+*-SAVE-ERROR
 
 # End of https://www.toptal.com/developers/gitignore/api/tex
