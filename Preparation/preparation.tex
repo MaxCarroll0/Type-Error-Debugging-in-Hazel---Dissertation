@@ -89,9 +89,9 @@ Elaboration to the \textit{internal language} is possible for well-typed \textit
 \[\inference[\tiny ESNEHole]{\elaborationSynthesis{e}{\tau}{d}{\Delta}}{\elaborationSynthesis{\hole[e]^u}{?}{\hole[d]^u_{\mathrm{id}(\Gamma)}}{\Delta, u :: \hole[] [\Gamma]}}\]
 \[\inference[\tiny ESAsc]{\elaborationAnalysis{e}{\tau}{d}{\tau'}{\Delta}}{\elaborationSynthesis{e:\tau}{\tau}{d\scast{\tau'}{\tau}}{\Delta}}\]
 \small
-\fbox{$\elaborationAnalysis{e}{\tau_1}{d}{\tau_2}{\Delta}$}\ \ \ $e$ analyses against type $\tau$ and elaborates to $d$ of consistent type $\tau_2$
+\fbox{$\elaborationAnalysis{e}{\tau}{d}{\tau'}{\Delta}$}\ \ \ $e$ analyses against type $\tau$ and elaborates to $d$ of consistent type $\tau'$
 \tiny 
-\[\inference[\tiny EAFun]{\tau \funmatch \tau_1 \to \tau_2 \\ \elaborationAnalysis[\Gamma,x:\tau_1]{e}{\tau_2}{d}{\tau_2}{\Delta}}{\elaborationAnalysis{\lambda x. e}{\tau}{\lambda x:\tau_1. d}{\tau_1 \to \tau_2'}{\Delta}}\]
+\[\inference[\tiny EAFun]{\tau \funmatch \tau_1 \to \tau_2 \\ \elaborationAnalysis[\Gamma,x:\tau_1]{e}{\tau_2}{d}{\tau_2'}{\Delta}}{\elaborationAnalysis{\lambda x. e}{\tau}{\lambda x:\tau_1. d}{\tau_1 \to \tau_2'}{\Delta}}\]
 \[\inference[\tiny EASubsume]{e \neq \hole^u & e \neq \hole[e']^u \\ \elaborationSynthesis{e}{\tau'}{d}{\Delta} & \tau \sim \tau'}{\elaborationAnalysis{e}{\tau}{d}{\tau'}{\Delta}}\]
 \[\inference[\tiny EAEHole]{}{\elaborationAnalysis{\hole^u}{\tau}{\hole^u_{\mathrm{id}(\Gamma)}}{\tau}{u::\tau[\Gamma]}}\]
 \[\inference[\tiny EANEHole]{\elaborationSynthesis{e}{\tau'}{d}{\Delta}}{\elaborationAnalysis{\hole[e]^u}{\tau}{\hole[d]^u_{\mathrm{id}(\Gamma)}}{\tau}{u::\tau[\Gamma]}}\]
