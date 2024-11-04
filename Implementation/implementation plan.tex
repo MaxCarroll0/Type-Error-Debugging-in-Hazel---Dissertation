@@ -22,6 +22,7 @@ Where the final type is an annotated \textit{type}, output consumers, or the joi
 \textbf{A logical interpretation of this would be useful (see the relation of contexts slices and type slice decomposition in implications/functions). The below formulation feels quite ad-hoc.}
 \par
 A \textit{type slice} of an $e$ in a context is an expression that has sub-expressions of $e$ replaced with holes or type annotations replaced with the dynamic type but still type synthesises or analyses to the same type.\footnote{Additionally they contain other info for use decomposing slices and the encompassing. Discussed throughout.}\par 
+\textit{An alternative formalisation could be: Instead of type synthesises or analyses the same type, it could contain all code that could be changed in order to NO LONGER synthesise/analyse to the type.}\par
 However, as typing often depends on the context, for which code involved may be outside the scope of the current term, an additional notion of a context slice will be attached. A context slice will contain all the variable bindings (lambdas or let bindings) and, importantly, their annotations. It is important to notice that this only works because Hazel is explicitly typed at variable bindings. \textit{An implicitly type language, like ML, could be translated to an explicitly typed internal language, for example CoreXML \cite{CoreXML}. Then, `constraint slices' could track code which is required for the constraint system to derive each annotation; this idea is similar to that used in type error slicing for higher-order functional languages \cite{ErrSlice, HaackErrSlice}.}
 \par 
 Slices for compound types will need to be split into slices for component types (as casts are decomposed), a suitable extension of this needs to be produced that allows slices to be decomposed into the slices of component types.\par
@@ -92,9 +93,9 @@ SEAEHole, SEANEHole are simply analogues of the synthesis slicing rules.
 \label{fig:elaborationsliced}
 \end{figure}
 
-Second, I describe how to calculate joins of slices. Simply speaking, a join of slices is just the union of the code they point at. Semantically, in the above formulation it is a bit tedious to define, but for any rule using join, the joined slice could be constructed by placing the slices in their appropriate spots and merging overlapping slices (with concrete terms replacing holes).
+Second, I describe how to calculate joins of slices. This depends on the formalisation of type slicing. If only a minimal code slice to produce the same type is required, then some branches with matching type may be replaced by holes. If we include any code that can cause type checking to change, a join of slices is just the union of the code they point at\footnote{Prove.}.\par Semantically, in the above formulation it is a bit tedious to define and doesn't quite fit the pattern that the type slice actually corresponds to a term, here it corresponds to a union of branches. \textbf{The idea of a type slice should be refined to accept function argument types and joined types more intuitively}\footnote{Consider having join types be explicit. The lack of a link between these types and an expression is the issue.}.
 \par 
-Implementation-wise, slices will probably be code locations, and will be more granular than expressions. Granularity at the level of annotations, and could potentially have special cases to distinguish cases where the slicing semantics inserts holes more clearly: for example, highlighting the brackets/hole being applied to a function in SSFun to make it clear that the type derives from \textit{application} rather than just the function which has a very similar slice. \textit{The hole based approach does have the benefit of automatically closing away irrelevant branches of code that is not highlighted, this could be a nice interaction design feature to implement.}
+Implementation-wise, slices will probably be code locations, and will be more granular than expressions.\footnote{Hence, the issues above are irrelevant to implementation.} Granularity at the level of annotations, and could potentially have special cases to distinguish cases where the slicing semantics inserts holes more clearly: for example, highlighting the brackets/hole being applied to a function in SSFun to make it clear that the type derives from \textit{application} rather than just the function which has a very similar slice. \textit{The hole based approach does have the benefit of automatically closing away irrelevant branches of code that is not highlighted, this could be a nice interaction design feature to implement.}
 
 \subsubsection{Context: How are casts evaluated}
 The Hazel cast calculus has two primary types of casts:
@@ -122,7 +123,7 @@ See constraint free error slicing \cite{ConstraintFreeErrSlice}.\par
 See Blame tracking to see how common type location transfer is handled \cite{Blame}.\\ \par
 Casting:\par 
 Casting goes from the terms actual type to coerce it into a new type. Casts are inserted by elaboration at appropriate points (where the type system uses consistency or pattern matching\footnote{See the gradualizer for intuition and direction of consistency casts}). Casts between compound types may be decomposed by the cast calculus. See gradualizer dynamic semantics \cite{GradualizerDynamic} for intuition and \cite{Blame} for intuition on polarity affecting blame. \par 
-Consider deeply type constructor polarities \cite[pg.473]{TAPL}. Covariant types give positive blame (blame value) and contravariant give negative (blame context).
+Consider deeply type constructor polarities \cite[pg.~473]{TAPL}. Covariant types give positive blame (blame value) and contravariant give negative (blame context).
 
 
 \subsection{Implementation Structure}
@@ -131,8 +132,10 @@ Research Into Hazel.
 \subsection{Implementation Details and Optimisations}
 \subsubsection{Slices -- Location based}
 Location based slices would could be represented by intervals.\par 
-Due to the recursive nature of slices (component type slices must be available), then there will be a significant number of interval trees. Therefore, a persistent structure MUST be used for space efficiency.\par 
-Efficiently displaying overlapping intervals is ideal. A sorted list achieves this, so a sorted  tree structure of some sort could be used to maintain efficient insertion.
+Due to the recursive nature of slices (component type slices must be available), then there will be a significant number of interval trees. Therefore, a persistent structure \cite[chapter~2]{PurelyFunctionalDataStructures} MUST be used for space efficiency.\par 
+Efficiently displaying overlapping intervals is ideal. A sorted list achieves this, so a sorted  tree structure of some sort could be used to maintain efficient insertion.\par 
+Hash consing may be similarly useful.\par 
+Displaying a slice here does need to be more efficient as there may be many intervals that aren't actually merged vs just walking a tree with holes.
 
 
 \subsubsection{Slices -- Hole Based}
@@ -140,7 +143,32 @@ Slices can be stored immutably as ASTs and splitting of slices will be handled i
 Overlapping slices can appear, most notably from joining slices. Therefore, joins should be implemented to preserve space. Speed of merging and splitting is also relatively important.\par 
 Displaying a slice is a relatively uncommon procedure compared to joining and splitting. Hence, retrieving and aggregating locations from the slice does not need to be fast, nor space efficient. \par 
 A regular persistent tree is likely sufficient, but lazy joining and/or hash consing \cite{HashCons} might be useful.
+
+
 \section{Search Procedure}
-Track dynamic type refinement via provenances, so the same dynamic type is always refined in the same manner \cite{MarkedLocalisation}.\par 
-Look into Idris etc. etc.
+Look into Zippers \cite{Zipper}, and other functional data structures that may be useful here.
+
+\subsection{Hole Refinement}
+A suitable notion of \textit{type hole} should be used for this. These will differ from dynamic types in that they can be refined. In particular they will probably be annotated by their type. Look into Seidel et al. \cite{SearchProc}, OLEG \cite[chapter~2]{OLEG} \& Idris for ideas.\par 
+Holes would be annotated by their type, and this would have type variables which could be refined accordingly. Essentially, a form of runtime type information is required.\par 
+Look into how Hazel may support type-driven code completion. 
+
+\subsection{Hole Instantiation}
+Semantics via CMTT contextual substitution.\par 
+Generating of values to substitute will match the required type as annotated on the hole.\par
+Generation of suitable concrete values of any type should be informed by ideas like the `small scope hypothesis' \cite{SmallScope}\footnote{This is evaluated for bugs in general in OOP, not necessarily type bugs in FP.} or just could be random as in QuickCheck \cite{QuickCheck}, SmallCheck \cite{SmallCheck}. Allowing some meta-programming of the value generation algorithms would be an interesting idea, especially for user-defined types.\par
+The idea of substituting symbols for symbolic execution is a good idea, but might be difficult. Symbols could be represented by holes of the required type, generating values upon reaching a conditional or similar.\footnote{This is the main idea to think about, probably more important than user control of value generation.} \par 
+Some heuristics may help with this search. But this project is unlikely to consider any in detail.
+
+\subsection{Backtracking}
+If a particular instantiation does not result in a general witness, then some form of backtracking is required. This is the primary addition to the small-step evaluator that needs to be added.\par 
+A simple way to do this would be wrapping the evaluator in a choice-pointing system -- like in Prolog. \par 
+Doing this space-efficiently (saving choice points) would be the goal.\par 
+\textbf{Look into non-deterministic evaluation from a logic programming perspective. Also backtracking in general.} See the Warren Abstract Machine \cite{WAM}.\par 
+A \textit{semi-persistent} data structure \cite{SemiPersistent} will be needed for this.\par 
+Notice that for efficiency reasons, it may be desirable to use some amount of immutability here.\footnote{Hazel code-base rules seem to not allow this though!}
+
+\subsection{Witness Visualisation}
+A manner in which to view the execution of the actually found witness result would be needed. So, whole traces would need to be stored/accumulated. Consider the space considerations of this. Look into Hazel's stepper and history functionality.
+
 
