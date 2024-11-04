@@ -2,10 +2,13 @@
 Hypothetical Judgements
 Generic Judgements
 Categorical Judgements
+Contextual Types -- https://dl.acm.org/doi/pdf/10.1145/3373718.3394735
 Contextual Modal Type Theory
 The Gradualizer
-Idris Holes & Hole Refinement -- See also OLEG metavariables and Beluga holes
+Idris Holes & Hole Refinement
+OLEG, type holes -- https://era.ed.ac.uk/handle/1842/374
 Explicit Substitutions -- Abadi 1991
+
 
 # Slicing
 Errors Slicing -- Haack
@@ -31,12 +34,7 @@ Fuzzing overview
 Overview -- Consider weak head normal forms
 
 # Further Directions
-Explicit substitutions for efficiency
 Pretty printing, eliding irrelevant detail
 More evaluation stepping options, trace compression
 Implicit Typing -- retaining parametricity and modularity
 Extend cast slicing with constraint slicing for implicitly typed external language
-
-# Papers to Print
-Contextual Modal Type Theory
-Categorical Judgements 
