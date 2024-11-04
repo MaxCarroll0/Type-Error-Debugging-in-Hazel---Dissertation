@@ -146,29 +146,51 @@ A regular persistent tree is likely sufficient, but lazy joining and/or hash con
 
 
 \section{Search Procedure}
-Look into Zippers \cite{Zipper}, and other functional data structures that may be useful here.
-
+\textit{Look into Zippers \cite{Zipper}, and other functional data structures that may be useful here.
+}
 \subsection{Hole Refinement}
-A suitable notion of \textit{type hole} should be used for this. These will differ from dynamic types in that they can be refined. In particular they will probably be annotated by their type. Look into Seidel et al. \cite{SearchProc}, OLEG \cite[chapter~2]{OLEG} \& Idris for ideas.\par 
-Holes would be annotated by their type, and this would have type variables which could be refined accordingly. Essentially, a form of runtime type information is required.\par 
-Look into how Hazel may support type-driven code completion. 
-
+A suitable notion of \textit{type hole} should be used for this. These will differ from regular holes in that they will maintain runtime type information\footnote{Or the evaluation environment will track these.}. In particular they will be annotated by a dynamically inferred type variable, which would be progressively refined.\par
+In particular the type given to a hole will be \textit{entirely} determined by the dynamics, and not the static type checking, which may not be well-typed or may be unspecific (using dynamic types).
+\par
+\textit{Look into Gradual type inference \cite{GradualTI}, Gradual dynamic type inference \cite{DTI}, Seidel et al. \cite{SearchProc}, OLEG \cite[chapter~2]{OLEG} \& Idris for ideas.  
+Look into how Hazel may support type-driven code completion.}
 \subsection{Hole Instantiation}
-Semantics via CMTT contextual substitution.\par 
-Generating of values to substitute will match the required type as annotated on the hole.\par
+Substitution semantics via CMTT contextual substitution.\par 
+Generating of values to substitute will match the required type as annotated on the hole. These should be the most general partial values to meet the type, see OLEG refinement \cite[chapter~2]{OLEG}.\par
 Generation of suitable concrete values of any type should be informed by ideas like the `small scope hypothesis' \cite{SmallScope}\footnote{This is evaluated for bugs in general in OOP, not necessarily type bugs in FP.} or just could be random as in QuickCheck \cite{QuickCheck}, SmallCheck \cite{SmallCheck}. Allowing some meta-programming of the value generation algorithms would be an interesting idea, especially for user-defined types.\par
-The idea of substituting symbols for symbolic execution is a good idea, but might be difficult. Symbols could be represented by holes of the required type, generating values upon reaching a conditional or similar.\footnote{This is the main idea to think about, probably more important than user control of value generation.} \par 
-Some heuristics may help with this search. But this project is unlikely to consider any in detail.
+The idea of instantiating in order to effectively explore branches is a good idea. This is essentially symbolic execution, and exploring branches space-time-efficiently without overlap is the goal.\footnote{This is the main idea to think about, probably more important than user control of value generation.} \par 
+Some heuristics may help with this search. But this project is unlikely to consider any in detail.\par
+\textit{Note, both hole refinement and instantiation can be handled as a search procedure wrapper around the stepper.}
+\subsection{Witness Generality}
+A witness is a hole instantiation that evaluates to a final form containing a cast error(s). \textit{Witness generality} should ensure that generating a witness via the search procedure implies that for any type, a witness exists of this type.\par 
+To achieve this, holes should only be instantiated when absolutely required, i.e. lazily as in SmallCheck \cite{SmallCheck}. For example, even if a function has a cast requiring integer arguments, the hole instantiation should be delayed, as passing a hole is still safe. When the hole passes into the function it will accumulate a cast to int, but the inferred type should remain ambiguous until evaluation gets stuck (such as at a case analysis). If this inferred type conflicts with the casts, hole instantiation to the inferred type may still be useful, and Hazel still supports evaluation.\par 
+Alternatively, annotations could be treated as correct, meaning casts would refine the inferred type, and thereby treat any value instantiation at this point as a witness. Note that the use of dynamic types still allows the procedure to find general witnesses.
 
-\subsection{Backtracking}
-If a particular instantiation does not result in a general witness, then some form of backtracking is required. This is the primary addition to the small-step evaluator that needs to be added.\par 
+\subsection{Backtracking \& Non-determinism}
+If a particular instantiation does not result in a witness, then some form of backtracking is required. This is the primary addition to the small-step evaluator that needs to be added.\par 
 A simple way to do this would be wrapping the evaluator in a choice-pointing system -- like in Prolog. \par 
 Doing this space-efficiently (saving choice points) would be the goal.\par 
 \textbf{Look into non-deterministic evaluation from a logic programming perspective. Also backtracking in general.} See the Warren Abstract Machine \cite{WAM}.\par 
 A \textit{semi-persistent} data structure \cite{SemiPersistent} will be needed for this.\par 
-Notice that for efficiency reasons, it may be desirable to use some amount of immutability here.\footnote{Hazel code-base rules seem to not allow this though!}
+In order to find witnesses that are shorter in trace length (and hence easier for the user to understand), it may be useful to perform iterative deepening. Otherwise, trace compression and input simplification (as in QuickCheck \cite{QuickCheck})
+\par 
+For efficiency reasons, it may be desirable to use some amount of immutability here.\footnote{Hazel code-base rules seem to not allow this though!}
 
-\subsection{Witness Visualisation}
-A manner in which to view the execution of the actually found witness result would be needed. So, whole traces would need to be stored/accumulated. Consider the space considerations of this. Look into Hazel's stepper and history functionality.
+\subsection{Cast Dependence}
+A cast error for associated with a witness should depend upon the value instantiated. Unrelated cast errors are not proof that the witness is valid.\par 
+This notion of dependence can be modelled by counting only casts that are attached to sub-terms of an instantiated value. \textit{If an unrelated cast error causes evaluation to get stuck, this could be reported in some way to the user.}\par 
 
+\subsection{Evaluation Order, Curried Functions \& Attached Search Holes}
+\textit{Making this work for multiple search holes in arbitrary position might be too difficult. The other option is to only support this attached to functions.}\par
+It is inefficient to evaluate the whole program in order to perform the search procedure. Instead evaluation should be directed first around search procedure holes\footnote{Of course, only possible because Hazel is pure.}. A key challenge with this is to decide which possible evaluation steps are related to the search hole and worth exploring.\par 
+For functions, it is useful to get a witness for multiple arguments. But, for curried functions, each application has extra syntax and is not instantiable by a single hole. In this case, if a general witness has not already been found and the final form is a function, then more search holes could be created. See saturaion in Seidel et al.\ \cite{SearchProc}.\par 
+A nice way to represent this would be to thinking of this would be \textit{attaching the function to a search hole}\footnote{Alternatively thought of as applying the function to the hole and instantiating accordingly}, which instantiates to the function with $n$ applications (then $n$ may change during backtracking). Besides using application onto search holes, attaching functions could just use the existing non-empty hole machanism. Further, in a sense a regular search hole is the above but for $n=0$; however, operationally it does not make sense to combine the two\footnote{Fundamentally, there is a difference between asking for a witness of the 1st arg of a function vs.\ the whole function.}. \textbf{Think about user interaction for this to guide this design.}\footnote{e.g. make clear the distinction between saturated witnesses and regular witnesses. Maybe directly annotate a term with a special application: \{\texttt{hole}\} as syntactic sugar for applying $n$ remaining arguments for witness}
+
+\subsection{Witness Result}
+A witness will be an initial instantiation leading to a  final form containing a cast error(s). Or potentially a trace containing a cast error (if annotations are treated as correct), for which stopping evaluation before the cast error is removed is ideal. 
+\par
+A manner in which to get the execution of the actually found witness result will be needed. So, whole traces would need to be stored/accumulated. Consider the space considerations of this. Look into Hazel's stepper and history functionality.
+
+\subsection{Coverage \& Time Limit}
+Due to this problem being undecidable and with potential infinite loops, a trace length limit will be imposed. Further, by using coverage metrics via symbolic evaluation, possible values to generate could be fully exhausted, showing that the code is actually safe.
 

@@ -213,6 +213,26 @@ OPTurldate = {2022-10-11},
   pages = {1–49}
 }
 
+@article{ModalStagedComputation,
+author = {Davies, Rowan and Pfenning, Frank},
+title = {A modal analysis of staged computation},
+year = {2001},
+issue_date = {May 2001},
+publisher = {Association for Computing Machinery},
+address = {New York, NY, USA},
+volume = {48},
+number = {3},
+issn = {0004-5411},
+url = {https://doi.org/10.1145/382780.382785},
+doi = {10.1145/382780.382785},
+abstract = {We show that a type system based on the intuitionistic modal logic S4 provides an expressive framework for specifying and analyzing computation stages in the context of typed λ-calculi and functional languages. We directly demonstrate the sense in which our λe→□-calculus captures staging, and also give a conservative embeddng of Nielson and Nielson's two-level functional language in our functional language Mini-ML□, thus proving that binding-time correctness is equivalent to modal correctness on this fragment. In addition, Mini-ML□ can also express immediate evaluation and sharing of code across multiple stages, thus supporting run-time code generation as well as partial evaluation.},
+journal = {J. ACM},
+month = may,
+pages = {555–604},
+numpages = {50},
+keywords = {staged computation, run-time code generation, binding times}
+}
+
 @article{ModalJudgements,
   title = {A judgmental reconstruction of modal logic},
   volume = {11},
@@ -402,6 +422,63 @@ numpages = {12},
 keywords = {embedded language, exhaustive search, lazy evaluation, property-based testing, type classes},
 location = {Victoria, BC, Canada},
 series = {Haskell '08}
+}
+
+@article{DTI,
+author = {Miyazaki, Yusuke and Sekiyama, Taro and Igarashi, Atsushi},
+title = {Dynamic type inference for gradual Hindley–Milner typing},
+year = {2019},
+issue_date = {January 2019},
+publisher = {Association for Computing Machinery},
+address = {New York, NY, USA},
+volume = {3},
+number = {POPL},
+url = {https://doi.org/10.1145/3290331},
+doi = {10.1145/3290331},
+abstract = {Garcia and Cimini study a type inference problem for the ITGL, an implicitly and gradually typed language with let-polymorphism, and develop a sound and complete inference algorithm for it. Soundness and completeness mean that, if the algorithm succeeds, the input term can be translated to a well-typed term of an explicitly typed blame calculus by cast insertion and vice versa. However, in general, there are many possible translations depending on how type variables that were left undecided by static type inference are instantiated with concrete static types. Worse, the translated terms may behave differently—some evaluate to values but others raise blame. In this paper, we propose and formalize a new blame calculus λBDTI that avoids such divergence as an intermediate language for the ITGL. A main idea is to allow a term to contain type variables (that have not been instantiated during static type inference) and defer instantiation of these type variables to run time. We introduce dynamic type inference (DTI) into the semantics of λBDTI so that type variables are instantiated along reduction. The DTI-based semantics not only avoids the divergence described above but also is sound and complete with respect to the semantics of fully instantiated terms in the following sense: if the evaluation of a term succeeds (i.e., terminates with a value) in the DTI-based semantics, then there is a fully instantiated version of the term that also succeeds in the explicitly typed blame calculus and vice versa. Finally, we prove the gradual guarantee, which is an important correctness criterion of a gradually typed language, for the ITGL.},
+journal = {Proc. ACM Program. Lang.},
+month = jan,
+articleno = {18},
+numpages = {29},
+keywords = {dynamic type inference, gradual guarantee, gradual typing}
+}
+
+@article{10.1145/2775051.2676992,
+author = {Garcia, Ronald and Cimini, Matteo},
+title = {Principal Type Schemes for Gradual Programs},
+year = {2015},
+issue_date = {January 2015},
+publisher = {Association for Computing Machinery},
+address = {New York, NY, USA},
+volume = {50},
+number = {1},
+issn = {0362-1340},
+url = {https://doi.org/10.1145/2775051.2676992},
+doi = {10.1145/2775051.2676992},
+abstract = {Gradual typing is a discipline for integrating dynamic checking into a static type system. Since its introduction in functional languages, it has been adapted to a variety of type systems, including object-oriented, security, and substructural. This work studies its application to implicitly typed languages based on type inference. Siek and Vachharajani designed a gradual type inference system and algorithm that infers gradual types but still rejects ill-typed static programs. However, the type system requires local reasoning about type substitutions, an imperative inference algorithm, and a subtle correctness statement.This paper introduces a new approach to gradual type inference, driven by the principle that gradual inference should only produce static types. We present a static implicitly typed language, its gradual counterpart, and a type inference procedure. The gradual system types the same programs as Siek and Vachharajani, but has a modular structure amenable to extension. The language admits let-polymorphism, and its dynamics are defined by translation to the Polymorphic Blame Calculus.The principal types produced by our initial type system mask the distinction between static parametric polymorphism and polymorphism that can be attributed to gradual typing. To expose this difference, we distinguish static type parameters from gradual type parameters and reinterpret gradual type consistency accordingly. The resulting extension enables programs to be interpreted using either the polymorphic or monomorphic Blame Calculi.},
+journal = {SIGPLAN Not.},
+month = jan,
+pages = {303–315},
+numpages = {13},
+keywords = {type inference, gradual typing}
+}
+
+@inproceedings{GradualTI,
+author = {Garcia, Ronald and Cimini, Matteo},
+title = {Principal Type Schemes for Gradual Programs},
+year = {2015},
+isbn = {9781450333009},
+publisher = {Association for Computing Machinery},
+address = {New York, NY, USA},
+url = {https://doi.org/10.1145/2676726.2676992},
+doi = {10.1145/2676726.2676992},
+abstract = {Gradual typing is a discipline for integrating dynamic checking into a static type system. Since its introduction in functional languages, it has been adapted to a variety of type systems, including object-oriented, security, and substructural. This work studies its application to implicitly typed languages based on type inference. Siek and Vachharajani designed a gradual type inference system and algorithm that infers gradual types but still rejects ill-typed static programs. However, the type system requires local reasoning about type substitutions, an imperative inference algorithm, and a subtle correctness statement.This paper introduces a new approach to gradual type inference, driven by the principle that gradual inference should only produce static types. We present a static implicitly typed language, its gradual counterpart, and a type inference procedure. The gradual system types the same programs as Siek and Vachharajani, but has a modular structure amenable to extension. The language admits let-polymorphism, and its dynamics are defined by translation to the Polymorphic Blame Calculus.The principal types produced by our initial type system mask the distinction between static parametric polymorphism and polymorphism that can be attributed to gradual typing. To expose this difference, we distinguish static type parameters from gradual type parameters and reinterpret gradual type consistency accordingly. The resulting extension enables programs to be interpreted using either the polymorphic or monomorphic Blame Calculi.},
+booktitle = {Proceedings of the 42nd Annual ACM SIGPLAN-SIGACT Symposium on Principles of Programming Languages},
+pages = {303–315},
+numpages = {13},
+keywords = {type inference, gradual typing},
+location = {Mumbai, India},
+series = {POPL '15}
 }
 
 
