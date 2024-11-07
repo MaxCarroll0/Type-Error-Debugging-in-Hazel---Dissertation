@@ -30,7 +30,14 @@ author = {Oleg Kiselyov}
 @online{MultiZipper,
 title = {Multi Zippers},
 url = {https://pavpanchekha.com/blog/zippers/multi-zippers.html#org1556357},
-author = {Pavel Panchekha}}
+author = {Pavel Panchekha}
+}
+
+@online{DelimitedControl,
+title = {Delimited Control in OCaml},
+url = {https://okmij.org/ftp/continuations/implementations.html},
+author = {Oleg Kiselyov}
+}
 
 @inbook{Blame,
   title = {Well-Typed Programs Can’t Be Blamed},
@@ -494,3 +501,20 @@ series = {POPL '15}
 }
 
 
+@inproceedings{EffectsHaskell,
+author = {Xie, Ningning and Leijen, Daan},
+title = {Effect handlers in Haskell, evidently},
+year = {2020},
+isbn = {9781450380508},
+publisher = {Association for Computing Machinery},
+address = {New York, NY, USA},
+url = {https://doi.org/10.1145/3406088.3409022},
+doi = {10.1145/3406088.3409022},
+abstract = {Algebraic effect handlers offer an alternative to monads to incorporate effects in Haskell. In recent work Xie _et al._ show how to give semantics to effect handlers in terms of plain polymorphic lambda calculus through _evidence translation_. Besides giving precise semantics, this translation also allows for potentially more efficient implementations. Here we present the first implementation of this technique as a library for effect handlers in Haskell. We show how the design naturally leads to a concise effect interface and how evidence translation enables evaluating _tail resumptive_ operations _in-place_. We give detailed benchmark results where our library performs well with respect to other approaches.},
+booktitle = {Proceedings of the 13th ACM SIGPLAN International Symposium on Haskell},
+pages = {95–108},
+numpages = {14},
+keywords = {Algebraic Effects, Evidence Passing Translation, Handlers},
+location = {Virtual Event, USA},
+series = {Haskell 2020}
+}

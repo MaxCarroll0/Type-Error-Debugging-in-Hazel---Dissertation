@@ -190,7 +190,8 @@ Doing this space-efficiently (saving choice points) would be the goal.\par
 A \textit{semi-persistent} data structure \cite{SemiPersistent} will be needed for this.\par 
 In order to find witnesses that are shorter in trace length (and hence easier for the user to understand), it may be useful to perform iterative deepening. Otherwise, trace compression and input simplification (as in QuickCheck \cite{QuickCheck})
 \par 
-For efficiency reasons, it may be desirable to use some amount of immutability here.\footnote{Hazel code-base rules seem to not allow this though!}
+For efficiency reasons, it may be desirable to use some amount of immutability here.\footnote{Hazel code-base rules seem to not allow this though!}\par
+Also, \texttt{call/cc} or \texttt{shift/reset} could be useful (or maybe even effect handlers \cite{EffectsHaskell}) for managing the desired control flow.
 
 \subsection{Cast Dependence}
 A cast error for associated with a witness should depend upon the value instantiated. Unrelated cast errors are not proof that the witness is valid.\par 
