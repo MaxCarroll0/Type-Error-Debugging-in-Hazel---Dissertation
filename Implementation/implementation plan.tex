@@ -60,7 +60,9 @@ Defining a slice matching relation analogously to type matching $\funmatch$.\par
 Notice that for types involved with the typing context, like function arguments, where no such term with type $\tau_1$ actually exists in code; the context slice gives required all info and the expression slice is filled with a dummy hole. \textbf{Formalise this better: could consider a term of type $\tau_1 \to ?$. Alternatively this may be better expressed as a transformation of DERIVATIONS themselves.}\par 
 
 For implementation and user purposes, the assumptions in the context slice $\gamma$ derive from annotations, whose location in code would be tracked. This could be formalised in the above rules by annotating type assumptions with locations, or by considering a context slice could as a term with holes at every subterm except for the relevant bindings.\par 
- 
+
+\subsubsection{Analysis Contexts}
+Every type that is analysed must have been synthesised by some expression. This expression will be used as an `analysis context' to allow proving formal properties and for use in determining the `scopes of types' and in the search procedure. \textbf{Consider the weird cases like a synthesised function type; what is the expression of the argument??}
 
 \subsubsection{Slicing of Casts}
 Casts always go from expression types (for which a type slice exists) to either final types or consumers.\par 
@@ -211,9 +213,6 @@ The evaluation order could be formalised by adapting the evaluation context to h
 \end{align*} 
 
 \[\inference[\tiny Step]{d = E_n(d_1, \cdots, d_i, \cdots, d_n) & d_i \longrightarrow d_i' & d' = E_n(d_1, \cdots,  d_i',\cdots, d_n)}{d \mapsto d'}\]
-\begin{align*}
-
-\end{align*}
 
 \caption{Search Procedure Evaluation Context}
 \label{fig:searchevaluationorder}
@@ -230,7 +229,11 @@ A nice way to represent this would be to thinking of this would be \textit{attac
 A witness will be an initial instantiation leading to a  final form containing a cast error(s). Or potentially a trace containing a cast error (if annotations are treated as correct), for which stopping evaluation before the cast error is removed is ideal. 
 \par
 A manner in which to get the execution of the actually found witness result will be needed. So, whole traces would need to be stored/accumulated. Consider the space considerations of this. Look into Hazel's stepper and history functionality.\par 
-The trace should ideally be presented in the standard call-by-value evaluation order, rather than the search procedure evaluation order.
+The trace should ideally be presented in the standard call-by-value evaluation order, rather than the search procedure evaluation order.\par 
+Consider trace reduction and/or witness reduction (see quickcheck).
+
+\subsection{How do search holes react upon meeting?}
+Multiple holes can meet, and this is where this method can find witnesses that were NOT possible in Seidel. But, a way of choosing values to instantiate in these cases must be devised AND the backtracking must be devised to recalculate too much information.
 
 \subsection{Coverage \& Time Limit}
 Due to this problem being undecidable and with potential infinite loops, a trace length limit will be imposed. Further, by using coverage metrics via symbolic evaluation, possible values to generate could be fully exhausted, showing that the code is actually safe.
@@ -239,3 +242,66 @@ Due to this problem being undecidable and with potential infinite loops, a trace
 It appears the main branch of Hazel has not actually implemented fill-and-resume. However, an earlier branch has -- haz3l-fill-and-resume.\par 
 This old branch does NOT include all features required by my core goal -- missing \textit{sum types} and \textit{type aliases}. And advanced features like polymorphism are not all implemented with fill-and-resume. To reach my extension goal I must implement some form of fill-and-resume for the dev branch. And the core goal requires adding \textit{at least} sum types and type aliases to the old branch. \textbf{This is an unforseen extra task.}\par 
 Maybe a hacky fill-and-resume that works just well enough for the search procedure could be implemented.
+
+\section{Type Error Witnesses Interaction in General}
+There are various classes of type errors, and witnesses will be evaluation traces to cast errors directly witnessing the type error.\footnote{Come up with a formal way of saying this.}:
+
+\subsection{Static Error Witnesses \& Type Witnesses}
+Each expression synthesises a type. A witness (evaluation to a value) can be provided for (some) of these. \textbf{Do this.}\par 
+Some expressions analyse against a type. The witness of the origin of the analysed type will have a type witness derived from synthesis type witnesses of it's components?\par
+Then for each class of type errors:
+\begin{itemize}
+\item Inconsistent against analysis type -- Use the type witness of the expression which imposed the analysis.
+\item Inconsistent branches -- Compare synthesised type witnesses of the inconsistent branches.
+\item Bad application -- 
+\end{itemize}
+
+\subsubsection{Type Synthesis Witnesses}
+Consider:
+\begin{minted}{reason}
+let sqsum = fun xs -> case xs 
+  | [] => 0 
+  | h :: t => sqsum(t) @ (h * h) end 
+in ?
+\end{minted}
+and also with \texttt{sqsum} annotated with \texttt{[?] -> ?} or \texttt{[String] -> ?}.\\ \par
+How to treat vars? \par 
+Treat them as instances to use the search procedure on. There are various instances for free vars: 
+\begin{itemize}
+\item Let binding -- These always have a direct definition \textit{(even recursive bindings, via fix)}, and hence can be substituted directly.
+\item Fun binding -- Use of such a binding implies the current expression is a component part of the function itself. This function can be searched using the search procedure. Essentially, this is taking the variable as an input to the procedure.
+\item Pattern binding -- These can be desugared into a one of the above bindings followed by deconstructing the bound value. i.e. in a fun binding it is a restriction on possible instantiations.
+\end{itemize}
+Note that the values by the above may NOT be possible in practice. i.e. if they do not result from a witness of the variable. Highlight these?
+
+\subsubsection{Static Error Witnesses}
+Essentially when putting errors into holes at compile time, tag the holes with their analysed type and original expression and context.\par 
+Then a search procedure stage can be added which performs the search on each hole treating free vars as above. For each type error we do:
+\begin{itemize}
+\item Inconsistent type between synthesised and analysed:\par  We can get a type witness of it's synthesised type, instantiating any holes within appropriately (make this very clear in the visualisation\footnote{e.g. an error hole containing an int 1 could be instantiated to a string "str" if required}).\par 
+The witness of this hole is then the analysis context using this witness (and any other required witnesses).
+\item Inconsistent branches: Get a type witness of each branch and compare.
+\item Bad function position (inconsistent with arrow): Get witness of the expected arrow. The result will be a something applied to a non-function (also make sure the cast slice error produced here works).
+\item No type: e.g. bad application, bad token, free constructor -- Treat as holes.
+\end{itemize}
+
+\subsubsection{Treatment of holes:}
+Treat as search procedure inputs and instantiate accordingly if progress is not being made.
+
+\subsubsection{On the interaction of multiple errors}
+\textit{Think about cases where error holes may be dependent? Or where recursion may result in a hole depending on itself?}
+
+\subsection{Treatment of dynamic typed regions:}
+There may still be traces leading to a cast error that are not statically caught due to presence of dynamically typed regions.\par 
+Selecting functions and searching for type errors (not linked to static errors) could be conducted as in Seidel. This could be generalised to selection any binding, with nullary functions (constants) just being evaluated directly with no inputs.
+
+\subsection{Interaction}
+\begin{itemize}
+\item Click on static errors to obtain witness.
+\item Allow checking any dynamic/partially dynamic function for potential type errors via search procedure. This could be a button when selecting such a function.
+\item Allow getting a type witness of any expression. Again, could be a button. This is essentially just evaluating at the cursor, but with lazy function input instantiation.
+\end{itemize}
+
+\subsection{Proofs}
+The ideal proofs here would be, alongside the expected ones for evaluation of search procedure holes (generality, progress):\par 
+That cast errors should relate directly to the source static type error. The witness of a static type error will contain a cast attached directly to this term (or one of it's evaluated derivatives).
