@@ -296,12 +296,47 @@ There may still be traces leading to a cast error that are not statically caught
 Selecting functions and searching for type errors (not linked to static errors) could be conducted as in Seidel. This could be generalised to selection any binding, with nullary functions (constants) just being evaluated directly with no inputs.
 
 \subsection{Interaction}
+There are 3 modes of use that I can envisage:
+\begin{enumerate}
+\item Searching in a selected expression: \begin{itemize}
+\item Select an expression (via cursor)
+\item Start search procedure on this expression, instantiating lazily all holes in the expression.
+\item Evaluate as far as possible/up until a limit to collect all cast errors. Or alternatively stop at the first.
+\end{itemize}
+\item Searching for witnesses of a specific, statically caught, type error.
 \begin{itemize}
 \item Click on static errors to obtain witness.
 \item Allow checking any dynamic/partially dynamic function for potential type errors via search procedure. This could be a button when selecting such a function.
 \item Allow getting a type witness of any expression. Again, could be a button. This is essentially just evaluating at the cursor, but with lazy function input instantiation.
 \end{itemize}
+\item Searching in a selected expression, around holes:\par  Same interaction as (1), but evaluates around holes using a multi-zipper structure. This approach has the following benefits:
+\begin{itemize}
+\item Avoids evaluating regions without holes (unless necessary).
+\item Finds errors in (some) dead code.
+\item Is a more principled way to attempt to find instantiations of \textit{every} hole involved. Each trace around each hole is evaluated to similar depths.
+\end{itemize}
+And downsides:
+\begin{itemize}
+\item Implementation difficulty.
+\item Higher constant factor in evaluation.
+\item Unusual evaluation order, making reasoning more difficult. This could be remedied by creating a system to replay the evaluation in a more standard ordering than the search procedure used.
+\end{itemize}
+
+\end{enumerate}
 
 \subsection{Proofs}
 The ideal proofs here would be, alongside the expected ones for evaluation of search procedure holes (generality, progress):\par 
 That cast errors should relate directly to the source static type error. The witness of a static type error will contain a cast attached directly to this term (or one of it's evaluated derivatives).
+
+\subsection{Actual Plan of Action}
+\begin{itemize}
+\item Implement hole substitution.
+\item Implement lazy hole instantiation: First when inside casts. Then also upon reaching operation when no wrapped in a cast. \textbf{This is nondeterministic.}
+\item Implement a evaluation viewer for this evaluation semantics, similar to the stepper.
+\item Explaining holes: Clicking each hole instantiation gives a reason why it was instantiated. Importantly, it will also link back to the ids of the original hole in the code AND make it clear why this term is a hole (i.e. due to being an error)\footnote{Error holes which involve instantiated free variables may be somewhat confusing (they will be instantiated to a different type to the value within the hole)}.
+\item Search for witnesses of statically caught type errors. For the three cases: Inconsistent types using an analysis context; Inconsistent branches, which will produce a list of evaluation traces \textit{(note: no cast errors here)\footnote{Consider how to link these errors back to code}}; Inconsistent with arrow type.
+\item UI: Click on static type errors to obtain this.
+\item Implement a multi-zipper data structure. \cite{MultiZipper}
+\item Add a `composition' function that given a cursor on a hole in the zipper, can compose the hole with it's context to find the smallest reduction involving it.
+\item Implement the multi-zipper search procedure evaluation using this.
+\end{itemize}
