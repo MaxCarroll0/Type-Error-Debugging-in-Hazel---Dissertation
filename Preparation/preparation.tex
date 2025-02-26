@@ -1,14 +1,23 @@
 \chapter{Preparation}
-\textit{In this chapter I present the core semantics and a larger overview of the Hazel language.}
-\section{The Hazel Language}
+\textit{In this chapter I present the technical background knowledge for this project, this is an introduction to the type theory for understanding Hazel's core semantics followed by an overview of Hazel itself. Following this I present my software engineering methodology.}
+
+\section{Background Knowledge}
+
+\subsection{Types}
+\subsubsection{Judgements}
+
+\subsubsection{Bidirectional Type Systems}
+
+\subsubsection{Gradual Type Systems}
+
+\subsubsection{Contextual Modal Type Theory}
+
+\subsubsection{System F}
+
+\subsection{The Hazel Language}
 \index{Hazel}
-\textit{What is Hazel and who is developing it here.}
 
-\subsection{Overview \& Vision}
-\textit{Detail the vision of the Hazel project and main features of Hazel.}\par 
-\textit{Finish with the state of the subset of Hazel for which the project was implemented.}
-
-\subsection{\textbf{Core Hazel}: Formal Semantics}
+\subsubsection{\textbf{Core Hazel}: Formal Semantics}
 For reference, the established semantics and type system for Hazel is presented. Derived from Omar et al.\ \cite{HazelLivePaper}. The paper itself goes into deeper depth into the intuition of the rules and the formal properties satisfied by the calculus.
 \index{\textbf{Core Hazel}}
 \footnote{
@@ -257,24 +266,24 @@ Hole substitutions will be extensively used by the search procedure, so their se
 \end{figure} 
 \textbf{Think in detail about CMTT and hole refinement. It is very relevant to the search procedure. In particular think about \texttt{box} and \texttt{letbox} in CMTT.} 
 
-\subsection{Hazel Codebase}
+\subsection{The Hazel Implementation}
+\subsubsection{Additional Features}
+\begin{itemize}
+\item 
+\end{itemize}
+\subsubsection{Code Structure}
 
-\section{The Project}
-\subsection{Cast Slicing}
-Cast slicing is, to my knowledge, a new concept and is a method in which selected casts can be linked back to source code by creating a slice of all code contributing to the cast.\par 
-Slicing methods have been researched extensively since Wadler first proposed static program slicing \cite{ProgSlice}, and later others proposed dynamic program slicing \cite{DynProgSlice} and error slicing \cite{ErrSlice}. Cast slicing combines ideas from both dynamic slicing, tracking of casts during evaluation, and error slicing, tracking casts during static elaboration. But is relatively less expressive in terms of slicing criterion, only considering casts, and no other expressions.
+\subsubsection{Terms}
 
-\subsection{Search Procedure}
-Search procedure for witnesses of type errors has been considered by Seidel et al. \cite{SearchProc} for OCaml. Their approach creates a non-deterministic semantics for ill-typed OCaml with a hole in place of a function argument being dynamically type inferred and instantiated in a most general manner until evaluation gets stuck. The hole instantiation at this point is the error witness.\par 
-Adapting this search procedure to Hazel, which natively supports evaluation of ill-typed expressions and hole substitution allows for stronger semantic foundations. In particular hole substitution and refinement, borrowing from contextual modal type theory\footnote{See Chapter 5 of \cite{HazelLivePaper}}.\par 
-Further, the use of dynamic types, casts, and the more general notion of holes will allow better handling of non-parametric function types -- stated as a problem in Seidel et al's. paper. Hence, very different semantics will need to be devised, but the general principle of dynamic inference and hole instantiation will remain the same.
+\subsubsection{Monadic Evaluation}
+
 
 \section{Starting Point}
 \subsubsection{Concepts}
-The foundations of most concepts in understanding Hazel from Part IB Semantics of Programming (and Part II Types later). The concept of gradual typing briefly appeared in Part IB Concepts of Programming Languages, but was not formalised. Dynamic typing, gradual typing, holes, and contextual modal type theory were not covered in Part IB, so were partially researched leading up to the project, then researched further in greater depth during the early stages. Similarly, Part IB Artificial Integlligence provided some context to search procedures, however nothing was directly relevant. Primarily, the OCaml search procedure for ill-typed witnesses Seidel et al. \cite{SearchProc} and the Hazel core language \cite{HazelLivePaper} were researched over the preceding summer.
+The foundations of most concepts in understanding Hazel from Part IB Semantics of Programming (and Part II Types later). The concept of gradual typing briefly appeared in Part IB Concepts of Programming Languages, but was not formalised. Dynamic typing, gradual typing, holes, and contextual modal type theory were not covered in Part IB, so were partially researched leading up to the project, then researched further in greater depth during the early stages. Similarly, Part IB Artificial Integlligence provided some context for search procedures. Primarily, the OCaml search procedure for ill-typed witnesses Seidel et al. \cite{SearchProc} and the Hazel core language \cite{HazelLivePaper} were researched over the preceding summer.
 
 \subsubsection{Tools and Source Code}
-My experience in OCaml was mostly from the Part IA Foundations of Computer Science course and small-scale personal projects. The Hazel source code had not been inspected in detail until after starting the project.
+My only experience in OCaml was from the Part IA Foundations of Computer Science course. The Hazel source code had not been inspected in any detail until after starting the project.
 
 \section{Requirement Analysis}
 
