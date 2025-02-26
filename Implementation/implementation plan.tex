@@ -331,7 +331,7 @@ That cast errors should relate directly to the source static type error. The wit
 \subsection{Actual Plan of Action}
 \begin{itemize}
 \item Implement hole substitution.
-\item Implement lazy hole instantiation: First when inside casts. Then also upon reaching operation when no wrapped in a cast. \textbf{This is nondeterministic.}
+\item Implement lazy hole instantiation: First when inside casts. Then also upon reaching operation when no wrapped in a cast. \textbf{This is nondeterministic. Represent with lazy lists and enumerations of all instances of a type (see smallcheck).} 
 \item Implement a evaluation viewer for this evaluation semantics, similar to the stepper.
 \item Explaining holes: Clicking each hole instantiation gives a reason why it was instantiated. Importantly, it will also link back to the ids of the original hole in the code AND make it clear why this term is a hole (i.e. due to being an error)\footnote{Error holes which involve instantiated free variables may be somewhat confusing (they will be instantiated to a different type to the value within the hole)}.
 \item Search for witnesses of statically caught type errors. For the three cases: Inconsistent types using an analysis context; Inconsistent branches, which will produce a list of evaluation traces \textit{(note: no cast errors here)\footnote{Consider how to link these errors back to code}}; Inconsistent with arrow type.

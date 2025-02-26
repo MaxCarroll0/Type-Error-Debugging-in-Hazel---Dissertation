@@ -1,3 +1,64 @@
 \chapter{Evaluation}
+\textbf{Should I put proposed implementation plans and improvements here or in implementation??}
+
 Evaluation Here.\par 
 Evaluate small scope hypothesis for this problem. Note that small inputs don't necessarily correlate with small evaluation traces.
+
+\section{Goals}
+i.e. Project Proposal. But make it with more clarity, i.e. `Most Type Errors Admit Witnesses'
+Completeness etc. most of Hazel...
+
+\section{Program Corpus Collection}
+\subsection{Methodology}
+\subsection{Alternatives}
+OCaml -> Hazel transpiler
+
+\section{Effectiveness Analysis}
+
+\subsection{Search Procedure}
+\subsubsection{Witness Coverage}
+Describe reasons for failure in next section
+\subsubsection{Code Coverage}
+\subsubsection{Trace Size}
+\subsubsection{Slice Size}
+Does this correlate with trace size!
+
+\subsection{Type Slicing}
+\subsubsection{Correctness}
+?
+\subsubsection{Code Slice Size}
+Compare with theory adhering slices and `simplified' slices.
+
+\section{Critical Analysis}
+\subsection{Analysis Type Slices}
+Which constructs are ignored? Why, do they have the biggest impact on size?
+\subsection{Categorising Programs Lacking Type Error Witnesses}
+\subsubsection{Non-Termination}
+The original procedure would get stuck on programs that loop forever. (To) Fix with iterative deepening
+\subsubsection{Repeated Instantiations}
+A hole being instantiated to a hole. Does this ever happen??
+\subsubsection{Dead Code}
+Search proc cannot reach, and failed cast detection would never find one there even if it existed (i.e. statically found).
+\subsubsection{Dynamically Safe Code}
+Code that is safe to run in all situations, but still exhibits a static type error.
+
+\subsubsection{Needle in a Haystack}
+Very specific input required from multiple hole instantiations. Combinatorial explosion makes this very hard to find (solve with coverage directed search, but this requires SMT solvers at least).
+
+\subsection{Non-Local Errors}
+Useful when type correct code written but used in the wrong way, i.e. write the wrong map function with @ still has a valid type. Especially prevalent with global inference.
+\subsection{Bidirectional Type Error Localisation}
+It is generally good. Find some cases where bidirectional type error localisation is wrong.
+\subsection{Improving Hole Instantiation}
+To improve code coverage. i.e. Strings and Floats are annoying, SMT solvers could be used...
+\subsection{Combinatorial Explosion}
+
+
+\section{Performance Analysis}
+\subsection{Search Procedure}
+\subsubsection{Time}
+\subsubsection{Space}
+
+\subsection{Slices}
+\subsubsection{Space}
+Compare with using using `Typ (turned off). Compare with old implementation (if possible)
