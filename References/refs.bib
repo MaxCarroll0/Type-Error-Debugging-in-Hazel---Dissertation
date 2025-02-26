@@ -462,26 +462,6 @@ numpages = {29},
 keywords = {dynamic type inference, gradual guarantee, gradual typing}
 }
 
-@article{10.1145/2775051.2676992,
-author = {Garcia, Ronald and Cimini, Matteo},
-title = {Principal Type Schemes for Gradual Programs},
-year = {2015},
-issue_date = {January 2015},
-publisher = {Association for Computing Machinery},
-address = {New York, NY, USA},
-volume = {50},
-number = {1},
-issn = {0362-1340},
-url = {https://doi.org/10.1145/2775051.2676992},
-doi = {10.1145/2775051.2676992},
-abstract = {Gradual typing is a discipline for integrating dynamic checking into a static type system. Since its introduction in functional languages, it has been adapted to a variety of type systems, including object-oriented, security, and substructural. This work studies its application to implicitly typed languages based on type inference. Siek and Vachharajani designed a gradual type inference system and algorithm that infers gradual types but still rejects ill-typed static programs. However, the type system requires local reasoning about type substitutions, an imperative inference algorithm, and a subtle correctness statement.This paper introduces a new approach to gradual type inference, driven by the principle that gradual inference should only produce static types. We present a static implicitly typed language, its gradual counterpart, and a type inference procedure. The gradual system types the same programs as Siek and Vachharajani, but has a modular structure amenable to extension. The language admits let-polymorphism, and its dynamics are defined by translation to the Polymorphic Blame Calculus.The principal types produced by our initial type system mask the distinction between static parametric polymorphism and polymorphism that can be attributed to gradual typing. To expose this difference, we distinguish static type parameters from gradual type parameters and reinterpret gradual type consistency accordingly. The resulting extension enables programs to be interpreted using either the polymorphic or monomorphic Blame Calculi.},
-journal = {SIGPLAN Not.},
-month = jan,
-pages = {303–315},
-numpages = {13},
-keywords = {type inference, gradual typing}
-}
-
 @inproceedings{GradualTI,
 author = {Garcia, Ronald and Cimini, Matteo},
 title = {Principal Type Schemes for Gradual Programs},
@@ -518,3 +498,71 @@ keywords = {Algebraic Effects, Evidence Passing Translation, Handlers},
 location = {Virtual Event, USA},
 series = {Haskell 2020}
 }
+
+@inproceedings{DebugTimeSelfReport,
+author = {Beller, Moritz and Spruit, Niels and Spinellis, Diomidis and Zaidman, Andy},
+title = {On the dichotomy of debugging behavior among programmers},
+year = {2018},
+isbn = {9781450356381},
+publisher = {Association for Computing Machinery},
+address = {New York, NY, USA},
+url = {https://doi.org/10.1145/3180155.3180175},
+doi = {10.1145/3180155.3180175},
+abstract = {Debugging is an inevitable activity in most software projects, often difficult and more time-consuming than expected, giving it the nickname the "dirty little secret of computer science." Surprisingly, we have little knowledge on how software engineers debug software problems in the real world, whether they use dedicated debugging tools, and how knowledgeable they are about debugging. This study aims to shed light on these aspects by following a mixed-methods research approach. We conduct an online survey capturing how 176 developers reflect on debugging. We augment this subjective survey data with objective observations on how 458 developers use the debugger included in their integrated development environments (IDEs) by instrumenting the popular Eclipse and IntelliJ IDEs with the purpose-built plugin WatchDog 2.0. To clarify the insights and discrepancies observed in the previous steps, we followed up by conducting interviews with debugging experts and regular debugging users. Our results indicate that IDE-provided debuggers are not used as often as expected, as "printf debugging" remains a feasible choice for many programmers. Furthermore, both knowledge and use of advanced debugging features are low. These results call to strengthen hands-on debugging experience in computer science curricula and have already refined the implementation of modern IDE debuggers.},
+booktitle = {Proceedings of the 40th International Conference on Software Engineering},
+pages = {572–583},
+numpages = {12},
+location = {Gothenburg, Sweden},
+series = {ICSE '18}
+}
+
+@misc{DebugSkew,
+      title={An Exploratory Study of Debugging Episodes}, 
+      author={Abdulaziz Alaboudi and Thomas D. LaToza},
+      year={2021},
+      eprint={2105.02162},
+      archivePrefix={arXiv},
+      primaryClass={cs.SE},
+      url={https://arxiv.org/abs/2105.02162}, 
+}
+
+@article{StudentTypeErrorFixes,
+author = {Wu, Baijun and Chen, Sheng},
+title = {How type errors were fixed and what students did?},
+year = {2017},
+issue_date = {October 2017},
+publisher = {Association for Computing Machinery},
+address = {New York, NY, USA},
+volume = {1},
+number = {OOPSLA},
+url = {https://doi.org/10.1145/3133929},
+doi = {10.1145/3133929},
+abstract = {Providing better supports for debugging type errors has been an active research area in the last three decades. Numerous approaches from different perspectives have been developed. Most approaches work well under certain conditions only, for example, when type errors are caused by single leaves and when type annotations are correct. However, the research community is still unaware of which conditions hold in practice and what the real debugging situations look like. We address this problem with a study of 3 program data sets, which were written in different years, using different compilers, and were of diverse sizes. They include more than 55,000 programs, among which more than 2,700 are ill typed. We investigated all the ill-typed programs, and our results indicate that current error debugging support is far from sufficient in practice since only about 35\% of all type errors were caused by single leaves. In addition, type annotations cannot always be trusted in error debuggers since about 30\% of the time type errors were caused by wrong type annotations. Our study also provides many insights about the debugging behaviors of students in functional programming, which could be exploited for developing more effective error debuggers.},
+journal = {Proc. ACM Program. Lang.},
+month = oct,
+articleno = {105},
+numpages = {27},
+keywords = {type inference, empirical study, Type-error debugging}
+}
+
+@INPROCEEDINGS{HowFixBugs,
+  author={Coker, Zack and Widder, David Gray and Le Goues, Claire and Bogart, Christopher and Sunshine, Joshua},
+  booktitle={2019 IEEE International Conference on Software Maintenance and Evolution (ICSME)}, 
+  title={A Qualitative Study on Framework Debugging}, 
+  year={2019},
+  volume={},
+  number={},
+  pages={568-579},
+  keywords={Debugging;Task analysis;Androids;Humanoid robots;Encoding;Protocols;Frameworks;Debugging;Qualitative study},
+  doi={10.1109/ICSME.2019.00091}}
+
+@INPROCEEDINGS{DebugNeeds,
+  author={Layman, Lucas and Diep, Madeline and Nagappan, Meiyappan and Singer, Janice and Deline, Robert and Venolia, Gina},
+  booktitle={2013 ACM / IEEE International Symposium on Empirical Software Engineering and Measurement}, 
+  title={Debugging Revisited: Toward Understanding the Debugging Needs of Contemporary Software Developers}, 
+  year={2013},
+  volume={},
+  number={},
+  pages={383-392},
+  keywords={Debugging;Interviews;Encoding;Computer bugs;Web services;Testing;debugging;software engineering;interview;professionals;qualitative analysis;program comprehension},
+  doi={10.1109/ESEM.2013.43}}
