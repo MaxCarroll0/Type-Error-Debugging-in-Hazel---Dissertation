@@ -80,6 +80,7 @@
 %TC:group table 0 1
 %TC:macro \footnote [text]
 
-\newcommand{\wordcount}{\input{|"texcount -inc -sum -0 \jobname.tex"}}
+\immediate\write18{texcount -inc -sum -0 \jobname.tex > wordcount.aux }
+\newcommand{\wordcount}{\input{wordcount.aux}}
 
 \setsecnumdepth{subsection}
