@@ -1,4 +1,5 @@
 \chapter{Introduction}
+\label{chap:Introduction}
 Software bugs are an inherent part of programming, often leading to unexpected behaviour and system failures. Debugging these errors is a \textit{time-consuming process} taking between 20-60\% of active work time \cite{DebugTimeSelfReport}, with programmers spending a \textit{highly skewed} proportion of their time identifying and resolving a small proportion of bugs \cite{DebugSkew}.
 
 Type systems aim to alleviate some of this burden by classifying expressions and operations that are allowed to work on them. This may be done \textit{statically} at compile time or \textit{dynamically} during runtime. The expressions not conforming to the type system manifest themselves as \textit{type errors}.
@@ -27,14 +28,23 @@ For example, here is a walk-through for how a simple error could be diagnosed us
 \textbf{MAP function? show a static error version}
 
 \section{Related Work}
+\label{sec:RelatedWork}
 There has been extensive research into attempting to understand \textit{what} is needed \cite{DebugNeeds}, \textit{how} developers fix bugs \cite{HowFixBugs}, and a plethora of compiler \textit{improvements} and \textit{tools} \textbf{add citations here, primarily functional language tools}. This project builds upon this body of research in new ways focusing on the Hazel language, which is itself a research project being taken in various directions but generally as a \textit{teaching language} for students. 
 
-To my knowledge the ideas of \textit{type slicing} and \textbf{cast slicing} are novel. However, they do output \textit{program slices} which were originally explored by Weiser \cite{ProgSlice}, though my usage is more similar to \textit{dynamic program slicing} \cite{DynProgSlice} but with type characteristic rather than evaluation characteristic, in a sense similar \textit{type error slicing} \cite{ErrSlice}. As Hazel is an expression-based language giving expression slices just the same as in Functional as Hazel is an expression-based language.
+To my knowledge the ideas of \textit{type slicing} and \textbf{cast slicing} are novel. However, they do output \textit{program slices} which were originally explored by Weiser \cite{ProgSlice}, though my definition of program slices matches more with functional program slices \cite{FunctionalProgExplain}, and the properties I explore are more similar to \textit{dynamic program slicing} \cite{DynProgSlice} but with type characteristics rather than evaluation characteristics, in a sense similar \textit{type error slicing} \cite{ErrSlice}.
 
 The \textit{type witness search procedure} is	 based upon Seidel et al. \cite{SearchProc}, though there are significant differences in workings due to my use of Hazel and various extensions as compared to the subset of OCaml used by Seidel et al.
 
 \section{Dissertation Outline}
-\textit{Explain structure -- what is covered in each chapter briefly.}
+\label{sec:Outline}
+\Cref{chap:Preparation} introduces the \textit{type theories} (\cref{sec:TypeSystems}) underpinning the \textit{Hazel core calculus} (\cref{sec:CoreHazel}), followed by the \textit{Hazel implementation} (\cref{sec:HazelImplementation}).
 
-\textbf{
-Where should a worked example of these features be placed?}
+\Cref{sec:TypeSlicingTheory} and \cref{sec:CastSlicingTheory} formalise the ideas of \textit{type slices} and \textit{cast slices} in the Hazel core calculus, with properties proven\footnote{\textbf{TODO}} in \cref{sec:Proofs}. 
+ 
+ An implementation (\cref{sec:TypeSlicingImplementation}-\ref{sec:CastSlicingImplementation}) of these has been created covering \textit{most}\footnote{Except for type substitution.} of the Hazel language, including a user interface. 
+ 
+ A \textit{type witness search procedure} was successfully implemented. This involved creating a hole \textit{instantiation} and a simplified \textit{hole substitution} method (\cref{sec:HoleInstantiation}); there is currently no full hole substitution feature in Hazel despite it's presence in the core calculus (\cref{sec:HoleSubstitution}). Additionally, a customisable instantiation method was implemented (\cref{sec:Stepper}) controllable via a UI.
+
+The slicing features and search procedure met all goals, \textbf{list eval goals briefly}, showing \textit{effectiveness} (\cref{sec:EffectivenessAnalysis}) and being reasonably \textit{performant} (\cref{sec:PerformanceAnalysis}) over a corpus of \textit{ill-typed} Hazel programs (\cref{sec:CorpusCollection}). Further, considered deviations from the slicing theories and strengths and weaknesses of the search procedure were evaluated in detail (\cref{sec:CriticalAnalysis}).
+
+Finally, further directions and improvements have been presented along with discussion on the applicability of these features, slicing in particular, to real world debugging situations in \cref{chap:Conclusions}.

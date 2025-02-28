@@ -1,19 +1,19 @@
-\chapter{Evaluation}
+\chapter{Evaluation}\label{chap:Evaluation}
 \textbf{Should I put proposed implementation plans and improvements here or in implementation??}
 
 Evaluation Here.\par 
 Evaluate small scope hypothesis for this problem. Note that small inputs don't necessarily correlate with small evaluation traces.
 
-\section{Goals}
+\section{Goals}\label{sec:EvaluationGoals}
 i.e. Project Proposal. But make it with more clarity, i.e. `Most Type Errors Admit Witnesses'
 Completeness etc. most of Hazel...
 
-\section{Program Corpus Collection}
+\section{Program Corpus Collection}\label{sec:CorpusCollection}
 \subsection{Methodology}
 \subsection{Alternatives}
 OCaml -> Hazel transpiler
 
-\section{Effectiveness Analysis}
+\section{Effectiveness Analysis}\label{sec:EffectivenessAnalysis}
 
 \subsection{Search Procedure}
 \subsubsection{Witness Coverage}
@@ -29,7 +29,17 @@ Does this correlate with trace size!
 \subsubsection{Code Slice Size}
 Compare with theory adhering slices and `simplified' slices.
 
-\section{Critical Analysis}
+
+\section{Performance Analysis}\label{sec:PerformanceAnalysis}
+\subsection{Search Procedure}
+\subsubsection{Time}
+\subsubsection{Space}
+
+\subsection{Slices}
+\subsubsection{Space}
+Compare with using using `Typ (turned off). Compare with old implementation (if possible)
+
+\section{Critical Analysis}\label{sec:CriticalAnalysis}
 \subsection{Analysis Type Slices}
 Which constructs are ignored? Why, do they have the biggest impact on size?
 \subsection{Categorising Programs Lacking Type Error Witnesses}
@@ -53,12 +63,3 @@ It is generally good. Find some cases where bidirectional type error localisatio
 To improve code coverage. i.e. Strings and Floats are annoying, SMT solvers could be used...
 \subsection{Combinatorial Explosion}
 
-
-\section{Performance Analysis}
-\subsection{Search Procedure}
-\subsubsection{Time}
-\subsubsection{Space}
-
-\subsection{Slices}
-\subsubsection{Space}
-Compare with using using `Typ (turned off). Compare with old implementation (if possible)
