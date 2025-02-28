@@ -13,12 +13,19 @@
 }@online{Hazel,
 title = {Hazel Project Website},
 url = {https://hazel.org/},
-OPTurldate = {2022-10-11},
+urldate = {2025-02-28},
+}
+@manual{OCamlManual,
+  title        = {The OCaml Manual: release 5.2},
+  author       = {The OCaml Development Team},
+  year         = {2024},
+  url          = {https://ocaml.org/manual/5.2/index.html},
+  note         = {Accessed: 2025-02-28}
 }
 @online{HazelCode,
 title = {Hazel Source Code},
 url = {https://github.com/hazelgrove/hazel},
-OPTurldate = {2022-10-11},
+urldate = {2025-02-28},
 }
 
 @online{ConcurrentZipper,
@@ -203,7 +210,19 @@ author = {Oleg Kiselyov}
 }
 
 @inbook{GradualFunctional,
-  title = {Gradual Typing for Functional Languages}
+  title = {Gradual Typing for Functional Languages},
+  author = {Jeremy G. Siek and Walid Taha},
+  booktitle = {Scheme and Functional Programming Workshop},
+  pages = {81-92},
+  year = {2006}
+}
+
+@inproceedings{GradualRefined,
+  title={Refined Criteria for Gradual Typing},
+  author={Jeremy G. Siek and Michael M. Vitousek and Matteo Cimini and John Tang Boyland},
+  booktitle={Summit on Advances in Programming Languages},
+  year={2015},
+  url={https://api.semanticscholar.org/CorpusID:15383644}
 }
 
 @book{PracticalFoundations,
@@ -566,3 +585,144 @@ keywords = {type inference, empirical study, Type-error debugging}
   pages={383-392},
   keywords={Debugging;Interviews;Encoding;Computer bugs;Web services;Testing;debugging;software engineering;interview;professionals;qualitative analysis;program comprehension},
   doi={10.1109/ESEM.2013.43}}
+
+@article{LogicProg,
+  title={Applied logic: its use and implementation as a programming tool},
+  author={Warren, David HD},
+  year={1978},
+  publisher={The University of Edinburgh}
+}
+
+@article{ModeCorrectness,
+  title={Adding redundancy to obtain more reliable and more readable prolog programs},
+  author={Bruynooghe, Maurice},
+  journal={CW Reports},
+  pages={5--5},
+  year={1982},
+  publisher={Department of Computer Science, KU Leuven, Leuven, Belgium}
+}
+@book{ATTAPL,
+  title={Advanced topics in types and programming languages},
+  author={Pierce, Benjamin C},
+  year={2024},
+  publisher={MIT press}
+}
+
+
+
+@article{SystemFUndecidable,
+title = {Typability and type checking in System F are equivalent and undecidable},
+journal = {Annals of Pure and Applied Logic},
+volume = {98},
+number = {1},
+pages = {111-156},
+year = {1999},
+issn = {0168-0072},
+doi = {https://doi.org/10.1016/S0168-0072(98)00047-5},
+url = {https://www.sciencedirect.com/science/article/pii/S0168007298000475},
+author = {J.B. Wells},
+keywords = {System F, Semi-unification, Type inference, Typability, Type checking, Lambda calculus},
+abstract = {Girard and Reynolds independently invented System F (a.k.a. the second-order polymorphically typed lambda calculus) to handle problems in logic and computer programming language design, respectively. Viewing F in the Curry style, which associates types with untyped lambda terms, raises the questions of typability and type checking. Typability asks for a term whether there exists some type it can be given. Type checking asks, for a particular term and type, whether the term can be given that type. The decidability of these problems has been settled for restrictions and extensions of F and related systems and complexity lower-bounds have been determined for typability in F, but this report is the first to resolve whether these problems are decidable for System F. This report proves that type checking in F is undecidable, by a reduction from semi-unification, and that typability in F is undecidable, by a reduction from type checking. Because there is an easy reduction from typability to type checking, the two problems are equivalent. The reduction from type checking to typability uses a novel method of constructing lambda terms that simulate arbitrarily chosen type environments. All of the results also hold for the λI-calculus.}
+}
+
+@ARTICLE{TraceVisualisation,
+  author={Cornelissen, Bas and Zaidman, Andy and van Deursen, Arie},
+  journal={IEEE Transactions on Software Engineering}, 
+  title={A Controlled Experiment for Program Comprehension through Trace Visualization}, 
+  year={2011},
+  volume={37},
+  number={3},
+  pages={341-355},
+  keywords={Visualization;Computer Society;Time measurement;Programming;Documentation;Scalability;Software maintenance;Gain measurement;Control systems;Performance evaluation;Program comprehension;dynamic analysis;controlled experiment.},
+  doi={10.1109/TSE.2010.47}}
+
+  @ARTICLE{DynamicLangShift,
+  author={Paulson, Linda Dailey},
+  journal={Computer}, 
+  title={Developers shift to dynamic programming languages}, 
+  year={2007},
+  volume={40},
+  number={2},
+  pages={12-15},
+  keywords={Dynamic programming;Java;Runtime;Programming profession;Application software;Computer languages;Error correction;Testing;Mission critical systems;Memory management;dynamic programming languages;PHP;Perl;Ruby},
+  doi={10.1109/MC.2007.53}}
+
+@misc{TIOBE,
+  author       = {TIOBE Software},
+  title        = {TIOBE Programming Community Index},
+  year         = 2025,
+  url          = {https://www.tiobe.com/tiobe-index/},
+  note         = {[Online; accessed 27-February-2025]}
+}
+
+@inproceedings{DynamicTyping,
+author = {Abadi, M. and Cardelli, L. and Pierce, B. and Plotkin, G.},
+title = {Dynamic typing in a statically-typed language},
+year = {1989},
+isbn = {0897912942},
+publisher = {Association for Computing Machinery},
+address = {New York, NY, USA},
+url = {https://doi.org/10.1145/75277.75296},
+doi = {10.1145/75277.75296},
+abstract = {Statically-typed programming languages allow earlier error checking, better enforcement of disciplined programming styles, and generation of more efficient object code than languages where all type-consistency checks are performed at runtime. However, even in statically-type languages, there is often the need to deal with data whose type cannot be known at compile time. To handle such situations safely, we propose to add a type Dynamic whose values are pairs of a value v and a type tag T where v has the type denoted by T. Instances of Dynamic are built with an explicit tagging construct and inspected with a type-safe typecase construct.This paper is an exploration of the syntax, operational semantics, and denotational semantics of a simple language with the type Dynamic. We give examples of how dynamically-typed values might be used in programming. Then we discuss an operational semantics for our language and obtain a soundness theorem. We present two formulations of the denotational semantics of this language and relate them to the operational semantics. Finally, we consider the implications of polymorphism and some implementation issues.},
+booktitle = {Proceedings of the 16th ACM SIGPLAN-SIGACT Symposium on Principles of Programming Languages},
+pages = {213–227},
+numpages = {15},
+location = {Austin, Texas, USA},
+series = {POPL '89}
+}
+
+@inproceedings{SemanticCasts,
+  title={Semantic casts: Contracts and structural subtyping in a nominal world},
+  author={Findler, Robert Bruce and Flatt, Matthew and Felleisen, Matthias},
+  booktitle={European Conference on Object-Oriented Programming},
+  pages={365--389},
+  year={2004},
+  organization={Springer}
+}
+
+@inproceedings{10.1145/581478.581484,
+author = {Findler, Robert Bruce and Felleisen, Matthias},
+title = {Contracts for higher-order functions},
+year = {2002},
+isbn = {1581134878},
+publisher = {Association for Computing Machinery},
+address = {New York, NY, USA},
+url = {https://doi.org/10.1145/581478.581484},
+doi = {10.1145/581478.581484},
+abstract = {Assertions play an important role in the construction of robust software. Their use in programming languages dates back to the 1970s. Eiffel, an object-oriented programming language, wholeheartedly adopted assertions and developed the "Design by Contract" philosophy. Indeed, the entire object-oriented community recognizes the value of assertion-based contracts on methods.In contrast, languages with higher-order functions do not support assertion-based contracts. Because predicates on functions are, in general, undecidable, specifying such predicates appears to be meaningless. Instead, the functional languages community developed type systems that statically approximate interesting predicates.In this paper, we show how to support higher-order function contracts in a theoretically well-founded and practically viable manner. Specifically, we introduce λcon, a typed lambda calculus with assertions for higher-order functions. The calculus models the assertion monitoring system that we employ in DrScheme. We establish basic properties of the model (type soundness, etc.) and illustrate the usefulness of contract checking with examples from DrScheme's code base.We believe that the development of an assertion system for higher-order functions serves two purposes. On one hand, the system has strong practical potential because existing type systems simply cannot express many assertions that programmers would like to state. On the other hand, an inspection of a large base of invariants may provide inspiration for the direction of practical future type system research.},
+booktitle = {Proceedings of the Seventh ACM SIGPLAN International Conference on Functional Programming},
+pages = {48–59},
+numpages = {12},
+keywords = {behavioral specifications, contracts, higher-order functions, predicate typing, solfware reliability},
+location = {Pittsburgh, PA, USA},
+series = {ICFP '02}
+}
+
+@article{Contracts,
+author = {Findler, Robert Bruce and Felleisen, Matthias},
+title = {Contracts for higher-order functions},
+year = {2002},
+issue_date = {September 2002},
+publisher = {Association for Computing Machinery},
+address = {New York, NY, USA},
+volume = {37},
+number = {9},
+issn = {0362-1340},
+url = {https://doi.org/10.1145/583852.581484},
+doi = {10.1145/583852.581484},
+abstract = {Assertions play an important role in the construction of robust software. Their use in programming languages dates back to the 1970s. Eiffel, an object-oriented programming language, wholeheartedly adopted assertions and developed the "Design by Contract" philosophy. Indeed, the entire object-oriented community recognizes the value of assertion-based contracts on methods.In contrast, languages with higher-order functions do not support assertion-based contracts. Because predicates on functions are, in general, undecidable, specifying such predicates appears to be meaningless. Instead, the functional languages community developed type systems that statically approximate interesting predicates.In this paper, we show how to support higher-order function contracts in a theoretically well-founded and practically viable manner. Specifically, we introduce λcon, a typed lambda calculus with assertions for higher-order functions. The calculus models the assertion monitoring system that we employ in DrScheme. We establish basic properties of the model (type soundness, etc.) and illustrate the usefulness of contract checking with examples from DrScheme's code base.We believe that the development of an assertion system for higher-order functions serves two purposes. On one hand, the system has strong practical potential because existing type systems simply cannot express many assertions that programmers would like to state. On the other hand, an inspection of a large base of invariants may provide inspiration for the direction of practical future type system research.},
+journal = {SIGPLAN Not.},
+month = sep,
+pages = {48–59},
+numpages = {12},
+keywords = {behavioral specifications, contracts, higher-order functions, predicate typing, solfware reliability}
+}
+
+
+@book{BasicCatTheory,
+  title={Basic category theory for computer scientists},
+  author={Pierce, Benjamin C},
+  year={1991},
+  publisher={MIT press}
+}

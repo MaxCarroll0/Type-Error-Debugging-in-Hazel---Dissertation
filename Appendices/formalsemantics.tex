@@ -1,3 +1,232 @@
-\chapter{Formal Semantics and Proofs}
+\chapter{Hazel Formal Semantics}
+\label{sec:HazelSemantics}
+This is the complete formal semantics for the Hazel \textit{core calculus}. It is \textit{gradually typed} so consists of both an \textit{external language} and \textit{internal language}.
 
-Example Appendix Here
+\textbf{ADD THE USEFUL THEOREMS AND REF THROUGHOUT TEXT. Add brief notes pointing out unusual features.}
+
+\section{Syntax}
+\begin{figure}[h]
+\begin{align*}
+\tau &::= b \mid \tau \to \tau \mid\  ?\\
+e &::= c \mid x \mid \lambda x : \tau.e \mid \lambda x. e \mid e(e) \mid \hole^u \mid \hole[e]^u \mid e : \tau\\
+d &::= c \mid x \mid \lambda x : \tau d \mid d(d) \mid \hole^u_\sigma \mid \hole[d]^u_\sigma \mid d\scast{\tau}{\tau} \mid d\scasterror{\tau}{\tau}
+\end{align*}
+\caption{Syntax: \textit{types} $\tau$, \textit{external expressions} $e$, \textit{internal expressions} $d$. With $x$ ranging over variables, $u$ over hole names, $\sigma$ over $x \to d$ \textit{internal language} substitutions/environments, $b$ over base types and $c$ over constants.}
+\label{fig:syntaxappendix}
+\end{figure}
+
+\section{Static Type System}
+\subsection{External Language}
+\begin{figure}[H]
+\small
+\fbox{$\synthesis{e}{\tau}$}\ \ \ $e$ synthesises type $\tau$ under context $\Gamma$
+\tiny
+\[\inference[\tiny SConst]{}{\synthesis{c}{b}} \quad
+\inference[\tiny SVar]{x : \tau \in \Gamma}{\synthesis{x}{\tau}} \quad 
+\inference[\tiny SFun]{\synthesis[\Gamma,x:\tau_1]{e}{\tau_2}}{\synthesis{\lambda x:\tau_1.e}{\tau_1 \to \tau_2}}\]
+\[\inference[\tiny SApp]{\synthesis{e_1}{\tau_1} & \tau_1 \funmatch \tau_2 \to \tau \\ \analysis{e_2}{\tau_2}}{\synthesis{e_1(e_2)}{\tau}} \quad 
+\inference[\tiny SEHole]{}{\synthesis{\hole^u}{?}} \quad \]
+\[\inference[\tiny SNEHole]{\synthesis{e}{\tau}}{\synthesis{\hole[e]^u}{\dyn}}\quad 
+\inference[\tiny SAsc]{\analysis{e}{\tau}}{\synthesis{e : \tau}{\tau}}\]
+
+\small
+\fbox{$\analysis{e}{\tau}$}\ \ \ $e$ analyses against type $\tau$ under context $\Gamma$
+
+\tiny
+\[\inference[\tiny AFun]{\tau \funmatch \tau_1 \to \tau_2\\ \analysis[\Gamma, x:\tau_1]{e}{\tau_2}}{\analysis{\lambda x.e}{\tau}} \quad 
+\inference[\tiny ASubsume]{\synthesis{e}{\tau}\\ \tau \sim \tau'}{\analysis{e}{\tau'}}\]
+
+\caption{Bidirectional typing judgements for \textit{external expressions}}
+\label{fig:typing}
+\end{figure} 
+
+
+\begin{figure}[H]
+\small
+\fbox{$\tau_1 \sim \tau_2$}\ \ \ $\tau_1$ is consistent with $\tau_2$
+\tiny
+\[\inference[\tiny TCDyn1]{}{? \sim \tau} \quad \inference[\tiny TCDyn2]{}{\tau \sim ?} \quad \inference[\tiny TCRfl]{}{\tau \sim \tau} \quad \inference[\tiny TCFun]{\tau_1 \sim \tau_1' & \tau_2 \sim \tau_2'}{\tau_1 \to \tau_2 \sim \tau_1' \to \tau_2'}\]
+\caption{Type consistency}
+\label{fig:consistency}
+\end{figure}
+
+\begin{figure}[h]
+\small
+\fbox{$\tau \funmatch \tau_1 \to \tau_2$}\ \ \ $\tau$ has arrow type $\tau_1 \to \tau_2$
+\tiny
+\[\inference[\tiny MADyn]{}{? \funmatch ? \to ?} \quad 
+\inference[\tiny MAFun]{}{\tau_1 \to \tau_2 \funmatch \tau_1 \to \tau_2}\]
+\caption{Type Matching}
+\label{fig:typematching}
+\end{figure}
+
+
+\subsection{Elaboration}
+
+\begin{figure}[H]
+\small
+\fbox{$\elaborationSynthesis{e}{\tau}{d}{\Delta}$}\ \ \ $e$ syntheses type $\tau$ and elaborates to $d$
+\tiny 
+\[\inference[\tiny ESConst]{}{\elaborationSynthesis{c}{b}{c}{\emptyset}} \quad 
+\inference[\tiny ESVar]{x : \tau \in \Gamma}{\elaborationSynthesis{x}{\tau}{x}{\emptyset}}\]
+\[\inference[\tiny ESFun]{\elaborationSynthesis[\Gamma,x:\tau_1]{e}{\tau_2}{d}{\Delta}}{\elaborationSynthesis{\lambda x:\tau_1.e}{\tau_1 \to \tau_2}{\lambda x:\tau_1. d}{\Delta}}\]
+\[\inference[\tiny ESApp]{\synthesis{e_1}{\tau_1} & \tau_1 \funmatch \tau_2 \to \tau \\ \elaborationAnalysis{e_1}{\tau_2 \to \tau}{d_1}{\tau_1'}{\Delta_1} & \elaborationAnalysis{e_1}{\tau_2}{d_2}{\tau_2'}{\Delta_2}}{\elaborationSynthesis{e_1(e_2)}{\tau}{(d_1\scast{\tau_1'}{\tau_2 \to \tau})(d_2\scast{\tau_2'}{\tau_2})}{\Delta_1 \cup \Delta_2}}\]
+\[\inference[\tiny ESEHole]{}{\elaborationSynthesis{\hole^u}{?}{\hole^u_{\mathrm{id}(\Gamma)}}{u :: \hole[] [\Gamma]}}\]
+\[\inference[\tiny ESNEHole]{\elaborationSynthesis{e}{\tau}{d}{\Delta}}{\elaborationSynthesis{\hole[e]^u}{?}{\hole[d]^u_{\mathrm{id}(\Gamma)}}{\Delta, u :: \hole[] [\Gamma]}}\]
+\[\inference[\tiny ESAsc]{\elaborationAnalysis{e}{\tau}{d}{\tau'}{\Delta}}{\elaborationSynthesis{e:\tau}{\tau}{d\scast{\tau'}{\tau}}{\Delta}}\]
+\small
+\fbox{$\elaborationAnalysis{e}{\tau}{d}{\tau'}{\Delta}$}\ \ \ $e$ analyses against type $\tau$ and elaborates to $d$ of consistent type $\tau'$
+\tiny 
+\[\inference[\tiny EAFun]{\tau \funmatch \tau_1 \to \tau_2 \\ \elaborationAnalysis[\Gamma,x:\tau_1]{e}{\tau_2}{d}{\tau_2'}{\Delta}}{\elaborationAnalysis{\lambda x. e}{\tau}{\lambda x:\tau_1. d}{\tau_1 \to \tau_2'}{\Delta}}\]
+\[\inference[\tiny EASubsume]{e \neq \hole^u & e \neq \hole[e']^u \\ \elaborationSynthesis{e}{\tau'}{d}{\Delta} & \tau \sim \tau'}{\elaborationAnalysis{e}{\tau}{d}{\tau'}{\Delta}}\]
+\[\inference[\tiny EAEHole]{}{\elaborationAnalysis{\hole^u}{\tau}{\hole^u_{\mathrm{id}(\Gamma)}}{\tau}{u::\tau[\Gamma]}}\]
+\[\inference[\tiny EANEHole]{\elaborationSynthesis{e}{\tau'}{d}{\Delta}}{\elaborationAnalysis{\hole[e]^u}{\tau}{\hole[d]^u_{\mathrm{id}(\Gamma)}}{\tau}{u::\tau[\Gamma]}}\]
+
+\caption{Elaboration judgements} 
+\label{fig:elaboration}
+\end{figure}
+
+\subsection{Internal Language}
+
+
+\begin{figure}[H]
+\small
+\fbox{$\typeassignment{d}{\tau}$}\ \ \ $d$ is assigned type $\tau$
+\tiny
+\[\inference[\tiny TACons]{}{\typeassignment{c}{b}}\quad
+\inference[\tiny TAVar]{x : \tau \in \Gamma}{\typeassignment{x}{\tau}}\quad
+\inference[\tiny TAFun]{\typeassignment[\Delta;\Gamma,x:\tau_1]{d}{\tau_2}}{\typeassignment{\lambda x:\tau_1. d}{\tau_1 \to \tau_2}}\]
+\[\inference[\tiny TAApp]{\typeassignment{d_1}{\tau_2 \to \tau} \\ \typeassignment{d_2}{\tau_2}}{\typeassignment{d_1(d_2)}{\tau}} \quad 
+\inference[\tiny TAEHole]{u :: \tau[\Gamma'] \in \Delta \\ \typeassignment{\sigma}{\Gamma'}}{\typeassignment{\hole^u_\sigma}{\tau}}\]
+\[
+\inference[\tiny TANEHole]{\typeassignment{d}{\tau'} \\ u :: \tau[\Gamma'] \in \Delta & \typeassignment{\sigma}{\Gamma'}}{\typeassignment{\hole[d]^u_\sigma}{\tau}}\quad 
+\inference[\tiny TACast]{\typeassignment{d}{\tau_1} & \tau_1 \sim \tau_2}{\typeassignment{d\scast{\tau_1}{\tau_2}}{\tau_2}}\]
+\[\inference[\tiny TACastError]{\typeassignment{d}{\tau_1} & \tau_1\text{ ground} & \tau_2\text{ ground} & \tau_1 \neq \tau_2}{\typeassignment{d\scasterror{\tau_1}{\tau_2}}{\tau_2}}\]
+\caption{Type assignment judgement for \textit{internal expressions}}
+\label{fig:typeassignment}
+\end{figure}
+
+\begin{figure}
+\tiny
+\[id(x_1:\tau_1, \dots, x_n:\tau_n) := [x_1/x_1, \dots, x_n/x_n]\]
+\[\typeassignment{\sigma}{\Gamma'} \text{ iff } \mathrm{dom}(\sigma) = \mathrm{dom}(\Gamma')\text{ and for every } x : \tau \in \Gamma' \text{ then:
+} \typeassignment{\sigma(x)}{\tau}\]
+\caption{Identity substitution and substitution typing}
+\label{fig:substitutiontyping}
+\end{figure}
+
+\begin{figure}[h]
+\tiny
+\fbox{$\tau$ ground}\ \ \ $\tau$ is a ground type
+\[\inference[\tiny GBase]{}{b\text{ ground}}\quad \inference[\tiny GDynFun]{}{? \to ?\text{ ground}}\]
+\caption{Ground types}
+\label{fig:groundtypes}
+\end{figure}
+
+\section{Dynamics}
+
+\subsection{Final Forms}
+
+\begin{figure}[H]
+\small
+\fbox{$\final$}\ \ \ $d$ is final
+\tiny
+\[\inference[\tiny FBoxedVal]{\boxedval}{\final}\quad
+\inference[\tiny FIndex]{\indet}{\final}\]
+\small
+\fbox{$\val$}\ \ \ $d$ is a value
+\tiny
+\[\inference[\tiny VConst]{}{\val[c]}\quad
+\inference[\tiny VFun]{}{\val[\lambda x:\tau. d]}\]
+\small
+\fbox{$\boxedval$}\ \ \ $d$ is a boxed value
+\tiny
+\[\inference[\tiny BVVal]{\val}{\boxedval}\quad
+\inference[\tiny BVFunCast]{\tau \to \tau_2 \neq \tau_3 \to \tau_4 & \boxedval}{\boxedval[d\scast{\tau_1 \to \tau_2}{\tau_3 \to \tau_4}]}\]
+\[\inference[\tiny BVDynCast]{\boxedval & \ground}{\boxedval[d\scast{\tau}{?}]}\]
+\small
+\fbox{$\indet$}\ \ \ $d$ is indeterminate
+\tiny
+\[\inference[\tiny IEHole]{}{\indet[\hole^u_\sigma]}\quad
+\inference[\tiny INEHole]{\final}{\indet[{\hole[d]^u_\sigma}]}\quad
+\inference[\tiny IAp]{d_1 \neq d_1'\scast{\tau_1 \to \tau_2}{\tau_3 \to \tau_4} \\ \indet[d_1] & \final[d_2]}{\indet[d_1(d_2)]}\]
+\[\inference[\tiny ICastGD]{\indet & \ground}{\indet[d\scast{\tau}{?}]}\quad
+\inference[\tiny ICastDG]{d \neq d'\scast{\tau'}{?} & \indet & \ground}{\indet[d\scast{?}{\tau}]}\]
+\[\inference[\tiny ICastFun]{\tau_1 \to \tau_2 \neq \tau_3 \to \tau_4 & \indet}{\indet[d\scast{\tau_1 \to \tau_2}{\tau_3 \to \tau_4}]}\quad
+\inference[\tiny ICastError]{\final & \ground[\tau_1] \\ \ground[\tau_2] & \tau_1 \neq \tau_2}{\indet[d\scasterror{\tau_1}{\tau_2}]}\]
+
+\caption{Final forms}
+\label{fig:finalforms}
+\end{figure}
+
+\subsection{Instructions}
+\begin{figure}[H]
+\small
+\fbox{$d \longrightarrow d'$}\ \ \ $d$ takes and instruction transition to $d'$
+\tiny
+\[\inference[\tiny ITFun]{}{(\lambda x:\tau. d_1)(d_2) \longrightarrow [d_2/x]d_1}\quad
+\inference[\tiny ITCastId]{}{d\scast{\tau}{\tau} \longrightarrow d}\]
+\[\inference[\tiny ITAppCast]{\tau_1 \to \tau_2 \neq \tau_1' \to \tau_2'}{d_1\scast{\tau_1 \to \tau_2}{\tau_1' \to \tau_2'}(d) \longrightarrow (d_1(d_2\scast{\tau_1'}{\tau_1}))\scast{\tau_2}{\tau_2'}}\]
+\[\inference[\tiny ITCast]{\ground}{d\scastcast{\tau}{?}{\tau} \longrightarrow d} \quad
+\inference[\tiny ITCastError]{\tau_1 \neq \tau_2 \\ \ground[\tau_1] & \ground[\tau_2]}{d\scastcast{\tau_1}{?}{\tau_2}\longrightarrow d\scasterror{\tau_1}{?}{\tau_2}}\]
+\[\inference[\tiny ITGround]{\tau \groundmatch \tau'}{d\scast{\tau}{?} \longrightarrow d\scastcast{\tau}{\tau'}{?}}\quad
+\inference[\tiny ITExpand]{\tau \groundmatch \tau'}{d\scast{?}{\tau} \longrightarrow d\scastcast{?}{\tau'}{\tau}}\]
+\caption{Instruction transitions}
+\label{fig:instructions}
+\end{figure}
+
+\subsection{Contextual Dynamics}
+\begin{figure}[H]
+\small
+\fbox{$\tau \groundmatch \tau'$}\ \ \ $\tau$ matches ground type $\tau'$
+\tiny
+\[\inference[\tiny]{\tau_1 \to \tau_2 \neq ? \to ?}{\tau_1 \to \tau_2 \groundmatch ? \to ?}\]
+\caption{Ground type matching}
+\label{fig:groundmatch}
+\end{figure}
+
+\begin{figure}[H]
+Context syntax:
+\[E ::= \circ \mid E(d) \mid d(E) \mid \hole[E]^u_\sigma \mid E\scast{\tau}{\tau} \mid E\scasterror{\tau}{\tau}\]
+\small
+\fbox{$d = E[d]$}\ \ \ $d$ is the context $E$ filled with $d'$ in place of $\circ$
+\tiny
+\[\inference[\tiny ECOuter]{}{d = \circ[d]} \quad
+\inference[\tiny ECApp1]{d_1 = E[d_1']}{d_1(d_2) = E(d_2)[d_1]}\quad
+\inference[\tiny ECApp2]{d_2 = E[d_2]}{d_1(d_2) = d_1(E)[d_2']}\]
+\[\inference[\tiny ECNEHole]{d=E[d']}{\hole[d]^u_\sigma = \hole[E]^u_\sigma [d']}\quad
+\inference[\tiny ECCast]{d=E[d']}{d\scast{\tau_1}{\tau_2} = E\scast{\tau_1}{\tau_2}[d']}\]
+\[\inference[\tiny ECCastError]{d=E[d']}{d\scasterror{\tau_1}{\tau_2} = E\scasterror{\tau_1}{\tau_2}[d']}\]
+\small
+\fbox{$d \mapsto d'$}\ \ \ $d$ steps to $d'$
+\tiny
+\[\inference[\tiny Step]{d_1=E[d_2] & d_2 \longrightarrow d_2' & d_1' = E[d_2']}{d_1 \mapsto d_1'}\]
+\caption{Contextual dynamics of the internal language}
+\label{fig:dynamics}
+\end{figure}
+
+\subsection{Hole Substitution}
+\begin{figure}[H]
+\small
+\fbox{$\contextualsub d' = d''$}\ \ \ $d''$ is $d'$ with each hole $u$ substituted with $d$ in the respective hole's environment $\sigma$.
+\begin{align*}
+&\contextualsub c &&= c\\
+&\contextualsub x &&= x\\
+&\contextualsub \lambda x:\tau.d' &&= \lambda x:\tau. \contextualsub d'\\
+&\contextualsub d_1(d_2) &&= (\contextualsub d_1)(\contextualsub d_2)\\
+&\contextualsub \hole^u_\sigma &&= [\contextualsub  \sigma]d\\
+&\contextualsub \hole^v_\sigma &&= \hole^b_{\contextualsub \sigma} && \text{if $u \neq v$}\\
+&\contextualsub \hole[d']^u_\sigma &&= [\contextualsub  \sigma]d\\
+&\contextualsub \hole[d']^v_\sigma &&= \hole[\contextualsub d']^b_{\contextualsub \sigma} && \text{if $u \neq v$}\\
+&\contextualsub d'\scast{\tau}{\tau'} &&= (\contextualsub d')\scast{\tau}{\tau'}\\
+&\contextualsub d'\scasterror{\tau}{\tau'} &&= (\contextualsub d')\scasterror{\tau}{\tau'}\\
+\end{align*}
+
+\fbox{$\contextualsub \sigma = \sigma'$}\ \ \ $\sigma'$ is $\sigma$ with each hole $u$ in $\sigma$ substituted with $d$ in the respective hole's environment.
+\begin{align*}
+\contextualsub \cdot &= \cdot\\ 
+\contextualsub \sigma, d'/x &= \contextualsub \sigma, (\contextualsub d')/x
+\end{align*}
+\caption{Hole substitution}
+\label{fig:holesubstitution}
+\end{figure} 

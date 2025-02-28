@@ -1,6 +1,6 @@
 \usepackage{graphicx}
 \usepackage[utf8]{inputenc}
-\usepackage[backend=biber, style=ieee]{biblatex}
+\usepackage[backend=biber, style=numeric]{biblatex}
 \usepackage{amsmath}
 \usepackage{amssymb}
 \usepackage{stmaryrd}
@@ -30,13 +30,14 @@
 \newcommand{\hlcmaths}[2][yellow!50]{\colorbox{#1}{$\displaystyle #2$}}
 
 \newcommand{\code}[1]{\text{\mintinline[escapeinside=||]{reason}{#1}}}
+\newcommand{\dyn}{{\color{teal}\texttt{?}}}
 \newcommand{\casthl}[4][yellow!50]{\ensuremath{\code{#4}^{\text{\hlc[#1]{${\langle$\code{#2}$ \Rightarrow $\code{#3}$\rangle}$}}}}}
 \newcommand{\cast}[3]{\casthl[red!0]{#1}{#2}{#3}}
 \newcommand{\casterror}[3]{\casthl[pink!50]{#1}{#2}{#3}}
 
-\newcommand{\hole}[1][]{{\color{red}\llparenthesis} #1 {\color{red}\rrparenthesis}}
+\newcommand{\hole}[1][]{{\color{teal}\llparenthesis} #1 {\color{teal}\rrparenthesis}}
 \newcommand{\scast}[2]{{\color{blue}\langle} #1 {\color{blue}\Rightarrow} #2 {\color{blue}\rangle}}
-\newcommand{\scasterror}[2]{{\color{blue}\langle} #1 {\color{blue}\Rightarrow} ? {\color{blue}\nRightarrow} #2 {\color{blue}\rangle}}
+\newcommand{\scasterror}[2]{{\color{red}\langle} #1 {\color{red}\Rightarrow} \dyn {\color{red}\nRightarrow} #2 {\color{red}\rangle}}
 \newcommand{\scastcast}[3]{{\color{blue}\langle} #1 {\color{blue}\Rightarrow} #2 {\color{blue}\Rightarrow} #3 {\color{blue}\rangle}}
 \newcommand{\synthesis}[3][\Gamma]{#1 \vdash #2 {\color{BrickRed}\ \Rightarrow}\ #3}
 \newcommand{\analysis}[3][\Gamma]{#1 \vdash #2 {\color{BlueViolet}\ \Leftarrow}\ #3}
@@ -59,6 +60,8 @@
 
 \newcommand{\elaborationSynthesisSlice}[6][\Gamma]{#1 \vdash #2 {\color{BrickRed}\ \Rightarrow\ } #3 \leadsto #4 \dashv #5\ \|\ #6}
 \newcommand{\elaborationAnalysisSlice}[7][\Gamma]{#1 \vdash #2 {\color{BlueViolet}\ \Leftarrow\ } #3 \leadsto #4 : #5 \dashv #6\ \|\ #7}
+
+\newmintinline[code]{reason}{}
 
 \addbibresource{References/refs.bib}
 \makeindex

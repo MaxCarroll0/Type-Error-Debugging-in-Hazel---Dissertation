@@ -1,31 +1,147 @@
 \chapter{Preparation}
-\textit{In this chapter I present the technical background knowledge for this project, this is an introduction to the type theory for understanding Hazel's core semantics followed by an overview of Hazel itself. Following this I present my software engineering methodology.}
+In this chapter I present the technical background knowledge for this project: an introduction to the type theory for understanding Hazel's core semantics, an overview of Hazel implementation, and notes on non-determinism (as the type witness search procedure is non-deterministic). Following this, I present my software engineering methodology.
 
 \section{Background Knowledge}
+\subsection{Static Type Systems}
+A \textit{type system} is a lightweight formal mathematical method which categorises values into \textit{types} and expressions into types that evaluate to values of the same type. It is effectively a static \textit{approximation} to the runtime behaviour of a language. 
 
-\subsection{Types}
-\subsubsection{Judgements}
+\subsubsection{Syntax}
+Trivial, probably not needed? Cite BNF grammars etc. All Ib stuff.
+Maybe briefly show examples of Lambda calculus-like syntax?
+\subsubsection{Judgements \& Inference Rules}
+A \textit{judgement}, $J$, is an assertion about \textit{expressions} in a language \cite{PracticalFoundations}. For example: \begin{itemize}
+\item $\mathrm{Exp\ e}$ -- $e$ is an \textit{expression} 
+\item $n : \code{int}$ -- $n$ has type \code{int}
+\item $e \Downarrow v$ -- $e$ evaluates to \textit{value} $v$ 
+\end{itemize}
+While an \textit{inference rule} is a collection of judgements $J, J_1, \dots, J_n$:
+\[\inference{J_1 & J_2 & \dots & J_n}{J}\]
+Representing the \textit{rule} that if the \textit{premises}, $J_1, \dots, J_n$ are true then the conclusion, $J$, is true. When the collection of premises is empty, it is an \textit{axiom} stating that the judgement is \textit{always} true. Truth of a judgement $J$ can be assessed by constructing a \textit{derivation}, a tree of rules where it's leaves are axioms. It is then possible to define a judgement as the largest judgement that is \textit{closed} under a collection of rules. This gives the result that a judgement $J$ is true \textit{if and only if} it has a derivation.
 
-\subsubsection{Bidirectional Type Systems}
+Properties on expressions can be proved using \textit{rule induction}, if a property is \textit{preserved} by every rule for a judgement, and true for it's axioms, then the property holds whenever the judgement is derivable.
+
+A \textit{hypothetical judgement} is a judgement written as: 
+\[J_1, \dots, J_n \vdash J\]
+is true if $J$ is derivable when additionally assuming each $J_i$ are axioms. Often written $\Gamma \vdash J$ and read \textit{$J$ holds under context $\Gamma$}. Hypothetical judgements can be similarly defined inductively via \textit{rules}.
+
+\subsubsection{Defining a Type System}
+A typical type system can be expressed by defining the following hypothetical judgement form $\Gamma \vdash e : \tau$ read as \textit{the expression $e$ has type $\tau$ under typing context $\Gamma$} and referred as a \textit{typing judgement}. Here, $e : \tau$ means that expression $e$ has type $\tau$.  A \textit{typing context}, $\Gamma$, is a list of types for variables $x_1 : \tau_1, \dots, x_n : \tau_2$. For example the SLTC\footnote{Simply typed lambda calculus.} \cite[ch. 9]{TAPL} has a typing rule for lambda expression and application as follows:
+\[\inference{\Gamma, x : \tau_1 \vdash e : \tau_2}{\Gamma \vdash \lambda x.\ e : \tau_1 \to \tau_2} \qquad \inference{\Gamma \vdash e_1 : \tau_1 \to \tau_2\\ \Gamma \vdash e_2 : \tau_1}{\Gamma \vdash e_1(e_2) : \tau_2}\]
+Meaning, $\lamdba x. e$ has type $\tau_1 \to \tau_2$ if $e$ has type $\tau_2$ under the extended context additionally assuming that $x$ has type $\tau_1$.
+And, $e_1(e_2)$ has type $\tau_2$ if $e_1$ is a function of type $\tau_1 \to \tau_2$ and it's argument $e_2$ has type $\tau_1$.
+
+\subsection{Product \& Labelled Sum Types}
+Briefly demonstrate. Link to TAPL \textit{Variants} and products
+
+\subsubsection{Dynamic Type Systems}
+\label{sec:dynamictypes}
+\textit{Dynamic Typing} has purported strengths allowing rapid development and flexibility, evidenced by their popularity \cite{DynamicLangShift, TIOBE}. Of particular relevance to this project, execution traces are known to help provide insight to errors \cite{TraceVisualisation}, yet statically typed languages remove the ability to execute programs with type errors, whereas dynamically typed languages do not.\par 
+
+A \textit{dynamically typed system} can be implemented and represented semantically by use of dynamic \textit{type tags} and a \textit{dynamic type}\footnote{Not necessarily needed for implementation, but is useful when reasoning about dynamic types within a formal type system or when considering types within a \textit{static} context.} \cite{DynamicTyping}. Then, runtime values can have their type checked at runtime and \textit{cast} between types. This suggests a way to encode dynamic typing via \textit{first-class}\footnote{Directly represented in the language syntax as expressions.} cast expressions which maintain and enforce runtime type constraints alongside a dynamic type written \dyn.
+
+Cast expressions can be represented in the syntax of expression by $e\scast{\tau_1}{\tau_2}$ for expression $e$ and types $\tau_1, \tau_2$, encoding that $e$ has type $\tau_1$ and is cast to new type $\tau_2$. An intuitive way to think about these is to consider two classes of casts:
+\begin{itemize}
+\item \textit{Injections} -- Casts \textit{to} the dynamic type $e\scast{\tau}{?}$. These are effectively equivalent to type tags, they say that $e$ has type $\tau$ but that it should be treat dynamically.
+\item \textit{Projections} -- Casts \textit{from} the dynamic type $e\scast{?}{\tau}$. These are type requirements, for example the add operator could require inputs to be of type \code{int}, and such a projection would force any dynamic value input to be cast to \code{int}. 
+\end{itemize}
+Then when \textit{injections} meet \textit{projections} meet, $v\scastcast{\tau_1}{\dyn}{\tau_2}$, representing an attempt to perform a cast $\scast{\tau_1}{\tau_2}$ on $v$. We check the cast is valid and perform if so:
+\[\inference{\tau_1 \text{ is castable to } \tau_2}{v\scastcast{\tau_1}{\dyn}{\tau_2} \mapsto v'} \qquad \inference{\tau_1  \text{ is {\color{red} not }castable to }  \tau_2}{v\scastcast{\tau_1}{\dyn}{\tau_2} \mapsto v\scasterror{\tau_1}{\tau_2}}\]
+
+
+Compound type casts can be broken down during evaluation upon usage of such constructs. For example, applying $v$ to a \textit{wrapped}\footnote{Wrapped in a cast between function types.} functions could decompose the cast to separately cast the applied argument and then the result. Inspired by, \textit{semantic casts} \cite{SemanticCasts} in \textit{contract} systems \cite{Contracts}:
+\[(f\scast{\tau_1 \to \tau_2}{\tau_1' \to \tau_2'})(v) \mapsto (f(v \scast{\tau_1'}{\tau_1})\scast{\tau_2}{\tau_2'})\]
+Or if $f$ has the dynamic type:
+\[(f\scast{\dyn}{\tau_1' \to \tau_2'})(v) \mapsto (f(v \scast{\tau_1'}{\dyn})\scast{\dyn}{\tau_2'})\]
+Then direction of the casts reflects the \textit{contravariance} \cite[ch. 2]{BasicCatTheory} of functions\footnote{A bifunctor.} in their argument.
+See that the cast $\scast{\tau_1'}{\tau_1}$ on the argument is \textit{reversed} with respect to the original cast on $f$. This makes sense as we must first cast the applied input to match the actual input type of the function $f$.
+
+Hence, casts around functions (type information) will be moved to the actual arguments at runtime, meeting with casts casts on the argument, resulting in a cast error or a successful casts.
 
 \subsubsection{Gradual Type Systems}
 
+A \textit{gradual type system} \cite{GradualRefined, GradualFunctional} combines static and dynamic typing. Terms may be annotated as dynamic, marking regions of code omitted from type-checking but still \textit{interoperable} with static code. For example, the following type checks:
+\begin{minted}[escapeinside=||]{reason}
+let x : |\dyn| = 10;  // Dynamically typed
+x ++ "str"       // Statically typed
+\end{minted}
+Where \code{++} is string concatenation expecting inputs to be \code{string}. But would then cause a runtime \textit{cast error} when attempting to calculate \code{10 ++ "str"}.
+
+It does this by representing casts as expressed previously. The language is split into two parts:
+\begin{itemize}
+\item The \textit{external language} -- where static type checking is performed which allows annotating expressions with the dynamic type.
+\item The \textit{internal language} -- where evaluation and runtime type checking is performed via cast expressions.\footnote{i.e. the proposed \textit{dynamic type system} above.} The example above would reduce to a \textit{cast error}\footnote{Cast errors now represented with a strike-through and in red. From here-on they are considered as first-class constructs.}: \[10\scasterror{\code{int}}{\code{string}}\code{ ++ "str"}\]
+\end{itemize}
+For type checking, a \textit{consistency} relation $\tau_1 \sim \tau_2$ is introduced meaning \textit{types $\tau_1, \tau_2$ are consistent}. This is a weakening of the type equality requirements in normal static type checking, allowing consistent types to be used additionally.
+
+Consistency must satisfy a few properties: that the dynamic type is consistent with every type, $\tau \sim \dyn$ for all types $\tau$, that $\sim$ is reflexive and symmetric, and two concrete types\footnote{No sub-parts are dynamic.} are consistent iff they are equal\footnote{e.g. $\tau_1 \to \tau_2 \sim \tau_1' \to \tau_2'$ iff $\tau_1 = \tau_1'$ and $\tau_2 = \tau_2'$ when $\tau_1, \tau_1', \tau_2, \tau_2'$ don't contain $\dyn$.}. A typical definition would be like:
+\[\inference{}{\tau \sim \dyn} \quad \inference{}{\tau \sim \tau} \quad \inference{\tau_1 \sim \tau_2}{\tau_2 \sim \tau_1} \quad \inference{\tau_1 \sim \tau_1' & \tau_2 \sim \tau_2}{\tau_1 \to \tau_2 \sim \tau_1' \to \tau_2'}\]
+This is very similar to the notion of \textit{subtyping} \cite[ch. 15]{TAPL} with a \textit{top} type $\top$, but with symmetry instead of transitivity.
+
+Then typing rules can be written to use consistency instead of equality. For example, application typing:
+\[\inference{\Gamma \vdash e_1 : \tau_1 & \Gamma \vdash e_2 : \tau_2'\\ \tau_1 \funmatch \tau_2 \to \tau & \tau_2 \sim \tau_2'}{\Gamma \vdash e_1(e_2) : \tau_2'}\]
+Where $\funmatch$ is a pattern matching function to extract the argument and return types from a function type.\footnote{This makes explicit the implicit pattern matching used normally.}
+Intuitively, $e_1(e_2)$ has type $\tau_2'$ if $e_1$ has type $\tau_1' \to \tau_2'$ or $\dyn$ and $e_2$ has type $\tau_1$ which is consistent with $\tau_1'$ and hence is assumed that it can be passed into the function.
+
+But, for evaluation to work the static type information needs to be encoded into casts to be used in the dynamic internal language, for which the evaluation semantics are defined. This is done via \textit{elaboration}, similarly to Harper and Stone's approach to defining (globally inferred) Standard ML \cite{StandardMLTypeTheory} by elaboration to an explicitly typed internal language XML \cite{CoreXML}. The \textit{elaboration judgement} $\Gamma \vdash e \leadsto e' : \tau$ read as: external expression $e$ is elaborated to internal expression $d$ with type $\tau$ under typing context $\Gamma$. For example we need to insert casts around function applications:
+\[\inference{\Gamma \vdash e_1 \leadsto d_1 : \tau_1 & \Gamma \vdash e_2 \leadsto d_2 : \tau_2' \\ \tau_1 \funmatch \tau_2 \to \tau  & \tau_2 \sim \tau_2'}{\Gamma \vdash e_1(e_2) : \tau \leadsto (d_1\scast{\tau_1}{\tau_2 \to \tau})(d_2\scast{\tau_2'}{\tau_2}) : \tau}\]
+If, $e_1$ elaborates to $d_1$ with type $\tau_1 \sim \tau_2 \to \tau$ and $e_2$ elaborates to $\tau_2'$ with $\tau_2 \sim \tau_2$ then we place a cast\footnote{This cast is required, as if $\tau_1 = \dyn$ then we need a cast to realise that it is even a function. Otherwise $\tau_1 = \tau_2 \to \tau$ and the cast is redundant.} on the function $d_1$ to $\tau_2 \to \tau$ and on the argument $d_2$ to the function's expected argument type $\tau_2$ to perform runtime type checking of arguments.
+Intuitively, casts must be inserted whenever type consistency is used, though the casts to insert are non-trivial \cite{Gradualizer}.
+
+The runtime semantics of the internal expression is that of the \textit{dynamic type system} discussed above (\ref{sec:dynamictypes}). A cast is determined to succeed iff the types are \textit{consistent}.
+
+The \textit{refined criteria} for gradual typing \cite{GradualRefined} also provides an additional property for such systems to satisfy, the \textit{gradual guarantee}, formalising the intuition that adding and removing annotations should \textit{not} change the \textit{behaviour} of the program except for catching errors either dynamically and statically.
+
+\subsubsection{Bidirectional Type Systems}
+A \textit{bidirectional type system} \cite{BidirectionalTypes} takes on a more algorithmic definition of typing judgements, being more intuitive to implement. They also allow some amount of local type inference \cite{LocalInference}, allowing programmers to omit \textit{type annotations}, instead type information. Global type inference systems \cite[ch. 22]{TAPL} can be \textit{difficult to implement}, often via constraint solving \cite[ch. 10]{ATTAPL}, and difficult or impossible to \textit{balance} with complex language features, for example global inference in System F (\ref{sec:System F}) is undecidable \cite{SystemFUndecidable}.
+
+This is done in a similar way to annotating logic program by specifying the \textit{mode} \cite[123]{LogicProg} of the type parameter in a typing judgement, distinguishing when it is an \textit{input} (type checking) and when it is an \textit{output} (type synthesis).
+
+We express this with two judgements:
+\[\synthesis{e}{\tau}\]
+Read as: \textit{$e$ synthesises a type $\tau$ under typing context $\Gamma$}. Type $\tau$ is an \textit{output}.
+\[\analysis{e}{\tau}\]
+Read as: $e$ analyses against a type $\tau$ under typing context $\Gamma$. Type $\tau$ is an \textit{input}
+
+When designing such a system care must be taken to ensure \textit{mode correctness} \cite{ModeCorrectness}. Mode correctness ensures that input-output dataflow is consistent such that an input never needs to be \textit{guessed}. For example the following function application rule is \textit{not} mode correct:
+\[\inference{\analysis{e_1}{{\color{red}\tau_1} \to \tau_2} & \analysis{e}{{\color{red}\tau_1}}}{\analysis{e_1(e_2)}{\tau_2}}\]
+We try to \textit{check} $e_2$ with input ${\color{red}\tau_1}$\footnote{Highlighted in red as an error.} which is \textit{not known} from either an \textit{output} of any premise nor from the \textit{input} to the conclusion, $\tau_2$. On the other hand, the following \textit{is} mode correct:
+\[\inference{\synthesis{e_1}{\tau_1 \to \tau_2} & \analysis{e_2}{\tau_1}}{\analysis{e_1(e_2)}{\tau_2}}\]
+Where $\tau_1$ is now known, being \textit{synthesised} from the premise $\synthesis{e_1}{\tau_1 \to \tau_2}$. As before, $\tau_2$ is known as an input in the conclusion $\analysis{e_1(e_2)}{\tau_2}$.
+
+Such languages will typically have three obvious rules. First, we should have that variables can synthesise their type, after all it is accessible from the typing context $\Gamma$:
+\[\inference[Var]{x : \tau \in \Gamma}{\synthesis{x}{\tau}}\]
+And annotated terms can synthesise their type by just looking at the annotation $e : \tau$ and checking the annotation is valid:
+\[\inference[Annot]{\analysis{e}{\tau}}{\synthesis{e : \tau}{\tau}}\]
+
+Finally, when we check against a type that we can synthesise a type for, variables for example.
+It would make sense to be able to \textit{check} $e$ against this same type $\tau$; we can synthesise it, so must be able to check it. This leads to the subsumption rule:
+\[\inference[Subsumption]{\synthesis{e}{\tau'} & \tau = \tau'}{\analysis{e}{\tau}}\]
+
 \subsubsection{Contextual Modal Type Theory}
+Not \textit{hugely} relevant really...
 
 \subsubsection{System F}
+\label{sec:System F}
+\textit{Very brief explanation with less/no maths}
 
-\subsection{The Hazel Language}
+\subsubsection{Recursive Types}
+\textit{Very brief explanation with less/no maths}
+
+\subsection{The Hazel Calculus}
 \index{Hazel}
+Hazel is a language that allows the writing of incomplete programs, evaluating them, and evaluating around dynamic errors.\footnote{Among other features, like an structure editor with syntactically meaningless states, and various learning aids.}
 
-\subsubsection{\textbf{Core Hazel}: Formal Semantics}
-For reference, the established semantics and type system for Hazel is presented. Derived from Omar et al.\ \cite{HazelLivePaper}. The paper itself goes into deeper depth into the intuition of the rules and the formal properties satisfied by the calculus.
-\index{\textbf{Core Hazel}}
-\footnote{
-\textbf{Come up with and detail some good intuitions of what each type of value \& expression is and what the cast calculus and elaboration does.}}
+The core calculus \cite{HazelLivePaper} is a gradually and bidirectionally typed lambda calculus. Therefore it has a locally inferred bidirectional \textit{external language} with the dynamic type $\dyn$ elaborated to an explicitly typed \textit{internal language} including cast expressions. 
+
+The full semantics are documented in the Hazel Formal Semantics appendix \ref{sec:HazelSemantics}, but only rules relevant to addition of \textit{holes} are  discussed in this section. The combination of gradual and bidirectional typing system is itself non-trivial and only particularly notable changes are mentioned here. The intuition should be clear from the previous gradual and bidirectional typing sections.\footnote{The difficulties combining gradual and bidirectional typing are largely orthogonal to adding holes.}
+
+Hazel's primary addition is the addition of \textit{expression holes}, which can both be typed and have evaluation proceed around them seamlessly. This also allows the evaluation of ill-typed expressions by placing them in holes.
+
 \subsubsection{Syntax}
 \index{\textbf{Core Hazel} syntax}
-\par The syntax, in Fig. \ref{fig:syntax}, consists of \textit{types} $\tau$, \textit{external expressions} $e$, and \textit{internal expressions} $d$. Here, $?$ is the \textit{dynamic type}, $\hole[e]$ is a \textit{non-empty hole} containing $e$, and $\scast{\tau_1}{\tau_2}$,  $\scasterror{\tau_1}{\tau_2}$ are casts and cast errors from $\tau_1$ to $\tau_2$ respectively.
-The \textit{external language} is a locally inferred \cite{LocalInference} surface syntax for the language, and is statically elaborated to (explicitly typed) \textit{internal expressions}, in a similar way to Harper and Stone's \cite{StandardMLTypeTheory} approach to defining Standard ML as elaboration to an explicitly typed internal langauge, \textit{XML} \cite{CoreXML}.
+\par The syntax, in Fig. \ref{fig:syntax}, consists of \textit{types} $\tau$ including the dynamic type $\dyn$, \textit{external expressions} $e$ including (optional) annotations, \textit{internal expressions} $d$ including cast expressions. The external language is \textit{bidirectionally typed}, and therefore is a locally inferred surface syntax for the language, and is statically elaborated to (explicitly typed) \textit{internal expressions}.
+
+Notating $\hole{}^u$ or $\hole{e}^u$ for empty and non-empty holes respectively, where $u$ is the \textit{metavariable} or name for a hole. Internal expression holes, $\hole{}^u_\sigma$ or $\hole{e}^u_\sigma$, also maintain an environment $\sigma$ mapping variables $x$ to internal expressions $d$. These internal holes act as \textit{closures}, recording which variables have been substituted during evaluation.\footnote{This is required, as the term inside the hole may contain one of these variables}
 \begin{figure}[h]
 \begin{align*}
 \tau &::= b \mid \tau \to \tau \mid\  ?\\
@@ -36,246 +152,129 @@ d &::= c \mid x \mid \lambda x : \tau d \mid d(d) \mid \hole^u_\sigma \mid \hole
 \label{fig:syntax}
 \end{figure}
 
-\subsubsection{External Language: Type System}
+\subsubsection{External Language}
 \index{External language type system}
-The static semantics in Fig. \ref{fig:typing} of the \textit{external language} is a bidirectionally typed system in the style of Pierce and Turner \cite{LocalInference}, and Dunfield and Krishnaswami \cite{BidirectionalTypes}. There are two typing judgement modes: $\synthesis{e}{\tau}$ which synthesises a type $\tau$, algorithmically thought of as an output, and $\analysis{e}{\tau}$ which analyses against a type $\tau$ as an input.\par 
-\begin{figure}[H]
-\small
-\fbox{$\synthesis{e}{\tau}$}\ \ \ $e$ synthesises type $\tau$ under context $\Gamma$
-\tiny
-\[\inference[\tiny SConst]{}{\synthesis{c}{b}} \quad
-\inference[\tiny SVar]{x : \tau \in \Gamma}{\synthesis{x}{\tau}} \quad 
-\inference[\tiny SFun]{\synthesis[\Gamma,x:\tau_1]{e}{\tau_2}}{\synthesis{\lambda x:\tau_1.e}{\tau_1 \to \tau_2}}\]
-\[\inference[\tiny SApp]{\synthesis{e_1}{\tau_1} & \tau_1 \funmatch \tau_2 \to \tau \\ \analysis{e_2}{\tau_2}}{\synthesis{e_1(e_2)}{\tau}} \quad 
-\inference[\tiny SEHole]{}{\synthesis{\hole^u}{?}} \quad \]
-\[\inference[\tiny SNEHole]{\synthesis{e}{\tau}}{\synthesis{\hole[e]^u}{?}}\quad 
-\inference[\tiny SAsc]{\analysis{e}{\tau}}{\synthesis{e : \tau}{\tau}}\]
+We have a bidirectionally static semantics for the \textit{external language}, giving the bidirectional typing judgements: $\synthesis{e}{\tau}$ and $\analysis{e}{\tau$}. Holes synthesise the \textit{dynamic type}, a natural choice made possible by the use of gradual types:
+\[\inference[\tiny SNEHole]{\synthesis{e}{\tau}}{\synthesis{\hole[e]^u}{\dyn}} \qquad \inference[\tiny SEHole]{}{\synthesis{\hole^u}{\dyn}}\] 
+One notable consequence of combining gradual and bidirectional typing is that the \textit{subsumption rule} in bidirectional typing is naturally extended to allow subsuming any \textit{consistent} types:
+\[\inference[\tiny ASubsume]{\synthesis{e}{\tau'}& \tau \sim \tau'}{\analysis{e}{\tau}}\]
+Of course $e$ should type check against $\tau$ if it can synthesise a consistent type as the goal of type consistency is that we may type check terms as if they were of the consistent type.
 
-\small
-\fbox{$\analysis{e}{\tau}$}\ \ \ $e$ analyses against type $\tau$ under context $\Gamma$
+The remaining rules are detailed in Fig. \ref{fig:typing}, with \textit{consistency} relation $\sim$ in Fig. \ref{fig:consistency} and (fun) type matching relation, $\funmatch$ in Fig. \ref{fig:typematching}. 
+\subsubsection{Internal Language}
+The internal language is non-bidirectionally typed and requires an extra \textit{hole context} $\Delta$ mapping hole \textit{metavariables} $u$ to their checked types\footnote{As originally required by the external language} and the type context under which notated $u :: \tau[\Gamma]$, notation borrowed from contextual modal type theory (CMTT) \cite{CMTT}.\footnote{Hole contexts corresponding to \textit{modal contexts}, hole names with \textit{metavariables}, and holes with \textit{metavariable closures} (on environments $\sigma$).} 
 
-\tiny
-\[\inference[\tiny AFun]{\tau \funmatch \tau_1 \to \tau_2\\ \analysis[\Gamma, x:\tau_1]{e}{\tau_2}}{\analysis{\lambda x.e}{\tau}} \quad 
-\inference[\tiny ASubsume]{\synthesis{e}{\tau}\\ \tau \sim \tau'}{\analysis{e}{\tau'}}\]
+The type assignment judgement $\typeassignment{d}{\tau}$ means that $d$ has type $\tau$ under typing and hole contexts $\Gamma, \Delta$. The rules for holes take their types from the hole context and ensure that the hole environment substitutions $\sigma$ are well-typed\footnote{With respect to the original typing context for the hole.}:
+\[\inference[\tiny TAEHole]{u :: \tau[\Gamma'] \in \Delta & \typeassignment{\sigma}{\Gamma'}}{\typeassignment{\hole^u_\sigma}{\tau}}\]
 
-\caption{Bidirectional typing judgements for \textit{external expressions}}
-\label{fig:typing}
-\end{figure} 
-These rules use a type consistency relation, $\sim$ in Fig. \ref{fig:consistency}, with types being consistent if they are equivalent up to the locations of the dynamic type. The type consistency relation is standard in gradual type systems \cite{GradualFunctional, GradualObjects}, and is similar to a subtyping relation but is \textit{not} transitive.
+Hazel is proven to preserve typing; a well-typed external expression will elaborate to a well-typed internal expression which is consistent to the external type. Hence, there is no need for an algorithmic definition of the internal language typing.
 
-\begin{figure}[H]
-\small
-\fbox{$\tau_1 \sim \tau_2$}\ \ \ $\tau_1$ is consistent with $\tau_2$
-\tiny
-\[\inference[\tiny TCDyn1]{}{? \sim \tau} \quad \inference[\tiny TCDyn2]{}{\tau \sim ?} \quad \inference[\tiny TCRfl]{}{\tau \sim \tau} \quad \inference[\tiny TCFun]{\tau_1 \sim \tau_1' & \tau_2 \sim \tau_2'}{\tau_1 \to \tau_2 \sim \tau_1' \to \tau_2'}\]
-\caption{Type consistency}
-\label{fig:consistency}
-\end{figure}
-Finally, a (function) type matching relation, $\funmatch$ in Fig. \ref{fig:typematching}, matches the argument and return types from a function type, which for the dynamic type is $? \funmatch ? -> ?$. 
-\begin{figure}[h]
-\small
-\fbox{$\tau \funmatch \tau_1 \to \tau_2$}\ \ \ $\tau$ has arrow type $\tau_1 \to \tau_2$
-\tiny
-\[\inference[\tiny MADyn]{}{? \funmatch ? \to ?} \quad 
-\inference[\tiny MAFun]{}{\tau_1 \to \tau_2 \funmatch \tau_1 \to \tau_2}\]
-\caption{Type Matching}
-\label{fig:typematching}
-\end{figure}
-
-
+Full rules in Fig. \ref{fig:typeassignment}. Formally speaking these define categorical judgements \cite{ModalJudgements}. Additionally, ground types and a matching function are defined in Figs. \ref{fig:groundtypes} \& \ref{fig:groundmatch}, and typing of hole environments/substitution in Fig. \ref{fig:substitutiontyping}
 \subsubsection{Elaboration}
-Elaboration to the \textit{internal language} is possible for well-typed \textit{external expressions} and consists of cast insertion, maintaining a hole context, and inserting initial identity hole environments. Each of these are used in the internal language type assignment $\typeassignment{e}{\tau}$ and the dynamic semantics. Fig. \ref{fig:elaboration} defines the elaboration judgements and Fig. \ref{fig:typeassignment} defines the internal language type assignment categorical judgement \cite{ModalJudgements}.
+Cast insertion requires an elaboration to the \textit{internal language}, so must output an additional context for holes $\Delta$. The judgements are notated: \[\elaborationSynthesis{e}{\tau}{d}{\Delta}\]\textit{
+external expression $e$ which synthesises type $\tau$ under type context $\Gamma$ is elaborated to internal expression $d$ producing hole context $\Delta$. }
+\[\elaborationAnalysis{e}{\tau}{d}{\tau'}{\Delta}\]\textit{
+external expression $e$ which type checks against type $\tau$ under type context $\Gamma$ is elaborated to internal expression $d$ of consistent type $\tau'$ producing hole context $\Delta$.}
 
-\begin{figure}[H]
-\small
-\fbox{$\elaborationSynthesis{e}{\tau}{d}{\Delta}$}\ \ \ $e$ syntheses type $\tau$ and elaborates to $d$
-\tiny 
-\[\inference[\tiny ESConst]{}{\elaborationSynthesis{c}{b}{c}{\emptyset}} \quad 
-\inference[\tiny ESVar]{x : \tau \in \Gamma}{\elaborationSynthesis{x}{\tau}{x}{\emptyset}}\]
-\[\inference[\tiny ESFun]{\elaborationSynthesis[\Gamma,x:\tau_1]{e}{\tau_2}{d}{\Delta}}{\elaborationSynthesis{\lambda x:\tau_1.e}{\tau_1 \to \tau_2}{\lambda x:\tau_1. d}{\Delta}}\]
-\[\inference[\tiny ESApp]{\synthesis{e_1}{\tau_1} & \tau_1 \funmatch \tau_2 \to \tau \\ \elaborationAnalysis{e_1}{\tau_2 \to \tau}{d_1}{\tau_1'}{\Delta_1} & \elaborationAnalysis{e_1}{\tau_2}{d_2}{\tau_2'}{\Delta_2}}{\elaborationSynthesis{e_1(e_2)}{\tau}{(d_1\scast{\tau_1'}{\tau_2 \to \tau})(d_2\scast{\tau_2'}{\tau_2})}{\Delta_1 \cup \Delta_2}}\]
-\[\inference[\tiny ESEHole]{}{\elaborationSynthesis{\hole^u}{?}{\hole^u_{\mathrm{id}(\Gamma)}}{u :: \hole[] [\Gamma]}}\]
-\[\inference[\tiny ESNEHole]{\elaborationSynthesis{e}{\tau}{d}{\Delta}}{\elaborationSynthesis{\hole[e]^u}{?}{\hole[d]^u_{\mathrm{id}(\Gamma)}}{\Delta, u :: \hole[] [\Gamma]}}\]
-\[\inference[\tiny ESAsc]{\elaborationAnalysis{e}{\tau}{d}{\tau'}{\Delta}}{\elaborationSynthesis{e:\tau}{\tau}{d\scast{\tau'}{\tau}}{\Delta}}\]
-\small
-\fbox{$\elaborationAnalysis{e}{\tau}{d}{\tau'}{\Delta}$}\ \ \ $e$ analyses against type $\tau$ and elaborates to $d$ of consistent type $\tau'$
-\tiny 
-\[\inference[\tiny EAFun]{\tau \funmatch \tau_1 \to \tau_2 \\ \elaborationAnalysis[\Gamma,x:\tau_1]{e}{\tau_2}{d}{\tau_2'}{\Delta}}{\elaborationAnalysis{\lambda x. e}{\tau}{\lambda x:\tau_1. d}{\tau_1 \to \tau_2'}{\Delta}}\]
-\[\inference[\tiny EASubsume]{e \neq \hole^u & e \neq \hole[e']^u \\ \elaborationSynthesis{e}{\tau'}{d}{\Delta} & \tau \sim \tau'}{\elaborationAnalysis{e}{\tau}{d}{\tau'}{\Delta}}\]
+The elaboration judgements for holes must add the hole to the output hole context. And they will elaborate to holes with the default empty environment $\sigma = \id(\Gamma)$, i.e. no substitutions.
+\[\inference[\tiny ESEHole]{}{\elaborationSynthesis{\hole^u}{\dyn}{\hole^u_{\mathrm{id}(\Gamma)}}{u :: \hole[] [\Gamma]}}\]
 \[\inference[\tiny EAEHole]{}{\elaborationAnalysis{\hole^u}{\tau}{\hole^u_{\mathrm{id}(\Gamma)}}{\tau}{u::\tau[\Gamma]}}\]
-\[\inference[\tiny EANEHole]{\elaborationSynthesis{e}{\tau'}{d}{\Delta}}{\elaborationAnalysis{\hole[e]^u}{\tau}{\hole[d]^u_{\mathrm{id}(\Gamma)}}{\tau}{u::\tau[\Gamma]}}\]
+When elaborating a type \textit{checked} hole, this checked type is used. Typing them instead as {\dyn} would imply type information being lost\footnote{Potentially leading to incorrect cast insertion.}.
 
-\caption{Elaboration judgements} 
-\label{fig:elaboration}
-\end{figure}
+The remaining elaboration rules are stated in Fig. \ref{fig:elaboration}.
 
-\begin{figure}[H]
-\small
-\fbox{$\typeassignment{d}{\tau}$}\ \ \ $d$ is assigned type $\tau$
-\tiny
-\[\inference[\tiny TACons]{}{\typeassignment{c}{b}}\quad
-\inference[\tiny TAVar]{x : \tau \in \Gamma}{\typeassignment{x}{\tau}}\quad
-\inference[\tiny TAFun]{\typeassignment[\Delta;\Gamma,x:\tau_1]{d}{\tau_2}}{\typeassignment{\lambda x:\tau_1. d}{\tau_1 \to \tau_2}}\]
-\[\inference[\tiny TAApp]{\typeassignment{d_1}{\tau_2 \to \tau} \\ \typeassignment{d_2}{\tau_2}}{\typeassignment{d_1(d_2)}{\tau}} \quad 
-\inference[\tiny TAEHole]{u :: \tau[\Gamma'] \in \Delta \\ \typeassignment{\sigma}{\Gamma'}}{\typeassignment{\hole^u_\sigma}{\tau}}\]
-\[
-\inference[\tiny TANEHole]{\typeassignment{d}{\tau'} \\ u :: \tau[\Gamma' \in \Delta & \typeassignment{\sigma}{\Gamma'}]}{\typeassignment{\hole[d]^u_\sigma}{\tau}}\quad 
-\inference[\tiny TACast]{\typeassignment{d}{\tau_1} & \tau_1 \sim \tau_2}{\typeassignment{d\scast{\tau_1}{\tau_2}}{\tau_2}}\]
-\[\inference[\tiny TACastError]{\typeassignment{d}{\tau_1} & \tau_1\text{ ground} & \tau_2\text{ ground} & \tau_1 \neq \tau_2}{\typeassignment{d\scasterror{\tau_1}{\tau_2}}{\tau_2}}\]
-\caption{Type assignment judgement for \textit{internal expressions}}
-\label{fig:typeassignment}
-\end{figure}
-Where ground types are base types or one-level unrollings of the dynamic type (each being the \textit{least specific} type for each compound type).
-
-\begin{figure}
-\tiny
-\[id(x_1:\tau_1, \dots, x_n:\tau_n) := [x_1/x_1, \dots, x_n/x_n]\]
-\[\typeassignment{\sigma}{\Gamma'} \text{ iff } \mathrm{dom}(\sigma) = \mathrm{dom}(\Gamma')\text{ and for every } x : \tau \in \Gamma' \text{ then:
-} \typeassignment{\sigma(x)}{\tau}\]
-\caption{Identity substitution and substitution typing}
-\label{fig:substitutiontyping}
-\end{figure}
-
-\begin{figure}[h]
-\tiny
-\fbox{$\tau$ ground}\ \ \ $\tau$ is a ground type
-\[\inference[\tiny GBase]{}{b\text{ ground}}\quad \inference[\tiny GDynFun]{}{? \to ?\text{ ground}}\]
-\caption{Ground types}
-\label{fig:groundtypes}
-\end{figure}
-This elaboration is proven to produce unique internal expressions and hole contexts, and to preserve well-typedness.
-
-\subsubsection{Internal Language: Dynamic Semantics}
-In order to support the ability to evaluate expressions around holes and cast errors, Hazel defines multiple syntax-directed classes of final forms in Fig. \ref{fig:finalforms}. \textit{Final forms} are irreducible expressions.
+\subsubsection{Final Forms}
+The primary addition of Hazel is the addition of a new kind of \textit{final forms} and \textit{values}. This is what allows evaluation to proceed around holes and errors. There are three types of final forms:
 \begin{itemize}
-\item Values -- Constants or functions.
-\item Boxed values -- Values or boxed values in one of the two cast forms. These must be unboxed (downcast) before reducing.
-\item Indeterminate forms -- Irreducible terms containing holes or are casts errors. Substitution of holes may make these reducible.
-\item Final -- All final forms.
+\item \textit{Values} -- Constants and functions.
+\item \textit{Boxed Values} -- Values wrapped in \textit{injection} casts, or \textit{function}\footnote{Between function types} casts.
+\item \text{Indeterminate Final Forms} -- Terms containing holes that cannot be directly evaluated, e.g. holes or function applications where the function is indeterminate, e.g. $\hole^u(1)$.
 \end{itemize}
+ Importantly, \textit{any} final form \textit{can} be treated as a value and, for example, passed inside a (determinate) function, e.g. $(\lambda x. x)(\hole^u)$ can evaluate to $\hole^u$.
+ 
+\textbf{maybe a good place to put an example here}
 
-\begin{figure}[H]
-\small
-\fbox{$\final$}\ \ \ $d$ is final
-\tiny
-\[\inference[\tiny FBoxedVal]{\boxedval}{\final}\quad
-\inference[\tiny FIndex]{\indet}{\final}\]
-\small
-\fbox{$\val$}\ \ \ $d$ is a value
-\tiny
-\[\inference[\tiny VConst]{}{\val[c]}\quad
-\inference[\tiny VFun]{}{\val[\lambda x:\tau. d]}\]
-\small
-\fbox{$\boxedval$}\ \ \ $d$ is a boxed value
-\tiny
-\[\inference[\tiny BVVal]{\val}{\boxedval}\quad
-\inference[\tiny BVFunCast]{\tau \to \tau_2 \neq \tau_3 \to \tau_4 & \boxedval}{\boxedval[d\scast{\tau_1 \to \tau_2}{\tau_3 \to \tau_4}]}\]
-\[\inference[\tiny BVDynCast]{\boxedval & \ground}{\boxedval[d\scast{\tau}{?}]}\]
-\small
-\fbox{$\indet$}\ \ \ $d$ is indeterminate
-\tiny
-\[\inference[\tiny IEHole]{}{\indet[\hole^u_\sigma]}\quad
-\inference[\tiny INEHole]{\final}{\indet[{\hole[d]^u_\sigma}]}\quad
-\inference[\tiny IAp]{d_1 \neq d_1'\scast{\tau_1 \to \tau_2}{\tau_3 \to \tau_4} \\ \indet[d_1] & \final[d_2]}{\indet[d_1(d_2)]}\]
-\[\inference[\tiny ICastGD]{\indet & \ground}{\indet[d\scast{\tau}{?}]}\quad
-\inference[\tiny ICastDG]{d \neq d'\scast{\tau'}{?} & \indet & \ground}{\indet[d\scast{?}{\tau}]}\]
-\[\inference[\tiny ICastFun]{\tau_1 \to \tau_2 \neq \tau_3 \to \tau_4 & \indet}{\indet[d\scast{\tau_1 \to \tau_2}{\tau_3 \to \tau_4}]}\quad
-\inference[\tiny ICastError]{\final & \ground[\tau_1] \\ \ground[\tau_2] & \tau_1 \neq \tau_2}{\indet[d\scasterror{\tau_1}{\tau_2}]}\]
+Full rules are present in Fig. \ref{fig:finalforms}.
 
-\caption{Final forms}
-\label{fig:finalforms}
-\end{figure}
+\subsubsection{Dynamics}
+A small-step contextual dynamics \cite[ch. 5]{PracticalFoundations} is defined on the internal expressions to define a \textit{call-by-value}\footnote{Values in this sense are \textit{final forms}.} \textbf{ENSURE THIS} evaluation order. 
+
+Like the \textit{refined criteria}  \cite{GradualRefined}, Hazel presents a rather different cast semantics designed around \textit{ground types}, that is \textit{base types}\footnote{Like \code{int} or \code{bool}.} and least specific\footnote{In the sense that $\dyn$ is more general than any concrete type.} compound types associated via a ground matching relation mapping compound types to their corresponding ground type, e.g. $\code{int} \to \code{int} \groundmatch \dyn \to \dyn$. This formalisation more closely represents common dynamically typed language implementations which only use generic type tags like \textit{fun}, corresponding to the ground type $\dyn \to \dyn$. However, the idea of type consistency checking when \textit{injections} meet \textit{projections} remains the same.\footnote{With projections/injections now being to/fro \textit{ground types}.}
 
 
-The small-step contextual dynamics \cite{PracticalFoundations} is defined on the internal expressions. The general idea is to consider two classes of casts: injections -- casts from a ground type to the dynamic types, and projections -- casts from the dynamic type to a ground type. These two classes of casts can be eliminated upon meeting if the ground types are equal or to a cast error if not. Function casts are dealt with by separating into two casts on the argument and return value. Finally, compound types can be cast to their least specific ground type specified by the ground matching relation in Fig. \ref{fig:groundmatch}.
+The cast calculus is more complex as discussed previously, due to being based around \textit{ground types} . However, the fundamental logic is similar to the dynamic type system described previously \textbf{ref backwards}.
 
-\begin{figure}[H]
-\small
-\fbox{$\tau \groundmatch \tau'$}\ \ \ $\tau$ matches ground type $\tau'$
-\tiny
-\[\inference[\tiny]{\tau_1 \to \tau_2 \neq ? \to ?}{\tau_1 \to \tau_2 \groundmatch ? \to ?}\]
-\caption{Ground type matching}
-\label{fig:groundmatch}
-\end{figure}
 
-\begin{figure}[H]
-\small
-\fbox{$d \longrightarrow d'$}\ \ \ $d$ takes and instruction transition to $d'$
-\tiny
-\[\inference[\tiny ITFun]{}{(\lambda x:\tau. d_1)(d_2) \longrightarrow [d_2/x]d_1}\quad
-\inference[\tiny ITCastId]{}{d\scast{\tau}{\tau} \longrightarrow d}\]
-\[\inference[\tiny ITAppCast]{\tau_1 \to \tau_2 \neq \tau_1' \to \tau_2'}{d_1\scast{\tau_1 \to \tau_2}{\tau_1' \to \tau_2'}(d) \longrightarrow (d_1(d_2\scast{\tau_1'}{\tau_1}))\scast{\tau_2}{\tau_2'}}\]
-\[\inference[\tiny ITCast]{\ground}{d\scastcast{\tau}{?}{\tau} \longrightarrow d} \quad
-\inference[\tiny ITCastError]{\tau_1 \neq \tau_2 \\ \ground[\tau_1] & \ground[\tau_2]}{d\scastcast{\tau_1}{?}{\tau_2}\longrightarrow d\scasterror{\tau_1}{?}{\tau_2}}\]
-\[\inference[\tiny ITGround]{\tau \groundmatch \tau'}{d\scast{\tau}{?} \longrightarrow d\scastcast{\tau}{\tau'}{?}}\quad
-\inference[\tiny ITExpand]{\tau \groundmatch \tau'}{d\scast{?}{\tau} \longrightarrow d\scastcast{?}{\tau'}{\tau}}\]
-\caption{Instruction transitions}
-\label{fig:instructions}
-\end{figure}
+Evaluation proceeds by \textit{capture avoiding variable substitution} $[d'/x]d$ (substitute $d'$ for $x$ in $d$). Additionally, substitutions are recorded in each hole's environment $\sigma$ by substituting all occurences of $x$ for $d$ in each $\sigma$ \textbf{Add figure for this}. 
 
-Variable substitution, used in ITFun, is capture avoiding and also substitutions are recorded in each hole's environment $\sigma$ by (over)writing $[d/x]\sigma$.\footnote{Create a figure for this, maybe in appendix.}
+The instruction transitions are in Fig. \ref{fig:instructions} and the contextual dynamics defining a small-step semantics in \ref{fig:dynamics}. \textbf{SWAP DYNAMICS BACK TO DETERMINISTIC}
 
-\begin{figure}[H]
-Context syntax:
-\[E ::= \circ \mid E(d) \mid d(E) \mid \hole[E]^u_\sigma \mid E\scast{\tau}{\tau} \mid E\scasterror{\tau}{\tau}\]
-\small
-\fbox{$d = E[d]$}\ \ \ $d$ is the context $E$ filled with $d'$ in place of $\circ$
-\tiny
-\[\inference[\tiny ECOuter]{}{d = \circ[d]} \quad
-\inference[\tiny ECApp1]{d_1 = E[d_1']}{d_1(d_2) = E(d_2)[d_1]}\quad
-\inference[\tiny ECApp2]{d_2 = E[d_2]}{d_1(d_2) = d_1(E)[d_2']}\]
-\[\inference[\tiny ECNEHole]{d=E[d']}{\hole[d]^u_\sigma = \hole[E]^u_\sigma [d']}\quad
-\inference[\tiny ECCast]{d=E[d']}{d\scast{\tau_1}{\tau_2} = E\scast{\tau_1}{\tau_2}[d']}\]
-\[\inference[\tiny ECCastError]{d=E[d']}{d\scasterror{\tau_1}{\tau_2} = E\scasterror{\tau_1}{\tau_2}[d']}\]
-\small
-\fbox{$d \mapsto d'$}\ \ \ $d$ steps to $d'$
-\tiny
-\[\inference[\tiny Step]{d_1=E[d_2] & d_2 \longrightarrow d_2' & d_1' = E[d_2']}{d_1 \mapsto d_1'}\]
-\caption{Contextual dynamics of the internal language}
-\label{fig:dynamics}
-\end{figure}
-
-The instruction transitions, Fig. \ref{fig:instructions}, and evaluation context, Fig. \ref{fig:dynamics}, specify a non-deterministic evaluation order, which is a more suitable choice for supporting dynamic hole instantiation, as will be used by the search procedure.\footnote{\textbf{Define Substitution in appendices?}}\par 
-Casts are associative, so bracketing is omitted.
+A contextual dynamics is defined via an Evaluation context
 
 \subsubsection{Hole Substitutions}
-Hole substitutions will be extensively used by the search procedure, so their semantics is given here. These correspond to contextual substitutions for meta-variables in closures in contextual modal type theory \cite{CMTT}. Intuitively, these are delayed substitutions with the holes being closures with environment $\sigma$ and meta-variable/hole name $u$. A hole $\hole^u_\sigma$ being substituted with $d$ (written $\contextualsub \hole_\sigma^u$) is $d$ with it's environment assignment $\sigma$ applied, after first substituting the hole ($\contextualsub \sigma$) in $\sigma$.\par Hole/contextual substitutions are mostly similar variable substitutions, except the substituted values may refer to bound variables without restriction. See Fig. \ref{fig:holesubstitution} for full definition. 
-\begin{figure}[H]
-\small
-\fbox{$\contextualsub d' = d''$}\ \ \ $d''$ is $d'$ with each hole $u$ substituted with $d$ in the respective hole's environment $\sigma$.
-\begin{align*}
-&\contextualsub c &&= c\\
-&\contextualsub x &&= x\\
-&\contextualsub \lambda x:\tau.d' &&= \lambda x:\tau. \contextualsub d'\\
-&\contextualsub d_1(d_2) &&= (\contextualsub d_1)(\contextualsub d_2)\\
-&\contextualsub \hole^u_\sigma &&= [\contextualsub  \sigma]d\\
-&\contextualsub \hole^v_\sigma &&= \hole^b_{\contextualsub \sigma} && \text{if $u \neq v$}\\
-&\contextualsub \hole[d']^u_\sigma &&= [\contextualsub  \sigma]d\\
-&\contextualsub \hole[d']^v_\sigma &&= \hole[\contextualsub d']^b_{\contextualsub \sigma} && \text{if $u \neq v$}\\
-&\contextualsub d'\scast{\tau}{\tau'} &&= (\contextualsub d')\scast{\tau}{\tau'}\\
-&\contextualsub d'\scasterror{\tau}{\tau'} &&= (\contextualsub d')\scasterror{\tau}{\tau'}\\
-\end{align*}
+Holes are indexed by \textit{metavariables} $u$, and can hence also be substituted. Hole substitution is a \textit{meta} action $\contextualsub d'$ meaning substituting each hole named $u$ for expression $d$ in some term $d'$ with the holes environment. Importantly, the substitutions $d$ can contain variables, whose values are found by checking the holes \textit{environment}, effectively making a \textit{delayed substitution}. See the following rule:
+ \[\contextualsub \hole^u_\sigma = [\contextualsub \sigma]d\]
+When substituting a matching hole $u$, we replace it with $d$ and \textit{apply substitutions from the environment $\sigma$ of $u$} to $d$.\footnote{After first substituting any occurrences of $u$ in the environment $\sigma$} This corresponds to \textit{contextual substitution} in CMTT. The remaining rules can be found in \ref{fig:holesubstitution}
+ 
+ This can be thought of as a \textit{fill-and-resume} functionality, allowing incomplete program parts to be filled \textit{during evaluation} rather than only before evaluation.
 
-\fbox{$\contextualsub \sigma = \sigma'$}\ \ \ $\sigma'$ is $\sigma$ with each hole $u$ in $\sigma$ substituted with $d$ in the respective hole's environment.
-\begin{align*}
-\contextualsub \cdot &= \cdot\\ 
-\contextualsub \sigma, d'/x &= \contextualsub \sigma, (\contextualsub d')/x
-\end{align*}
-\caption{Hole substitution}
-\label{fig:holesubstitution}
-\end{figure} 
-\textbf{Think in detail about CMTT and hole refinement. It is very relevant to the search procedure. In particular think about \texttt{box} and \texttt{letbox} in CMTT.} 
+As Hazel is a \textit{pure language}\footnote{Having no side effects.} and as holes act as closures, then performing hole substitution is \textit{commutative} with respect to evaluation. That is, filling incomplete parts of a program \textit{before} evaluation gives the same result as filling \textit{after} evaluation then resuming evaluation. Formalised in \textbf{ref theorems}.
 
 \subsection{The Hazel Implementation}
-\subsubsection{Additional Features}
+The Hazel implementation \cite{HazelCode} is written primarily in ReasonML and OCaml with approx. 65,000 lines of code. It implements the Hazel core calculus along with many additional features. Relevant features and important abstractions are discussed here.
+
+\subsubsection{Language Features}
 \begin{itemize}
-\item 
+\item \textbf{Lists} -- 
+\item \textbf{Tuples} -- 
+\item \textbf{Labelled Sums} -- 
+\item \textbf{Type Aliases} -- 
+\item \textbf{Pattern Matching} -- 
+\item \textbf{Explicit Polymorphism} -- System F style
+\item \textbf{Recursive Types} -- 
 \end{itemize}
-\subsubsection{Code Structure}
 
-\subsubsection{Terms}
+\subsubsection{Monadic Evaluator}
+\textbf{This is extremely hard to explain concisely!! or at all... Ask on Slack?}
 
-\subsubsection{Monadic Evaluation}
+The transition semantics are defined on an intricate \textit{monadic} \textbf{is this is actually a monad...?} evaluator which is discussed in depth in the Implementation section \textbf{REF}. It is equipped with custom \code{let.} and \code{and.} binding operators\footnote{Which allow a convenient for writing code with binding functions.} \cite{OCamlManual}, and a \code{otherwise} and \code{req_final} function. Allowing transition rules to be simply written (simplified):
+\begin{minted}[fontsize=\footnotesize]{reason}
+...
+| Seq(d1, d2) =>
+        let. _ = otherwise(d1 => Seq(d1, d2))
+        and. d1' = 
+          req_final(req(state, env), d1 => Seq1(d1, d2), d1);
+        Step({expr: d2, state});
+...
+| Int(i) =>
+      let. _ = otherwise(env, Int(i));
+      Value;
+...
+ | EmptyHole =>
+      let. _ = otherwise(env, EmptyHole);
+      Indet;
+...
+\end{minted}
+Representing rules by a \code{let. _ = otherwise(env, r)} determining how to rewrap an expression if it is unevaluable. A term may be unevaluable if it requires some subterms to be \textit{final}, but that this is not the case. 
+
+The \code{req_final(req(state, env), _, d)} function will pass a reference the recursive evaluation abstraction \code{req}, which the abstraction may choose to recursively evaluate, and bind a resulting value for use in calculating the next step.
+
+\textbf{Explain the middle EvalCtx arg to \code{req_final}...}
+
+Each transition returns either a possible step \code{Step({expr})}, or states that the term is indeterminate \code{Indet}, or a value \code{Value}.\footnote{Or a constructor, discussed more in the Implementation section.}
+
+The results that these `evaluate' to are abstract, they do not necessarily have to be terms, as demonstrated by the following implementations:
+\begin{itemize}
+\item \textbf{Final Form Checker} -- Returns whether a term is one of each of the final form. Using the evaluator abstraction with this means there is no need to maintain a separate syntactic value checker, instead it is derived directly from the evaluation transitions. Yet, it is still syntactic since the abstraction does not actually perform evaluation steps and continue evaluation, instead it just makes the step accessible\footnote{And the final form checker will just classify such an expression immediately as non-final.} to the implementation.
+\item \textbf{Evaluator} -- Maintains a stack machine and actually performs the reduction steps.
+\item \textbf{Stepper} -- Returns a list of possible evaluation steps in terms of \textit{evaluation contexts} under a non-deterministic evaluation method \textbf{Explain how \code{EvalCtx.t => EvalCtx.t} in \code{req_final} allows this}. The evaluation order can then be user-controlled. 
+\end{itemize}
+
+
+\subsubsection{UI Architecture}
+Model View Update model.
+
+\subsection{Non-Determinism}
 
 
 \section{Starting Point}
@@ -288,5 +287,7 @@ My only experience in OCaml was from the Part IA Foundations of Computer Science
 \section{Requirement Analysis}
 
 \section{Software Engineering Methodology}
+Do the theory first.
 
 \section{Legality}
+MIT licence for Hazel.
