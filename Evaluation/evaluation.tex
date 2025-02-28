@@ -11,7 +11,7 @@ Completeness etc. most of Hazel...
 \section{Program Corpus Collection}\label{sec:CorpusCollection}
 \subsection{Methodology}
 \subsection{Alternatives}
-OCaml -> Hazel transpiler
+OCaml $\to$ Hazel transpiler
 
 \section{Effectiveness Analysis}\label{sec:EffectivenessAnalysis}
 
@@ -19,29 +19,35 @@ OCaml -> Hazel transpiler
 \subsubsection{Witness Coverage}
 Describe reasons for failure in next section
 \subsubsection{Code Coverage}
+Were some branches not taken? `Solvable' via symbolic execution
 \subsubsection{Trace Size}
-\subsubsection{Slice Size}
-Does this correlate with trace size!
+Larger trace sizes are harder to comprehend? Cite...
+\subsubsection{Cast Slice Size}
+Common complaints on error slices are large slice sizes. cite... 
+Does this correlate with trace size?
 
 \subsection{Type Slicing}
 \subsubsection{Correctness}
 ?
 \subsubsection{Code Slice Size}
-Compare with theory adhering slices and `simplified' slices.
+Compare large theory slices with the `simplified' slices.
 
 
 \section{Performance Analysis}\label{sec:PerformanceAnalysis}
 \subsection{Search Procedure}
 \subsubsection{Time}
 \subsubsection{Space}
+Lazy list stuff in particular...
 
 \subsection{Slices}
+\subsubsection{Time}
+Very slice when used continuously... This might be due to bad design or bugs?
 \subsubsection{Space}
-Compare with using using `Typ (turned off). Compare with old implementation (if possible)
+Compare with using using `Typ (slices turned off). Compare with old implementation (if possible)
 
 \section{Critical Analysis}\label{sec:CriticalAnalysis}
 \subsection{Analysis Type Slices}
-Which constructs are ignored? Why, do they have the biggest impact on size?
+Which constructs are ignored in simplified slices? Why? Do they have the biggest impact on size?
 \subsection{Categorising Programs Lacking Type Error Witnesses}
 \subsubsection{Non-Termination}
 The original procedure would get stuck on programs that loop forever. (To) Fix with iterative deepening
@@ -60,6 +66,6 @@ Useful when type correct code written but used in the wrong way, i.e. write the 
 \subsection{Bidirectional Type Error Localisation}
 It is generally good. Find some cases where bidirectional type error localisation is wrong.
 \subsection{Improving Hole Instantiation}
-To improve code coverage. i.e. Strings and Floats are annoying, SMT solvers could be used...
+To improve code coverage. i.e. Strings and Floats are annoying, SMT solvers could be used to help explore branches... Equality solvers in particular would be very useful and quite easy to implement, in particular for strings which are generally used via equality as opposed to lists which are used incrementally via pattern matching.
 \subsection{Combinatorial Explosion}
-
+State space gets very large as more holes are instantiated from other holes, i.e. $[] \to [\dyn] \to [\dyn, \dyn] \to [\dyn,\dyn,\dyn]$...

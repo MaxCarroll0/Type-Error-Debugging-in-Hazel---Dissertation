@@ -9,52 +9,99 @@ Then, I implemented the theories, making it suitable for implementation and exte
 \section{Type Slicing Theory}\label{sec:TypeSlicingTheory}
 
 \subsection{Program Slices}
-\subsection{Synthesis Type Slices}\label{sec:SynthesisSlices}
+Terms with subterms being (potentially) holes. Define a generality relation. Then define the slices as indexed by types\footnote{Hence, decomposable} and context subsets. Make clear what these type slices are therefore defined within a lexical context and typing context, i.e. they are more like a property of the typing judgement itself.
+
+\subsection{Synthesis Type Slices}
+\label{sec:SynthesisSlices}
+Main property is that the program slice will synthesise/check under the same context to the same type.
+
+Relatively simple, annotate types with subterms they come from. This is a property on the typing context, expression and type.
 \subsection{Analysis Type Slices}\label{sec:AnalysisSlices}
-Detail initial plan, then describe how this is nice and easy maths but not very useful
+Any type analysed against must come from a type synthesis, so will be paired with an expression in whatever context it was in. However, this is now no longer just a property about the term we are looking at, but instead the \textit{whole} context: treat this context as a new input, making a new hypothetical judgement. 
+
+Provide a way to transform some fixed outer context sort of \textit{backwards} up the rules derivation. i.e. The current term has some context enforcing its type $\tau$, then how can we decompose that context into a context that enforces the premises types and recombines into a real expression.
+
+
+To meet the main property these slices could just always be \dyn.
+
+Mentioning this idea of external context and somewhat formalising it is useful because the real implementation allows the outer analysis slice from this term. 
+
+
+\subsection{Join Types}
+These are the only way a \textit{new type} is created other than synthesis, add some machinery to demonstrate how a program slice could be constructed by taking the `deepest' branch in the join and working out if it was the left/right branch etc.
 
 \section{Cast Slicing Theory}\label{sec:CastSlicingTheory}
 
+Fairly trivial, just treat slices as types and decompose accordingly. The whole reason of indexing by type was to allow this.
+
+The idea of it being a minimal program slice producing the same cast doesn't really work here due to dynamics. Explore the maths of this. Either way, it is a useful construct in practice. Exploring this in more detail, looking at \textit{dynamic program slicing} could be a good future direction.
+
 \section{Proofs}\label{sec:Proofs}
+Do if there is time.
 
 \section{Type Slicing Implementation}\label{sec:TypeSlicingImplementation}
 \subsection{Type Slice Data-Type}\label{sec:TypeSliceDataType}
-Detail initial implementation (just tagging existing types).
+Detail initial implementation (just tagging existing types). Compare with final implementation, quantitative numbers for improve could be obtained but would require quite a bit of coding work... Polymorphic Variants :))
 \subsubsection{Code Slices}\label{sec:CodeSlices}
-id based. Has ctx used but not actually required as I decide to directly store typslices in context (explain how this differs from the theory)
+id based. Has ctx used but not actually required as I decide to directly store typslices in context (explain how this differs from the theory).
+
+Mention that full slices as in the theory is very inefficient.
 \subsubsection{Integration with Existing Type Data-Type}
+Use of `Typ. Explain how this allows it to easily be disabled and saves space (maybe).
 \subsubsection{Synthesis \& Analysis Slices}
-Incremental/Global. Detail the choice to not annotate many analysis slices
+Incremental/Global. Detail the choice to not annotate many analysis slices.
 \subsubsection{Mapping Functions}
 \subsubsection{Type Slice Joins}
+Just unions of the lists. Double check that we can't have elements from more than one branch highlighted.\footnote{Type variables might make this possible??}
 
 \subsection{Static Type Checking}\label{sec:TypeChecking}
-
+Detail the statics and Info types. Explain the distinction between Self.re and Mode.re, which links very nicely with the synthesis and analysis slice distinctions.
 
 \subsection{Elaboration}\label{sec:Elaboration}
-
+Make casts use type slices, insertion is mostly the same. Just need to ensure that the slices are preserved (i.e. types are threaded through without being replaced)
 
 \subsection{User Interface}
+Click on analysis or synthesis slices from context inspector
 
 \section{Cast Slicing Implementation}\label{sec:CastSlicingImplementation}
 \subsection{Cast Transitions}
 
+Cast transition and unboxing logic
+
 \subsection{User Interface}
 Mainly talk about the Model-view architecture and passing the cursor into the evaluator view to allow 
 
+
+\subsection{EV\_MODE Evaluation Abstraction}
+Very complex!!
+
 \section{Indeterminate Evaluation}\label{sec:IndetEval}
 \subsection{Futures Data-Type}\label{sec:Futures}
+Lazy lists, often infinite
 \subsection{Hole Instantiation}\label{sec:HoleInstantiation}
 Small Hole hypothesis, quick check
+
+
 \subsubsection{Choosing which Hole to Instantiate}
+Use EV\_Mode to select next hole to instantiate
+
 \subsubsection{Synthesising Terms for Types}
+Difficulties instantiating strings...
+
 \subsubsection{Substituting Holes}\label{sec:HoleSubstitutionImplementation}
 Detail that this was an unexpected extra task, and is therefore not exactly the same as hole substitution as detailed in Preparation (i.e. no metavars or contexts annotated on holes, but it is enough for the search procedure to work)
+
 \subsection{Cast Laziness}\label{sec:CastLaziness}
-Ref the original cast slicing paper.
+Ref the original cast slicing paper, which is not lazy apparently? Laziness sort of breaks the idea that runtime errors evaluate to cast errors. There can be compound values of the wrong type being cast, but the error will only be found upon accessing parts of the compound type.
+
+Making casts eager is a major change to the actual transitions.
+
+
+
 \subsection{User Interface}
 
 \section{Evaluation Stepper}\label{sec:Stepper}
+\subsection{Evaluation Contexts}
 \subsection{Customisable Hole Instantiation}
 \subsection{User Interface}
 
@@ -63,6 +110,7 @@ Ref the original cast slicing paper.
 \subsection{Detecting Relevant Cast Errors}
 i.e. failed cast at head of term
 \subsection{Filtering Indeterminate Evaluation}
+Done via EV\_MODE similarly to finding which hole to instantiate.
 
 \subsection{Iterative Deepening}\label{sec:IterativeDeepening}
 Required after evaluating that infinite loops break the thing

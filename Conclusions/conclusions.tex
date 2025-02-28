@@ -6,11 +6,18 @@ Conclusions Here.
 \section{Further Directions}
 Further directions here, referencing unsatisfactory results from Evaluation. Also various extensions.
 \subsection{Extension to Full Hazel Language}
+Type functions, recursive types, deferrals
 
 \subsection{Slicing}
+Cast slicing here doesn't extend the nice properties I have with type slicing: that a program slice will synthesise/analyse the same type. It might be possible to have a system that does?
+
+The implementation differs by storing slices directly in the context, making analysis slices
+
 \subsubsection{Proofs}
+PRimarily about the search procedure.
+
 \subsubsection{User Studies}
-Effectiveness gauge
+Effectiveness gauge in the real world
 
 \subsection{Search Procedure}
 \subsubsection{Jump Trace Compression}
@@ -21,8 +28,12 @@ Not in Hazel, but the search procedure can't deal well with it
 Was an uncompleted extension goal
 
 \subsection{Let Polymorphism \& Global Inference}
+Errors with global inference errors are often more subtle, where trace visualisation really shines. 
 \subsubsection{Constraint Slicing}
+To allow slices to work with constraint solvers. One error slicing paper already does this.
+
 \subsubsection{Gradual Type Inference}
-Miyazaki
+Miyazaki has a good paper on this. Seems like it could work well in Hazel, though at the loss of parametricity.
+
 \subsubsection{Localisation}
-Bidirectional typing localisation is good, but global inference is bad. The search procedure could improve localisation and also give more meaning to localisations.
+Bidirectional typing localisation is good, but global inference is bad. The search procedure could improve localisation and also give more meaning (traces, slices) to localisations.
