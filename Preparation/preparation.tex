@@ -28,7 +28,7 @@ is true if $J$ is derivable when additionally assuming each $J_i$ are axioms. Of
 \subsubsection{Defining a Type System}\label{sec:TypingJudgements}
 A typical type system can be expressed by defining the following hypothetical judgement form $\Gamma \vdash e : \tau$ read as \textit{the expression $e$ has type $\tau$ under typing context $\Gamma$} and referred as a \textit{typing judgement}. Here, $e : \tau$ means that expression $e$ has type $\tau$.  A \textit{typing context}, $\Gamma$, is a list of types for variables $x_1 : \tau_1, \dots, x_n : \tau_2$. For example the SLTC\footnote{Simply typed lambda calculus.} \cite[ch. 9]{TAPL} has a typing rule for lambda expression and application as follows:
 \[\inference{\Gamma, x : \tau_1 \vdash e : \tau_2}{\Gamma \vdash \lambda x.\ e : \tau_1 \to \tau_2} \qquad \inference{\Gamma \vdash e_1 : \tau_1 \to \tau_2\\ \Gamma \vdash e_2 : \tau_1}{\Gamma \vdash e_1(e_2) : \tau_2}\]
-Meaning, $\lamdba x. e$ has type $\tau_1 \to \tau_2$ if $e$ has type $\tau_2$ under the extended context additionally assuming that $x$ has type $\tau_1$.
+Meaning, $\lambda x. e$ has type $\tau_1 \to \tau_2$ if $e$ has type $\tau_2$ under the extended context additionally assuming that $x$ has type $\tau_1$.
 And, $e_1(e_2)$ has type $\tau_2$ if $e_1$ is a function of type $\tau_1 \to \tau_2$ and it's argument $e_2$ has type $\tau_1$.
 
 \subsubsection{Product \& Labelled Sum Types}\label{sec:ADTs}
@@ -89,24 +89,24 @@ Intuitively, casts must be inserted whenever type consistency is used, though th
 
 The runtime semantics of the internal expression is that of the \textit{dynamic type system} discussed above (\ref{sec:DynamicTypeSystem}). A cast is determined to succeed iff the types are \textit{consistent}.
 
-The \textit{refined criteria} for gradual typing \cite{GradualRefined} also provides an additional property for such systems to satisfy, the \textit{gradual guarantee}, formalising the intuition that adding and removing annotations should \textit{not} change the \textit{behaviour} of the program except for catching errors either dynamically and statically.
+The \textit{refined criteria} for gradual typing \cite{GradualRefined} also provides an additional property for such systems to satisfy, the \textit{gradual guarantee}, formalising the intuition that adding and removing annotations should \textit{not} change the \textit{behaviour} of the program except for catching errors either dynamically or statically.
 
 \subsubsection{Bidirectional Type Systems}\label{sec:BidirectionalTypeSystem}
 A \textit{bidirectional type system} \cite{BidirectionalTypes} takes on a more algorithmic definition of typing judgements, being more intuitive to implement. They also allow some amount of local type inference \cite{LocalInference}, allowing programmers to omit \textit{type annotations}, instead type information. Global type inference systems \cite[ch. 22]{TAPL} can be \textit{difficult to implement}, often via constraint solving \cite[ch. 10]{ATTAPL}, and difficult or impossible to \textit{balance} with complex language features, for example global inference in System F (\ref{sec:System F}) is undecidable \cite{SystemFUndecidable}.
 
-This is done in a similar way to annotating logic program by specifying the \textit{mode} \cite[123]{LogicProg} of the type parameter in a typing judgement, distinguishing when it is an \textit{input} (type checking) and when it is an \textit{output} (type synthesis).
+This is done in a similar way to annotating logic programming  \cite[123]{LogicProg}, by specifying the \textit{mode} of the type parameter in a typing judgement, distinguishing when it is an \textit{input} (type checking) and when it is an \textit{output} (type synthesis).
 
 We express this with two judgements:
 \[\synthesis{e}{\tau}\]
 Read as: \textit{$e$ synthesises a type $\tau$ under typing context $\Gamma$}. Type $\tau$ is an \textit{output}.
 \[\analysis{e}{\tau}\]
-Read as: $e$ analyses against a type $\tau$ under typing context $\Gamma$. Type $\tau$ is an \textit{input}
+Read as: \textit{$e$ analyses against a type $\tau$ under typing context $\Gamma$}. Type $\tau$ is an \textit{input}
 
 When designing such a system care must be taken to ensure \textit{mode correctness} \cite{ModeCorrectness}. Mode correctness ensures that input-output dataflow is consistent such that an input never needs to be \textit{guessed}. For example the following function application rule is \textit{not} mode correct:
-\[\inference{\analysis{e_1}{{\color{red}\tau_1} \to \tau_2} & \analysis{e}{{\color{red}\tau_1}}}{\analysis{e_1(e_2)}{\tau_2}}\]
+\[\inference{\analysis{e_1}{{\color{red}\tau_1} \to \tau_2} & \analysis{e_2}{{\color{red}\tau_1}}}{\analysis{e_1(e_2)}{\tau_2}}\]
 We try to \textit{check} $e_2$ with input ${\color{red}\tau_1}$\footnote{Highlighted in red as an error.} which is \textit{not known} from either an \textit{output} of any premise nor from the \textit{input} to the conclusion, $\tau_2$. On the other hand, the following \textit{is} mode correct:
 \[\inference{\synthesis{e_1}{\tau_1 \to \tau_2} & \analysis{e_2}{\tau_1}}{\analysis{e_1(e_2)}{\tau_2}}\]
-Where $\tau_1$ is now known, being \textit{synthesised} from the premise $\synthesis{e_1}{\tau_1 \to \tau_2}$. As before, $\tau_2$ is known as an input in the conclusion $\analysis{e_1(e_2)}{\tau_2}$.
+Where $\tau_1$ is now known, being \textit{synthesised} from the premise $\synthesis{e_1}{\tau_1 \to \tau_2}$. As before, $\tau_2$ is known as it is an input in the conclusion $\analysis{e_1(e_2)}{\tau_2}$.
 
 Such languages will typically have three obvious rules. First, we should have that variables can synthesise their type, after all it is accessible from the typing context $\Gamma$:
 \[\inference[Var]{x : \tau \in \Gamma}{\synthesis{x}{\tau}}\]
@@ -128,19 +128,19 @@ Not \textit{hugely} relevant really...
 
 \subsection{The Hazel Calculus}\label{sec:CoreHazel}
 \index{Hazel}
-Hazel is a language that allows the writing of incomplete programs, evaluating them, and evaluating around dynamic errors.\footnote{Among other features, like an structure editor with syntactically meaningless states, and various learning aids.}
+Hazel is a language that allows the writing of incomplete programs, evaluating them, and evaluating around static \& dynamic errors.\footnote{Among other features, like an structure editor with syntactically meaningless states, and various learning aids.}
+
+It does this via adding \textit{expression holes}, which can both be typed and have evaluation proceed around them seamlessly. This allows the evaluation around errors by placing them in holes.
 
 The core calculus \cite{HazelLivePaper} is a gradually and bidirectionally typed lambda calculus. Therefore it has a locally inferred bidirectional \textit{external language} with the dynamic type $\dyn$ elaborated to an explicitly typed \textit{internal language} including cast expressions. 
 
-The full semantics are documented in the Hazel Formal Semantics appendix \ref{sec:HazelSemantics}, but only rules relevant to addition of \textit{holes} are  discussed in this section. The combination of gradual and bidirectional typing system is itself non-trivial and only particularly notable changes are mentioned here. The intuition should be clear from the previous gradual and bidirectional typing sections.\footnote{The difficulties combining gradual and bidirectional typing are largely orthogonal to adding holes.}
-
-Hazel's primary addition is the addition of \textit{expression holes}, which can both be typed and have evaluation proceed around them seamlessly. This also allows the evaluation of ill-typed expressions by placing them in holes.
+The full semantics are documented in the Hazel Formal Semantics appendix \ref{sec:HazelSemantics}, but only rules relevant to addition of \textit{holes} are  discussed in this section. The combination of gradual and bidirectional typing system is itself non-trivial, but only particularly notable consequences are mentioned here. The intuition should be clear from the previous gradual and bidirectional typing sections.\footnote{The difficulties combining gradual and bidirectional typing are largely orthogonal to adding holes.}
 
 \subsubsection{Syntax}\label{sec:HazelSyntax}
 \index{\textbf{Core Hazel} syntax}
 \par The syntax, in Fig. \ref{fig:syntax}, consists of \textit{types} $\tau$ including the dynamic type $\dyn$, \textit{external expressions} $e$ including (optional) annotations, \textit{internal expressions} $d$ including cast expressions. The external language is \textit{bidirectionally typed}, and therefore is a locally inferred surface syntax for the language, and is statically elaborated to (explicitly typed) \textit{internal expressions}.
 
-Notating $\hole{}^u$ or $\hole{e}^u$ for empty and non-empty holes respectively, where $u$ is the \textit{metavariable} or name for a hole. Internal expression holes, $\hole{}^u_\sigma$ or $\hole{e}^u_\sigma$, also maintain an environment $\sigma$ mapping variables $x$ to internal expressions $d$. These internal holes act as \textit{closures}, recording which variables have been substituted during evaluation.\footnote{This is required, as the term inside the hole may contain one of these variables}
+Notating $\hole{}^u$ or $\hole[e]^u$ for empty and non-empty holes respectively, where $u$ is the \textit{metavariable} or name for a hole. Internal expression holes, $\hole{}^u_\sigma$ or $\hole[e]^u_\sigma$, also maintain an environment $\sigma$ mapping variables $x$ to internal expressions $d$. These internal holes act as \textit{closures}, recording which variables have been substituted during evaluation.\footnote{This is required, as holes may later be substituted, with variables then receiving their values from the closure environment.}
 \begin{figure}[h]
 \begin{align*}
 \tau &::= b \mid \tau \to \tau \mid\  ?\\
@@ -155,15 +155,15 @@ d &::= c \mid x \mid \lambda x : \tau d \mid d(d) \mid \hole^u_\sigma \mid \hole
 \index{External language type system}
 We have a bidirectionally static semantics for the \textit{external language}, giving the bidirectional typing judgements: $\synthesis{e}{\tau}$ and $\analysis{e}{\tau$}. Holes synthesise the \textit{dynamic type}, a natural choice made possible by the use of gradual types:
 \[\inference[\tiny SNEHole]{\synthesis{e}{\tau}}{\synthesis{\hole[e]^u}{\dyn}} \qquad \inference[\tiny SEHole]{}{\synthesis{\hole^u}{\dyn}}\] 
-One notable consequence of combining gradual and bidirectional typing is that the \textit{subsumption rule} in bidirectional typing is naturally extended to allow subsuming any \textit{consistent} types:
+One notable consequence of combining gradual and bidirectional typing is that the \textit{subsumption rule} in bidirectional typing is naturally extended to allow subsuming any terms of \textit{consistent} types:
 \[\inference[\tiny ASubsume]{\synthesis{e}{\tau'}& \tau \sim \tau'}{\analysis{e}{\tau}}\]
 Of course $e$ should type check against $\tau$ if it can synthesise a consistent type as the goal of type consistency is that we may type check terms as if they were of the consistent type.
 
 The remaining rules are detailed in Fig. \ref{fig:typing}, with \textit{consistency} relation $\sim$ in Fig. \ref{fig:consistency} and (fun) type matching relation, $\funmatch$ in Fig. \ref{fig:typematching}. 
 \subsubsection{Internal Language}\label{sec:HazelInternalLang}
-The internal language is non-bidirectionally typed and requires an extra \textit{hole context} $\Delta$ mapping hole \textit{metavariables} $u$ to their checked types\footnote{As originally required by the external language} and the type context under which notated $u :: \tau[\Gamma]$, notation borrowed from contextual modal type theory (CMTT) \cite{CMTT}.\footnote{Hole contexts corresponding to \textit{modal contexts}, hole names with \textit{metavariables}, and holes with \textit{metavariable closures} (on environments $\sigma$).} 
+The internal language is non-bidirectionally typed and requires an extra \textit{hole context} $\Delta$ mapping each hole \textit{metavariables} $u$ to it's \textit{checked type} $\tau$ \footnote{Originally required when typing the external language expression. See Elaboration section.} and the type context $\Gamma$ under which the hole was typed. Each metavariable context notated as $u :: \tau[\Gamma]$, notation borrowed from contextual modal type theory (CMTT) \cite{CMTT}.\footnote{Hole contexts corresponding to \textit{modal contexts}, hole names with \textit{metavariables}, and holes with \textit{metavariable closures} (on environments $\sigma$).} 
 
-The type assignment judgement $\typeassignment{d}{\tau}$ means that $d$ has type $\tau$ under typing and hole contexts $\Gamma, \Delta$. The rules for holes take their types from the hole context and ensure that the hole environment substitutions $\sigma$ are well-typed\footnote{With respect to the original typing context for the hole.}:
+The type assignment judgement $\typeassignment{d}{\tau}$ means that $d$ has type $\tau$ under typing and hole contexts $\Gamma, \Delta$. The rules for holes take their types from the hole context and ensure that the hole environment substitutions $\sigma$ are well-typed\footnote{With respect to the original typing context captured by the hole.}:
 \[\inference[\tiny TAEHole]{u :: \tau[\Gamma'] \in \Delta & \typeassignment{\sigma}{\Gamma'}}{\typeassignment{\hole^u_\sigma}{\tau}}\]
 
 Hazel is proven to preserve typing; a well-typed external expression will elaborate to a well-typed internal expression which is consistent to the external type. Hence, there is no need for an algorithmic definition of the internal language typing.
@@ -178,7 +178,7 @@ external expression $e$ which type checks against type $\tau$ under type context
 The elaboration judgements for holes must add the hole to the output hole context. And they will elaborate to holes with the default empty environment $\sigma = \id(\Gamma)$, i.e. no substitutions.
 \[\inference[\tiny ESEHole]{}{\elaborationSynthesis{\hole^u}{\dyn}{\hole^u_{\mathrm{id}(\Gamma)}}{u :: \hole[] [\Gamma]}}\]
 \[\inference[\tiny EAEHole]{}{\elaborationAnalysis{\hole^u}{\tau}{\hole^u_{\mathrm{id}(\Gamma)}}{\tau}{u::\tau[\Gamma]}}\]
-When elaborating a type \textit{checked} hole, this checked type is used. Typing them instead as {\dyn} would imply type information being lost\footnote{Potentially leading to incorrect cast insertion.}.
+When elaborating a \textit{type checked} hole, this checked type is used. Typing them instead as {\dyn} would imply type information being lost.\footnote{Potentially leading to incorrect cast insertion.}
 
 The remaining elaboration rules are stated in Fig. \ref{fig:elaboration}.
 
@@ -187,11 +187,9 @@ The primary addition of Hazel is the addition of a new kind of \textit{final for
 \begin{itemize}
 \item \textit{Values} -- Constants and functions.
 \item \textit{Boxed Values} -- Values wrapped in \textit{injection} casts, or \textit{function}\footnote{Between function types} casts.
-\item \text{Indeterminate Final Forms} -- Terms containing holes that cannot be directly evaluated, e.g. holes or function applications where the function is indeterminate, e.g. $\hole^u(1)$.
+\item \textit{Indeterminate Final Forms} -- Terms containing holes that cannot be directly evaluated, e.g. holes or function applications where the function is indeterminate, e.g. $\hole^u(1)$.
 \end{itemize}
- Importantly, \textit{any} final form \textit{can} be treated as a value and, for example, passed inside a (determinate) function, e.g. $(\lambda x. x)(\hole^u)$ can evaluate to $\hole^u$.
- 
-\textbf{maybe a good place to put an example here}
+ Importantly, \textit{any} final form can be treated as a value (in a \textit{call-by-value} context). For example, they can be passed inside a (determinate) function: $(\lambda x. x)(\hole^u)$ can evaluate to $\hole^u$.
 
 Full rules are present in Fig. \ref{fig:finalforms}.
 
@@ -201,17 +199,17 @@ A small-step contextual dynamics \cite[ch. 5]{PracticalFoundations} is defined o
 Like the \textit{refined criteria}  \cite{GradualRefined}, Hazel presents a rather different cast semantics designed around \textit{ground types}, that is \textit{base types}\footnote{Like \code{int} or \code{bool}.} and least specific\footnote{In the sense that $\dyn$ is more general than any concrete type.} compound types associated via a ground matching relation mapping compound types to their corresponding ground type, e.g. $\code{int} \to \code{int} \groundmatch \dyn \to \dyn$. This formalisation more closely represents common dynamically typed language implementations which only use generic type tags like \textit{fun}, corresponding to the ground type $\dyn \to \dyn$. However, the idea of type consistency checking when \textit{injections} meet \textit{projections} remains the same.\footnote{With projections/injections now being to/fro \textit{ground types}.}
 
 
-The cast calculus is more complex as discussed previously, due to being based around \textit{ground types} . However, the fundamental logic is similar to the dynamic type system described previously \textbf{ref backwards}.
+The cast calculus is more complex as discussed previously, due to being based around \textit{ground types}. However, the fundamental logic is similar to the dynamic type system described previously in \cref{sec:DynamicTypeSystem}.
 
 
 Evaluation proceeds by \textit{capture avoiding variable substitution} $[d'/x]d$ (substitute $d'$ for $x$ in $d$). Additionally, substitutions are recorded in each hole's environment $\sigma$ by substituting all occurences of $x$ for $d$ in each $\sigma$ \textbf{Add figure for this}. 
 
 The instruction transitions are in Fig. \ref{fig:instructions} and the contextual dynamics defining a small-step semantics in \ref{fig:dynamics}. \textbf{SWAP DYNAMICS BACK TO DETERMINISTIC}
 
-A contextual dynamics is defined via an Evaluation context
+A contextual dynamics is defined via an Evaluation context... \textit{(TODO, explain evaluation contexts as will be relevant to the Stepper EV\_MODE explanation)}
 
 \subsubsection{Hole Substitutions}\label{sec:HoleSubstitution}
-Holes are indexed by \textit{metavariables} $u$, and can hence also be substituted. Hole substitution is a \textit{meta} action $\contextualsub d'$ meaning substituting each hole named $u$ for expression $d$ in some term $d'$ with the holes environment. Importantly, the substitutions $d$ can contain variables, whose values are found by checking the holes \textit{environment}, effectively making a \textit{delayed substitution}. See the following rule:
+Holes are indexed by \textit{metavariables} $u$, and can hence also be substituted. Hole substitution is a \textit{meta} action $\contextualsub d'$ meaning substituting each hole named $u$ for expression $d$ in some term $d'$ applying the holes environment. Importantly, the substitutions $d$ can contain variables, whose values are found by checking the holes \textit{environment}, effectively making a \textit{delayed substitution}. See the following rule:
  \[\contextualsub \hole^u_\sigma = [\contextualsub \sigma]d\]
 When substituting a matching hole $u$, we replace it with $d$ and \textit{apply substitutions from the environment $\sigma$ of $u$} to $d$.\footnote{After first substituting any occurrences of $u$ in the environment $\sigma$} This corresponds to \textit{contextual substitution} in CMTT. The remaining rules can be found in \ref{fig:holesubstitution}
  
