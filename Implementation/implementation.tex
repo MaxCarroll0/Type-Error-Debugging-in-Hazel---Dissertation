@@ -19,12 +19,7 @@ Relatively simple, annotate types with subterms they come from. This is a proper
 \subsection{Analysis Type Slices}\label{sec:AnalysisSlices}
 Any type analysed against must come from a type synthesis, so will be paired with an expression in whatever context it was in. However, this is now no longer just a property about the term we are looking at, but instead the \textit{whole} context: treat this context as a new input, making a new hypothetical judgement. 
 
-Provide a way to transform some fixed outer context sort of \textit{backwards} up the rules derivation. i.e. The current term has some context enforcing its type $\tau$, then how can we decompose that context into a context that enforces the premises types and recombines into a real expression.
-
-
-To meet the main property these slices could just always be \dyn.
-
-Mentioning this idea of external context and somewhat formalising it is useful because the real implementation allows the outer analysis slice from this term. 
+See written notes for detailed ideas.
 
 
 \subsection{Join Types}
@@ -37,7 +32,7 @@ Fairly trivial, just treat slices as types and decompose accordingly. The whole 
 The idea of it being a minimal program slice producing the same cast doesn't really work here due to dynamics. Explore the maths of this. Either way, it is a useful construct in practice. Exploring this in more detail, looking at \textit{dynamic program slicing} could be a good future direction.
 
 \section{Proofs}\label{sec:Proofs}
-Do if there is time.
+Do if there is time. Prove that analysis slice contexts actually make sense, that they maintain a valid term that is \textit{still} minimal.
 
 \section{Type Slicing Implementation}\label{sec:TypeSlicingImplementation}
 \subsection{Type Slice Data-Type}\label{sec:TypeSliceDataType}
@@ -96,6 +91,7 @@ Ref the original cast slicing paper, which is not lazy apparently? Laziness sort
 
 Making casts eager is a major change to the actual transitions.
 
+Eager casts also catch `spurious' errors (see Evaluation).
 
 
 \subsection{User Interface}

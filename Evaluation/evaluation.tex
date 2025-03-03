@@ -8,7 +8,13 @@ Evaluate small scope hypothesis for this problem. Note that small inputs don't n
 i.e. Project Proposal. But make it with more clarity, i.e. `Most Type Errors Admit Witnesses'
 Completeness etc. most of Hazel...
 
+\section{Hypotheses}
+Various hypotheses for results, mentioned below.
+
 \section{Program Corpus Collection}\label{sec:CorpusCollection}
+\textbf{I need a corpus of programs with type errors and a corpus of programs with annotations (which may be well-typed). Currently have neither!! Think I might need help with this...}
+
+Both the above could be transpiled from OCaml, ill-typed ones by just ignoring all types (though this adds some bias to the search procedure, by ignoring partially annotated examples or annotated but ill-typed situations, but it \textit{should} be roughly ok). But sum types etc. may be harder to transpile.
 \subsection{Methodology}
 \subsection{Alternatives}
 OCaml $\to$ Hazel transpiler
@@ -45,9 +51,19 @@ Very slice when used continuously... This might be due to bad design or bugs?
 \subsubsection{Space}
 Compare with using using `Typ (slices turned off). Compare with old implementation (if possible)
 
+Cast slices should be small as they only use sub-parts of terms and mostly exist at the leaves, or are incremental parts (i.e. to [?]). Compare the slice size of \textit{casts} vs \textit{type} slices.
+
 \section{Critical Analysis}\label{sec:CriticalAnalysis}
-\subsection{Analysis Type Slices}
+\subsection{Slicing}
 Which constructs are ignored in simplified slices? Why? Do they have the biggest impact on size?
+
+Discuss the usability aspects of the 4 different type slicing ideas. Discuss 
+\subsection{Cast Laziness}
+Annotations will create casts, but in many cases these annotations will never actually be used. i.e. on a product where only the 2nd element is ever used, a cast error on the 1st element is still caught. Eager casts catch these errors, lazy casts do NOT.
+
+\subsection{Cast Errors during Evaluation}
+Cast errors may appear during evaluation, but subsequently ignored as they may be discarded upon further evaluation. i.e. we get to a safe result, even though a cast error appeared on the way. It is debatable if this should count as an error. Should be easy to implement a version which catches this and do some tests?
+  
 \subsection{Categorising Programs Lacking Type Error Witnesses}
 \subsubsection{Non-Termination}
 The original procedure would get stuck on programs that loop forever. (To) Fix with iterative deepening

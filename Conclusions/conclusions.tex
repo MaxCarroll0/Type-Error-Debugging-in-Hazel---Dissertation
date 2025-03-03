@@ -8,13 +8,17 @@ Further directions here, referencing unsatisfactory results from Evaluation. Als
 \subsection{Extension to Full Hazel Language}
 Type functions, recursive types, deferrals
 
-\subsection{Slicing}
+\subsection{Cast Slicing}
 Cast slicing here doesn't extend the nice properties I have with type slicing: that a program slice will synthesise/analyse the same type. It might be possible to have a system that does?
 
-The implementation differs by storing slices directly in the context, making analysis slices
+The implementation differs by storing slices directly in the context, making analysis slices.
+
+Also, the fact that cast slices are manipulated in evaluation is completely opaque to the user \textit{unless} they step through manually. Ways to better represent this information exist (cast dependency graphs etc.)
 
 \subsubsection{Proofs}
-PRimarily about the search procedure.
+PRimarily about the search procedure \& casts. 
+
+Also about creating a \textit{stronger} link between static type errors and runtime errors, what Hazel considers as a runtime error is somewhat unintuitive, see the points made in evaluation. A formal property of what exactly a type error witness \textit{is} which actually matches with the implementation would be nice.
 
 \subsubsection{User Studies}
 Effectiveness gauge in the real world

@@ -121,7 +121,6 @@ It would make sense to be able to \textit{check} $e$ against this same type $\ta
 Not \textit{hugely} relevant really...
 
 \subsubsection{System F}\label{sec:System F}
-\label{sec:System F}
 \textit{Very brief explanation with less/no maths}
 
 \subsubsection{Recursive Types}\label{sec:Recursive Types}
@@ -211,7 +210,7 @@ The instruction transitions are in Fig. \ref{fig:instructions} and the contextua
 
 A contextual dynamics is defined via an Evaluation context
 
-\subsubsection{Hole Substitutions}\label{sec:HazelHoleSubstitutions}
+\subsubsection{Hole Substitutions}\label{sec:HoleSubstitution}
 Holes are indexed by \textit{metavariables} $u$, and can hence also be substituted. Hole substitution is a \textit{meta} action $\contextualsub d'$ meaning substituting each hole named $u$ for expression $d$ in some term $d'$ with the holes environment. Importantly, the substitutions $d$ can contain variables, whose values are found by checking the holes \textit{environment}, effectively making a \textit{delayed substitution}. See the following rule:
  \[\contextualsub \hole^u_\sigma = [\contextualsub \sigma]d\]
 When substituting a matching hole $u$, we replace it with $d$ and \textit{apply substitutions from the environment $\sigma$ of $u$} to $d$.\footnote{After first substituting any occurrences of $u$ in the environment $\sigma$} This corresponds to \textit{contextual substitution} in CMTT. The remaining rules can be found in \ref{fig:holesubstitution}
