@@ -1,0 +1,45 @@
+\chapter{Slicing Theory}
+\section{Criterion 1: Synthesis Slices}
+\begin{figure}[H]
+\small
+\fbox{$\synthesisslice{e}{\tau}{\rho}$}\ \ \ $e$ synthesising type $\tau$ under context $\Gamma$ produces minimum synthesis slice $\rho$
+\tiny
+\[\inference[\tiny SConst]{}{\synthesisslice{c}{b}{[c\mid \emptyset]}} \quad
+\inference[\tiny SVar]{x : \tau \in \Gamma}{\synthesisslice{x}{\tau}{[x\mid x:\tau]}} \quad
+\inference[\tiny SVar?]{x : \dyn \in \Gamma}{\synthesisslice{x}{\tau}{[\gap\mid \emptyset]}}\]
+\[\inference[\tiny SFun]{\synthesisslice[\Gamma,x:\tau_1]{e}{\tau_2}{[\varsigma \mid \gamma, x : \tau_1]} }{\synthesisslice{\lambda x:\tau_1.\ e}{\tau_1 \to \tau_2}{[\lambda x : \tau_1.\ \varsigma \mid \gamma]}}\]
+\[\inference[\tiny SFunConst]{\synthesisslice[\Gamma,x:\tau_1]{e}{\tau_2}{[\varsigma \mid \gamma]} & x \not \in \mathrm{dom}(\gamma)}{\synthesisslice{\lambda x:\tau_1.\ e}{\tau_1 \to \tau_2}{[\lambda \gap : \tau_1.\ \varsigma \mid \gamma]}}\]
+\[\inference[\tiny SApp]{\synthesisslice{e_1}{\tau_1}{[\varsigma_1 \mid \gamma_1]}}{\synthesis{e_1(e_2)}{\tau}{[\varsigma_1(\gap) \mid \gamma_1]}} \quad 
+\inference[\tiny SEHole]{}{\synthesisslice{\hole^u}{\dyn}{[\gap \mid \emptyset]}}\]
+\[\inference[\tiny SNEHole]{\synthesisslice{e}{\tau}}{\synthesis{\hole[e]^u}{\dyn}{[\gap, \emptyset]}}\quad 
+\inference[\tiny SAsc]{\analysis{e}{\tau}}{\synthesisslice{e : \tau}{\tau}{[\gap : \tau \mid \emptyset]}}\]
+
+\caption{\textit{Minimum synthesis slice} calculation}
+\label{fig:SynthesisSlices}
+\end{figure} 
+
+\begin{figure}[H]
+\small
+\fbox{$\synthesissliceindexed{e}{\upsilon[\rho]}$}\ \ \ $e$ synthesising type $\upsilon \typematch \tau$ under context $\Gamma$ produces minimum type-indexed synthesis slice(s) $\upsilon[\rho]$
+\tiny
+\[\inference[\tiny SConst]{}{\synthesissliceindexed{c}{b[c\mid \emptyset]}} \quad
+\inference[\tiny SVar]{x : \tau \in \Gamma}{\synthesissliceindexed{x}{\tau[x\mid x:\tau]}}\]
+\[\inference[\tiny SFun]{\synthesissliceindexed[\Gamma,x:\tau_1]{e}{\upsilon_2[\varsigma \mid \gamma, x : \tau_1]}}{\synthesissliceindexed{\lambda x:\tau_1.\ e}{(\tau_1[\gap : \tau_1 \mid \emptyset] \to \upsilon_2[e \mid \gamma])[\lambda x : \tau_1.\ \varsigma \mid \gamma]}}\]
+\[\inference[\tiny SFunConst]{\synthesissliceindexed[\Gamma,x:\tau_1]{e}{\upsilon_2[\varsigma \mid \gamma]} & x \not \in \mathrm{dom}(\gamma)}{\synthesissliceindexed{\lambda x:\tau_1.\ e}{(\tau_1[\gap : \tau_1 \mid \emptyset] \to \upsilon_2[e \mid \gamma])[\lambda \gap : \tau_1.\ \varsigma \mid \gamma]}}\]
+\[\inference[\tiny SApp]{\synthesissliceindexed{e_1}{\upsilon_1[\varsigma_1 \mid \gamma_1]}}{\synthesissliceindexed{e_1(e_2)}{\upsilon[\varsigma_1(\gap) \mid \gamma_1]}} \quad 
+\inference[\tiny SEHole]{}{\synthesissliceindexed{\hole^u}{\dyn[\gap \mid \emptyset]}}\]
+\[\inference[\tiny SNEHole]{}{\synthesissliceindexed{\hole[e]^u}{\dyn[\gap \mid \emptyset]}}\quad 
+\inference[\tiny SAsc]{}{\synthesis{e : \tau}{\tau[\gap : \tau \mid \emptyset]}}\]
+\caption{\textit{Minimum synthesis slice} calculation retaining subslices indexed on types}
+\label{fig:SynthesisSlicesIndexed}
+\end{figure} 
+
+\section{Criterion 2: Analysis Slices}
+
+
+\section{Criterion 3: ...}
+
+
+\section{Elaboration}
+
+

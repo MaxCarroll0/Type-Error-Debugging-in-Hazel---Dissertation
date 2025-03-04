@@ -175,7 +175,7 @@ external expression $e$ which synthesises type $\tau$ under type context $\Gamma
 \[\elaborationAnalysis{e}{\tau}{d}{\tau'}{\Delta}\]\textit{
 external expression $e$ which type checks against type $\tau$ under type context $\Gamma$ is elaborated to internal expression $d$ of consistent type $\tau'$ producing hole context $\Delta$.}
 
-The elaboration judgements for holes must add the hole to the output hole context. And they will elaborate to holes with the default empty environment $\sigma = \id(\Gamma)$, i.e. no substitutions.
+The elaboration judgements for holes must add the hole to the output hole context. And they will elaborate to holes with the default empty environment $\sigma = \\mathrm{id}(\Gamma)$, i.e. no substitutions.
 \[\inference[\tiny ESEHole]{}{\elaborationSynthesis{\hole^u}{\dyn}{\hole^u_{\mathrm{id}(\Gamma)}}{u :: \hole[] [\Gamma]}}\]
 \[\inference[\tiny EAEHole]{}{\elaborationAnalysis{\hole^u}{\tau}{\hole^u_{\mathrm{id}(\Gamma)}}{\tau}{u::\tau[\Gamma]}}\]
 When elaborating a \textit{type checked} hole, this checked type is used. Typing them instead as {\dyn} would imply type information being lost.\footnote{Potentially leading to incorrect cast insertion.}
@@ -209,7 +209,7 @@ The instruction transitions are in Fig. \ref{fig:instructions} and the contextua
 A contextual dynamics is defined via an Evaluation context... \textit{(TODO, explain evaluation contexts as will be relevant to the Stepper EV\_MODE explanation)}
 
 \subsubsection{Hole Substitutions}\label{sec:HoleSubstitution}
-Holes are indexed by \textit{metavariables} $u$, and can hence also be substituted. Hole substitution is a \textit{meta} action $\contextualsub d'$ meaning substituting each hole named $u$ for expression $d$ in some term $d'$ applying the holes environment. Importantly, the substitutions $d$ can contain variables, whose values are found by checking the holes \textit{environment}, effectively making a \textit{delayed substitution}. See the following rule:
+Holes are indexed by \textit{metavariables} $u$, and can hence also be substituted. Hole substitution is a \textit{meta} action $\contextualsub d'$ meaning substituting each hole named $u$ for expression $d$ in some term $d'$ with the holes environment. Importantly, the substitutions $d$ can contain variables, whose values are found by checking the holes \textit{environment}, effectively making a \textit{delayed substitution}. See the following rule:
  \[\contextualsub \hole^u_\sigma = [\contextualsub \sigma]d\]
 When substituting a matching hole $u$, we replace it with $d$ and \textit{apply substitutions from the environment $\sigma$ of $u$} to $d$.\footnote{After first substituting any occurrences of $u$ in the environment $\sigma$} This corresponds to \textit{contextual substitution} in CMTT. The remaining rules can be found in \ref{fig:holesubstitution}
  

@@ -6,7 +6,7 @@ Type systems aim to alleviate some of this burden by classifying expressions and
 
 In static typing, blame for type errors are typically localised to a \textit{single} location in the code. However, this localisation may be misleading, as the actual cause of the error might be rooted in a broader context, for example in OCaml 65\% of type errors related to \textit{multiple} locations \cite{StudentTypeErrorFixes}. This is a particularly prevalent issue in \textit{type inferred} languages.
 
-In dynamic typing, type errors are often missed as they only appear during runtime with specific inputs. However, a dynamic type error can be more intuitive due to it being accompanied by an \textit{evaluation trace} demonstrating concretely why values are \textit{not} consistent with their expected type.
+In dynamic typing, type errors are often missed as they only appear during runtime with specific inputs. However, a dynamic type error can be \textit{more intuitive} \cite{TraceVisualisation} due to it being accompanied by an \textit{evaluation trace} demonstrating concretely why values are \textit{not} consistent with their expected type.
 
 This project seeks to enhance the debugging experience in Hazel \cite{Hazel}, a functional locally inferred and gradually typed research language under active development at the University of Michigan. 
 

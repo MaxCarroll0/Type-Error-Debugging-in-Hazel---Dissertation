@@ -23,7 +23,7 @@ d &::= c \mid x \mid \lambda x : \tau d \mid d(d) \mid \hole^u_\sigma \mid \hole
 \tiny
 \[\inference[\tiny SConst]{}{\synthesis{c}{b}} \quad
 \inference[\tiny SVar]{x : \tau \in \Gamma}{\synthesis{x}{\tau}} \quad 
-\inference[\tiny SFun]{\synthesis[\Gamma,x:\tau_1]{e}{\tau_2}}{\synthesis{\lambda x:\tau_1.e}{\tau_1 \to \tau_2}}\]
+\inference[\tiny SFun]{\synthesis[\Gamma,x:\tau_1]{e}{\tau_2}}{\synthesis{\lambda x:\tau_1.\ e}{\tau_1 \to \tau_2}}\]
 \[\inference[\tiny SApp]{\synthesis{e_1}{\tau_1} & \tau_1 \funmatch \tau_2 \to \tau \\ \analysis{e_2}{\tau_2}}{\synthesis{e_1(e_2)}{\tau}} \quad 
 \inference[\tiny SEHole]{}{\synthesis{\hole^u}{?}} \quad \]
 \[\inference[\tiny SNEHole]{\synthesis{e}{\tau}}{\synthesis{\hole[e]^u}{\dyn}}\quad 
