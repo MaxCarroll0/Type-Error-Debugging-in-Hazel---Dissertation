@@ -11,17 +11,29 @@ I develop \textit{type slicing} as a mechanism to aid programmers in understandi
 
 The first two criteria attempt to give insight on the structure of the typing derivations, and hence how types are decided. While the third criterion gives a complete picture of the regions of code which, if changed, could cause a change in type of the whole expression.
 
-\subsection{Program Slices}
-A \textit{program slice} $\rho$, is a pair $(\varsigma \mid \gamma)$, consisting of an \textit{expression slice} and \textit{typing context slice} respectively which are calculated based on some typing \textit{criterion}\footnote{One of the three slicing mechanisms.} based on the typability of the slice $\varsigma$ under context $\gamma$. 
+\textbf{Make some brief arguments into why the first two criteria are still useful.}
 
-Formally, an expression slice is a Hazel external expression which may have sub-terms \textit{omitted}. I represent omissions from expressions by replacing the respective sub-term with a \textit{gap}, notated $\gap$. This is the same definition of a slice as presented in \cite{FunctionalProgExplain}.\footnote{With their `holes' equating with my `gaps'. Different terminology used to distinguish with Hazel's holes} 
+\subsection{Program Slices}
+A \textit{program slice} $\rho$, is a pair $[\varsigma \mid \gamma]$, consisting of an \textit{expression slice} and \textit{typing context slice} respectively which are calculated based on some typing \textit{criterion}\footnote{One of the three slicing mechanisms.} based on the typability of the slice $\varsigma$ under context $\gamma$. 
+
+Intuitively, an expression slice is a Hazel external expression highlighting the sub-terms of relevance to the \textit{typing criterion}. For example if my criterion is to \textit{omit terms which are typed as int}, then the following expressions highlights as:
+
+\[\hlcmaths[yellow!30]{(\lambda x: \code{Int}.\ \lambda y : \code{Bool}.}\ x\hlcmaths[yellow!30]{)(}1\hlcmaths[yellow!30])}\]
+
+Formally, I represent this by specifying which sub-terms are omitted in the highlighted expression. So, Replace each omitted sub-term with a \textit{gap}, notated $\gap$. This is the same definition of a slice as presented in \cite{FunctionalProgExplain}.\footnote{With their `holes' equating with my `gaps'. Different terminology used to distinguish with Hazel's holes} i.e. representing the above highlighting we get slice:
+\[(\lambda x : \code{Int}.\ \lambda y : \code{Bool}.\ \gap)(\gap)\]
+
+
+Additionally, it is useful to omit variable names. For this I introduce \textit{patterns} $p$ for variable bindings: 
+\[p ::= \gap \mid x\]
 
 This gives the following extended syntax of expression slices, $\varsigma$, extending \cref{fig:syntax}:
-\[\varsigma ::= c \mid x \mid \lambda x : \tau.\ \varsigma \mid \lambda x.\ \varsigma \mid \varsigma(\varsigma) \mid \hole^u \mid \hole[\varsigma]^u \mid \varsigma : \tau \mid \gap\]
+\[\varsigma ::= \gap \mid  c \mid x \mid \lambda p : \upsilon.\ \varsigma \mid \lambda x.\ \varsigma \mid \varsigma(\varsigma) \mid \hole^u \mid \hole[\varsigma]^u \mid \varsigma : \upsilon\]
+Where $\upsilon$ are types, similarly with potential omitted sub-term gaps:
+\[\upsilon ::= \gap \mid \dyn b \mid \upsilon \to \upsilon\]
+These slices are then allowed to be \textit{typed} by representing gaps $\gap$ by holes of fresh metavariables $\hole^u$ in \textit{expressions}, fresh variables in \textit{patterns}, and the dynamic type in \textit{types}, see \textbf{(fig APPENDIX)}. From here-on consider $\gap$ as interchangeable with a hole $\hole^u$ of fresh metavariable $u$ or the dynamic type.
 
-These slices are then allowed to be \textit{typed} by representing gaps $\gap$ by holes of fresh metavariables $\hole^u$. It turns out that none of the proposed criteria ever highlight (retain) hole terms,\footnote{As holes have the dynamic type.} hence gaps can be directly represented as holes internally without loss of generality. From here-on consider $\gap$ as interchangeable with a hole $\hole^u$ of fresh metavariable $u$.
-
-We then have a \textit{precision} relation on expression slices, $\varsigma_1 \sqsubseteq \varsigma_2$ meaning $\varsigma_1$ is less or equally precise than $\varsigma_2$, that is $\varsigma_1$ matches $\varsigma_2$ structurally except that some subterms may be gaps. For example, see this precision chain:
+We then have a \textit{precision} relation on expression slices, $\varsigma_1 \sqsubseteq \varsigma_2$ meaning $\varsigma_1$ is less or equally precise than $\varsigma_2$, that is $\varsigma_1$ matches $\varsigma_2$ structurally except that some subterms may be gaps, see \textbf{ref appendix}. For example, see this precision chain:
 \[\gap \sqsubseteq\gap + \gap\sqsubseteq 1 + \gap \sqsubseteq 1 + 2\]
 We have that $\sqsubseteq$ is a partial order (\textbf{cite}), that is, satisfies relexivity, antisymmetry, and transitivity. Respectively:
 \[\inference{}{\varsigma \sqsubseteq \varsigma} \quad \inference{\varsigma_1 \sqsubseteq \varsigma_2 & \varsigma_2 \sqsubseteq \varsigma_1}{\varsigma_1 = \varsigma_2} \quad \inference{\varsigma_1 \sqsubseteq \varsigma_2 & \varsigma_2 \sqsubseteq \varsigma_3}{\varsigma_1 \sqsubseteq \varsigma_3}\]
@@ -30,19 +42,19 @@ We also have a \textit{bottom} (least) element, $\gap \sqsubseteq \varsigma$ (fo
 \textit{Context slices} are simply a typing context $\Gamma$, which is used to represent the notion of \textit{relevant typing assumption}. Typing contexts are just functions mapping variables to types notated $x : \tau$ (see \cref{sec:TypingJudgements}). Functions are sets, so they also have a partial order of subset inclusion, $\subseteq$. Again, we have a bottom element, $\emptyset$.
 
 The precision relation and subset inclusion can be extended pointwise to give a partial order, $\sqsubseteq$, on program slices:
-\[(\varsigma_1\mid \gamma_1) \sqsubseteq (\varsigma_2\mid \gamma_2) \iff  \varsigma_1 \sqsubseteq \varsigma_2 \text{ and } \gamma_1 \subseteq \gamma_2\]
+\[[\varsigma_1\mid \gamma_1] \sqsubseteq [\varsigma_2\mid \gamma_2] \iff  \varsigma_1 \sqsubseteq \varsigma_2 \text{ and } \gamma_1 \subseteq \gamma_2\]
 
-Program slices will often be grouped and indexed upon expressions and typing contexts, $P_e[\Gamma]$ which contains all slices $\rho \sqsubseteq (e, \Gamma)$. So, the set $P_e[\Gamma]$ forms a lattice (\textbf{cite}) with unique least upper bound $(e, \Gamma)$ and greatest lower bound $(\gap, \emptyset)$.
-
-Such 
+Program slices will often be grouped and indexed upon expressions and typing contexts, $P_e^{\Gamma}$ which contains all slices $\rho \sqsubseteq (e, \Gamma)$. So, the set $P_e^{\Gamma}$ forms a lattice (\textbf{cite}) with unique least upper bound $[e, \Gamma]$ and greatest lower bound $[\gap, \emptyset]$.
 
 \subsection{Criterion 1: Synthesis Slices}
 \label{sec:SynthesisSlices}
 For \textit{synthesis type slices} we consider an expression synthesising a type $\tau$ under some context $\Gamma$:
 \[\synthesis{e}{\tau}\]
-And consider the slices in $P_e[\Gamma]$ and attempt to find the minimum slice $\rho = (\varsigma\mid \gamma)$ constraining that $\rho$ also synthesises the same type $\tau$ under the restricted context $\gamma$:
+And consider the slices in $P_e^{\Gamma}$ and attempt to find the minimum slice $\rho = [\varsigma\mid \gamma]$ constraining that $\rho$ also synthesises the same type $\tau$ under the restricted context $\gamma$:
 \[\synthesis[\gamma]{\varsigma}{\tau}\]
-Where minimality requires that no other (strictly) less precise slice satisfies the criterion. That is: for any slice $\rho' = (\varsigma'\mid \gamma')$, if $\synthesis[\gamma']{\varsigma'}{\tau}$ and $\rho' \sqsubseteq \rho$, then $\rho' = \rho$.
+Where minimality requires that no other (strictly) less precise slice satisfies the criterion. That is: for any slice $\rho' = [\varsigma'\mid \gamma']$, if $\synthesis[\gamma']{\varsigma'}{\tau}$ and $\rho' \sqsubseteq \rho$, then $\rho' = \rho$.
+
+\textbf{GIVE CONCRETE EXAMPLE HERE, use highlighting}
 
 I conjecture that, under the Hazel type system, there exists a unique minimum slice for each $\synthesis{e}{\tau}$:\footnote{Would follow from uniqueness of typing derivations in Hazel.}
 \begin{conjecture}[Uniqueness]\label{conj:SynthesisSliceUniqueness}
@@ -79,17 +91,72 @@ If $\synthesis{e}{\tau}$ then:
 \item For any $\rho' = [\varsigma' \mid \gamma'] \sqsubseteq [e\mid \Gamma]$ such that $\synthesis[\gamma']{\varsigma'}{\tau}$ then $\rho \sqsubseteq \rho'$.
 \end{itemize}
 \end{conjecture}
+
+\textbf{Maybe push context slices into it's own section here?}
 \subsection{Criterion 2: Analysis Slices}\label{sec:AnalysisSlices}
-Any type analysed against must come from a type synthesis, so will be paired with an expression in whatever context it was in. However, this is now no longer just a property about the term we are looking at, but instead the \textit{whole} context: treat this context as a new input, making a new hypothetical judgement. 
+A similar idea can be devised for analysis slices. Essentially, we do the opposite of \textit{criterion 1} and omit sub-terms where \textit{synthesis} was used. The intention is to show how a analysing type is deconstructed based on the structure of the term being analysed. 
 
-See written notes for detailed ideas.
+The useful notion to represent this is the slice of an expression's \textit{syntactic context}, it is the terms immediately around it which determine how the checked type is deconstructed:
 
+For example, when checking this term against $\code{Bool} \to \code{Int}$:
+\[(\lambda x. \hole^u)\]
+The slice context of the inner hole term $\hole^u$, which is required to be consistent with \code{Int}, would be the following:
+\[\hlcmaths[yellow!30]{(\lambda} x\hlcmaths[yellow!30]{.} \hole^u \hlcmaths[yellow!30]{)}\]
+Intuitively, this means that the \textit{contextual} reason for $\hole^u$ to be required to be an \code{Int} is that it was within a function (and the context was initially checked against $\code{Bool} \to \code{Int}$ and deconstructed to retrieve the return type $\code{Int}$.
+
+\newcommand{\C}{\mathcal{C}}
+Formally, an \textit{expression slice context} $\mathcal{C}$ is a term with at most \textit{one} sub-term marked as $\mark$:\footnote{The two separate syntax definition for application allow a \textit{mark} to be in either the left or right expression, but \textit{not both}.}
+\[\C ::=  \mark \mid \gap \mid c \mid x \mid \lambda x : \tau.\ \C \mid \lambda x.\ \C \mid \C(\varsigma) \mid \varsigma(\C) \mid \hole^u \mid \hole[\C]^u \mid \C : \tau\]
+
+\textbf{CONTEXT slices don't need gaps in this case, maybe remove?}
+
+Where $\C\{\varsigma\}$ substitutes expression slice $\varsigma$ for the mark $\mark$ in $\C$ if it exists, the result of this is necessarily an expression slice. Additionally, contexts are composable: substituting a context into a context, $\C_1\{\C_2\}$ produces another valid context, notate this by $\C_1 \circ \C_2$.
+
+Then, for a term $e$ which type checks against type $\tau$ under context $\Gamma$, the \textit{minimum analysis slice} of sub-terms $e'$ of $e$ checking against typed $\tau'$ under typing context $\Gamma'$ inside slice context $\mathcal{C}$, that is $e = \C\{e'\}$ and $\analysis[\Gamma']{e'}{\tau'}$, is a \textit{minimum program slice} $[\varsigma, \gamma]$ such that $\varsigma$ checks against $\tau'$ under $\gamma$, that $\analysis[\gamma]{\varsigma}{\tau'$} and $\varsigma$ within context $\C$ also checks against $\tau$ i.e. $\analysis[\Gamma]{\C \{\varsigma\}}{\tau}$.\footnote{Note that the context $\mathcal{C}$ of $e'$ has no part omitted when type checking within the context.} Written, given that $\analysis{\C\{e'\}}{\tau}$:
+\[\analysisslice[\Gamma']{\C}{e'}{\tau'}{[\varsigma\mid \gamma]}\]
+
+This judgement can be defined syntactically, similarly to \textit{synthesis slices}. While the Hazel core calculus only has one analysis rule (for unannotated lambdas), there are several other valid analysis rules\footnote{Flipping synthesis and analysis where \textit{mode correctness} is preserved.} that are omitted to preserve determinacy of typing. Using these is useful to demonstrate this criterion. 
+
+For example, for the atomic terms: constants, variables, holes etc. the empty context trivially satisfies the criterion:
+\[\inference[\tiny AConst]{\synthesis{c}{b'} & b \sim b'}{\analysisslice{\C}{c}{b}{[\mark\mid \emptyset]}}\]
+And for unannotated functions:
+\[\inference[\tiny AFun]{\analysisslice[\Gamma, x:\tau_1]{\C\circ(\lambda x.\ \mark)}{e}{\tau_2}{[\varsigma\mid \gamma, x : \tau_1]}}{\analysisslice{\C}{\lambda x.\ e}{\tau_1 \to \tau_2}{[\lambda x.\ \varsigma\mid \gamma]}}\]
+\[\inference[\tiny AFun]{\analysisslice[\Gamma, x:\tau_1]{\C\circ(\lambda x.\ \mark)}{e}{\tau_2}{[\varsigma\mid \gamma]} & x \not \in \mathrm{dom}(\gamma)}{\analysisslice{\C}{\lambda x.e}{\tau_1 \to \tau_2}{[\lambda \gap.\ \varsigma\mid \gamma]}}\]
+As it turns out, variables are never added to $\gamma$ so the first version of the rule above cannot happen. The rule is stated as this may not necessarily be the case in general and for consistency with \textit{criterion 3}. Finally, function applications:
+\[\inference[\tiny AApp]{\tau \neq \dyn &\synthesis{e_1}{\tau_1} & \tau_1 \funmatch \tau_2 \to \tau' & \tau \sim \tau'\\ \analysisslice{\C\circ (e_1(\mark))}{e_2}{\tau_2}{[\varsigma \mid \gamma]}}{\analysisslice{\C}{e_1(e_2)}{\tau}{[\gap(\varsigma)\mid \gamma]}}\]
+As with \textit{synthesis slices}, if the checked type is $\dyn$ then an empty slice should be returned. Intuitively, the checked type is $\dyn$, and cannot be further decomposed, so there is not much use in slicing further structure. This has the second purpose of omitting all regions of code that are \textit{dynamically typed}.
+
+I believe, this formulation does indeed find the minimum such slice in the context:
+\begin{conjecture}[Correctness]
+For $\analysis{e}{\tau}$ and any context $\C$ and term $e'$ such that $e = \C\{e'\}$. If $\analysisslice[\Gamma']{\C}{e'}{\tau'}{\rho}$ for $\rho = [\varsigma\mid \gamma]$:
+\begin{itemize}
+\item $\rho$ is an \textit{analysis slice}: $\analysis[\gamma]{\varsigma}{\tau'}$ and $\analysis{\C\{\varsigma\}}{\tau}$
+\item $\rho$ is minimal: if also $\rho' = [\varsigma' \mid \gamma']$ and $\analysis[\gamma]{\varsigma}{\tau'}$ and $\analysis{\C\{\varsigma\}}{\tau}$, then $\rho \sqsubseteq \rho'$.
+\end{itemize}
+\end{conjecture}
+
+\textbf{Consider if manipulating the context $\C$ is useful, for example if the context includes an annotation, we could find also the \textit{minimum context} such that .}
 
 \subsection{Criterion 3: \textit{good\_name\_here}}
+Combines the previous two criteria. The main difficulty is how to combine the two slices during subsumption, kinda extends the previous.
 
+Talk about annotations as analysis slices?
 
-\subsection{Join Types}
-These are the only way a \textit{new type} is created other than synthesis, add some machinery to demonstrate how a program slice could be constructed by taking the `deepest' branch in the join and working out if it was the left/right branch etc.
+The objective of this criterion is to determine which parts of an expression required to be typed checked. Therefore, it omits the sub-terms which could be changed to a different type, but still have the whole expression check against the same type. 
+
+\textbf{Give example here with highlighting.}
+
+Formally, this criterion considers expressions $e$ type checked against a type $\tau$ under typing context $\Gamma$:
+\[\analysis{e}{\tau}{\varsigma}\]
+And finds the minimum slice of $e$ in this context such that 
+
+\subsection{Join Types}\label{sec:JoinTypesTheory}
+The Hazel core calculus is very primitive, only consisting of \textit{base types}, \textit{annotations}, and \textit{functions}. Extensions to gradual types \cite{GradualJoins}, and Hazel \cite{MarkedLocalisation}\footnote{Here as the \textit{meet} of the opposite of my \textit{precision} order.}: \textit{if} expressions, \textit{pattern matching}, \textit{sum types} etc. all require\footnote{Or are easiest formulated with.} \textit{join types}. 
+
+A join of two types $\tau_1 \sqcup \tau_2$ (if one exists) is the least precise (most general) type that more precise than both $\tau_1, \tau_2$: that $\tau_1 \sqsubseteq \tau_1 \sqcup \tau_2$ and $\tau_1 \sqsubseteq \tau_1 \sqcup \tau_2$. Therefore, the join is therefore is consistent with both $\tau_1, \tau_2$. Type consistency can be reformulated in terms of joins: $\tau_1, \tau_2$ are consistent \textit{if and only if} they have a join. This is the \textit{order-theoretic} \textbf{(cite)} join with respect to the precision partial order on types. 
+For example, the type of an \textit{if statement} would be the join of the types of it's branches.
+
+These add an additional way to generate a \textit{new type} other than by synthesis or from annotations.\textit{ add some machinery to demonstrate how a program slice could be constructed by taking the `deepest' branch in the join and working out if it was the left/right branch etc.}
 
 \section{Cast Slicing Theory}\label{sec:CastSlicingTheory}
 
