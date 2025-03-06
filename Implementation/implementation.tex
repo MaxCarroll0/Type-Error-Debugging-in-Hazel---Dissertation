@@ -7,16 +7,20 @@ Then, I implemented the theories, making it suitable for implementation and exte
 
 \textbf{Annotate the above with the relevant section links!}
 \section{Type Slicing Theory}\label{sec:TypeSlicingTheory}
+\textbf{Replace all occurrences of `typing context' with `typing assumptions' to avoid name clash with expression/program contexts.}
+
 I develop \textit{type slicing} as a mechanism to aid programmers in understanding \textit{why} a term has a given type via static means. Three slicing mechanism have been devised with differing characteristics, all of which associate terms with their typing derivation to produce a \textit{program slice}. 
 
 The first two criteria attempt to give insight on the structure of the typing derivations, and hence how types are decided. While the third criterion gives a complete picture of the regions of code which, if changed, could cause a change in type of the whole expression.
 
 \textbf{Make some brief arguments into why the first two criteria are still useful.}
 
+\textbf{PLACE ALL IMPORTANT DEFINITIONS INSIDE DEFINITION ENVIRONMENTS}
+
 \subsection{Program Slices}
 A \textit{program slice} $\rho$, is a pair $[\varsigma \mid \gamma]$, consisting of an \textit{expression slice} and \textit{typing context slice} respectively which are calculated based on some typing \textit{criterion}\footnote{One of the three slicing mechanisms.} based on the typability of the slice $\varsigma$ under context $\gamma$. 
 
-Intuitively, an expression slice is a Hazel external expression highlighting the sub-terms of relevance to the \textit{typing criterion}. For example if my criterion is to \textit{omit terms which are typed as int}, then the following expressions highlights as:
+Intuitively, an expression slice is a Hazel external expression highlighting the sub-terms of relevance to the \textit{typing criterion}. For example if my criterion is to \textit{omit terms which are typed as} \code{Int}, then the following expressions highlights as:
 
 \[\hlcmaths[yellow!30]{(\lambda x: \code{Int}.\ \lambda y : \code{Bool}.}\ x\hlcmaths[yellow!30]{)(}1\hlcmaths[yellow!30])}\]
 
@@ -30,7 +34,7 @@ Additionally, it is useful to omit variable names. For this I introduce \textit{
 This gives the following extended syntax of expression slices, $\varsigma$, extending \cref{fig:syntax}:
 \[\varsigma ::= \gap \mid  c \mid x \mid \lambda p : \upsilon.\ \varsigma \mid \lambda x.\ \varsigma \mid \varsigma(\varsigma) \mid \hole^u \mid \hole[\varsigma]^u \mid \varsigma : \upsilon\]
 Where $\upsilon$ are types, similarly with potential omitted sub-term gaps:
-\[\upsilon ::= \gap \mid \dyn b \mid \upsilon \to \upsilon\]
+\[\upsilon ::= \gap \mid \dyn \mid b \mid \upsilon \to \upsilon\]
 These slices are then allowed to be \textit{typed} by representing gaps $\gap$ by holes of fresh metavariables $\hole^u$ in \textit{expressions}, fresh variables in \textit{patterns}, and the dynamic type in \textit{types}, see \textbf{(fig APPENDIX)}. From here-on consider $\gap$ as interchangeable with a hole $\hole^u$ of fresh metavariable $u$ or the dynamic type.
 
 We then have a \textit{precision} relation on expression slices, $\varsigma_1 \sqsubseteq \varsigma_2$ meaning $\varsigma_1$ is less or equally precise than $\varsigma_2$, that is $\varsigma_1$ matches $\varsigma_2$ structurally except that some subterms may be gaps, see \textbf{ref appendix}. For example, see this precision chain:
@@ -39,12 +43,45 @@ We have that $\sqsubseteq$ is a partial order (\textbf{cite}), that is, satisfie
 \[\inference{}{\varsigma \sqsubseteq \varsigma} \quad \inference{\varsigma_1 \sqsubseteq \varsigma_2 & \varsigma_2 \sqsubseteq \varsigma_1}{\varsigma_1 = \varsigma_2} \quad \inference{\varsigma_1 \sqsubseteq \varsigma_2 & \varsigma_2 \sqsubseteq \varsigma_3}{\varsigma_1 \sqsubseteq \varsigma_3}\]
 We also have a \textit{bottom} (least) element, $\gap \sqsubseteq \varsigma$ (for all $\varsigma$). This relation is trivially extended to include complete expressions $e$ which satisfy that: if $e \sqsubseteq \varsigma$ then $e = \varsigma$, i.e. complete terms are always \textit{unique} upper bounds of precision chains.
 
-\textit{Context slices} are simply a typing context $\Gamma$, which is used to represent the notion of \textit{relevant typing assumption}. Typing contexts are just functions mapping variables to types notated $x : \tau$ (see \cref{sec:TypingJudgements}). Functions are sets, so they also have a partial order of subset inclusion, $\subseteq$. Again, we have a bottom element, $\emptyset$.
+An expression slice $\varsigma$ \textit{of} $e$ is a slice such that $e \sqsubseteq e$.
+
+\textit{Typing context slices} are simply a typing context $\Gamma$, which is used to represent the notion of \textit{relevant typing assumption}. Typing contexts are just functions mapping variables to types notated $x : \tau$ (see \cref{sec:TypingJudgements}). Functions are sets, so they also have a partial order of subset inclusion, $\subseteq$. Again, we have a bottom element, $\emptyset$.  These are notated $\gamma$ and if $\gamma \subseteq \Gamma$ then $\gamma$ is a slice \textit{of} $\Gamma$.
 
 The precision relation and subset inclusion can be extended pointwise to give a partial order, $\sqsubseteq$, on program slices:
 \[[\varsigma_1\mid \gamma_1] \sqsubseteq [\varsigma_2\mid \gamma_2] \iff  \varsigma_1 \sqsubseteq \varsigma_2 \text{ and } \gamma_1 \subseteq \gamma_2\]
 
-Program slices will often be grouped and indexed upon expressions and typing contexts, $P_e^{\Gamma}$ which contains all slices $\rho \sqsubseteq (e, \Gamma)$. So, the set $P_e^{\Gamma}$ forms a lattice (\textbf{cite}) with unique least upper bound $[e, \Gamma]$ and greatest lower bound $[\gap, \emptyset]$.
+Program slices will often be grouped and indexed upon expressions and typing contexts, $P_e^{\Gamma}$ which contains all slices $\rho \sqsubseteq (e, \Gamma)$. So, the set $P_e^{\Gamma}$ forms a lattice (\textbf{cite}) with unique least upper bound $[e, \Gamma]$ and greatest lower bound $[\gap, \emptyset]$. Similarly, an element $\rho$ in $P_e^{\Gamma}$ can referred to as a program slice \textit{of} $e$ under $\Gamma$.
+\subsection{Program Context Slices}
+
+
+\newcommand{\C}{\mathcal{C}}
+Formally, an \textit{expression context} $\mathcal{C}$ is an expressions with \textit{exactly one} sub-term marked as $\mark$:\footnote{The two separate syntax definition for application allow a \textit{mark} to be in either the left or right expression, but \textit{not both}.}
+\[\C ::=  \mark \mid \lambda x : \tau.\ \C \mid \lambda x.\ \C \mid \C(e) \mid e(\C) \mid \C : \tau\]
+
+Where $\C\{e\}$ substitutes expression $e$ for the mark $\mark$ in $\C$, the result of this is necessarily an expression. Additionally, contexts are composable: substituting a context into a context, $\C_1\{\C_2\}$ produces another valid context, notate this by $\C_1 \circ \C_2$\footnote{Context can alternatively be though of as functions from expressions to expressions.}.
+
+
+\newcommand{\Cs}{\mathcal{c}}
+\newcommand{\p}{\mathcal{p}}
+Similarly to expressions, contexts can be extended to \textit{context slices} by allowing slices within:
+\[\Cs ::= \mark \mid \lambda p : \upsilon. \Cs \mid \Cs(\varsigma) \mid \varsigma(\C) \mid \Cs : \upsilon\]
+
+However, the precision relation $\sqsubseteq$ is defined differently, requiring that the mark $\mark$ must remain in the same position in the context structurally speaking. For example $\mark(\gap) \sqsubseteq \mark(1)$, but $\mark \not \sqsubseteq \mark(1)$. This can be concisely defined by \textit{extensionality} (\textbf{cite}):
+
+\begin{definition}[Context Precision]\label{def:ContextPrecision}
+If $\Cs'$ and $\Cs$ are context slices, then $\Cs' \sqsubseteq \Cs$ if and only if, for all expressions $e$, that $\Cs'\{e\} \sqsubseteq \Cs\{e\}$.
+\end{definition}
+Again, we refer to a context slice $\Cs$ of $\C$ as one satisfying that $\Cs' \sqsubseteq \C$.
+
+We also get that filling contexts preserves the precision relations both on expression slices \textit{and} context slices:
+\begin{conjecture}[Context Filling Preserves Precision]
+For expression slice $\varsigma$ and context slice $\Cs$. Then if we have slices $\varsigma' \sqsubseteq \varsigma$, $\Cs' \sqsubseteq \Cs$ then also $\Cs'\{\varsigma'\} \sqsubseteq \Cs\{\varsigma\}$.
+\end{conjecture}
+Therefore, context slices $\Cs$ can be though of as monotone function (\textbf{cite})...
+
+\textit{Make some references to category theory, i.e. category of slices with morphisms being context slices. Or that slices form categories on expression $e$ and contexts are a functor between program slice categories. i.e. contexts are monotonic functions}
+
+The accompanying notion of a \textit{typing co-context slice} is retained representing the notion of \textit{irrelevant typing assumptions}, those assumptions which would be used within portions of the context which were omitted. i.e. for a a term placed in the mark, we could type it using the original context minus the ones used only in typing the context.
 
 \subsection{Criterion 1: Synthesis Slices}
 \label{sec:SynthesisSlices}
@@ -84,7 +121,7 @@ The remaining rules are in \cref{fig:SynthesisSlices}.
 
 It is \textit{expected} \textbf{(Proof TODO)} that these rules do indeed always produce a slice for any expression which synthesises a type, and that this slice is minimal:
 \begin{conjecture}[Correctness]
-\label{conj:SynthesisSliceUniqueness}
+\label{conj:SynthesisSliceCorrectness}
 If $\synthesis{e}{\tau}$ then:
 \begin{itemize}
 \item $\synthesisslice{e}{\tau}{\rho}$ where $\rho = [\varsigma \mid \gamma]$ with $\synthesis[\gamma]{\varsigma}{\tau}$.
@@ -93,10 +130,11 @@ If $\synthesis{e}{\tau}$ then:
 \end{conjecture}
 
 \textbf{Maybe push context slices into it's own section here?}
-\subsection{Criterion 2: Analysis Slices}\label{sec:AnalysisSlices}
-A similar idea can be devised for analysis slices. Essentially, we do the opposite of \textit{criterion 1} and omit sub-terms where \textit{synthesis} was used. The intention is to show how a analysing type is deconstructed based on the structure of the term being analysed. 
 
-The useful notion to represent this is the slice of an expression's \textit{syntactic context}, it is the terms immediately around it which determine how the checked type is deconstructed:
+\subsection{Criterion 2: Analysis Slices}\label{sec:AnalysisSlices}
+A similar idea can be devised for analysis slices. Essentially, we do the opposite of \textit{criterion 1} and omit sub-terms where \textit{synthesis} was used. The intention is to show how an analysing type is deconstructed based on the structure of the term being analysed. 
+
+The useful notion to represent this are \textit{context slices}. It is the terms immediately \textit{around} the term we are examining which determine how the checked type is deconstructed:
 
 For example, when checking this term against $\code{Bool} \to \code{Int}$:
 \[(\lambda x. \hole^u)\]
@@ -104,38 +142,41 @@ The slice context of the inner hole term $\hole^u$, which is required to be cons
 \[\hlcmaths[yellow!30]{(\lambda} x\hlcmaths[yellow!30]{.} \hole^u \hlcmaths[yellow!30]{)}\]
 Intuitively, this means that the \textit{contextual} reason for $\hole^u$ to be required to be an \code{Int} is that it was within a function (and the context was initially checked against $\code{Bool} \to \code{Int}$ and deconstructed to retrieve the return type $\code{Int}$.
 
-\newcommand{\C}{\mathcal{C}}
-Formally, an \textit{expression slice context} $\mathcal{C}$ is a term with at most \textit{one} sub-term marked as $\mark$:\footnote{The two separate syntax definition for application allow a \textit{mark} to be in either the left or right expression, but \textit{not both}.}
-\[\C ::=  \mark \mid \gap \mid c \mid x \mid \lambda x : \tau.\ \C \mid \lambda x.\ \C \mid \C(\varsigma) \mid \varsigma(\C) \mid \hole^u \mid \hole[\C]^u \mid \C : \tau\]
+Formally, we take a subterm in it's context, and try omit parts of the \textit{context} that don't change whether type checking is successful. Additionally, we log the typing assumptions relevant in typing the \textit{context}.
 
-\textbf{CONTEXT slices don't need gaps in this case, maybe remove?}
-
-Where $\C\{\varsigma\}$ substitutes expression slice $\varsigma$ for the mark $\mark$ in $\C$ if it exists, the result of this is necessarily an expression slice. Additionally, contexts are composable: substituting a context into a context, $\C_1\{\C_2\}$ produces another valid context, notate this by $\C_1 \circ \C_2$.
-
-Then, for a term $e$ which type checks against type $\tau$ under context $\Gamma$, the \textit{minimum analysis slice} of sub-terms $e'$ of $e$ checking against typed $\tau'$ under typing context $\Gamma'$ inside slice context $\mathcal{C}$, that is $e = \C\{e'\}$ and $\analysis[\Gamma']{e'}{\tau'}$, is a \textit{minimum program slice} $[\varsigma, \gamma]$ such that $\varsigma$ checks against $\tau'$ under $\gamma$, that $\analysis[\gamma]{\varsigma}{\tau'$} and $\varsigma$ within context $\C$ also checks against $\tau$ i.e. $\analysis[\Gamma]{\C \{\varsigma\}}{\tau}$.\footnote{Note that the context $\mathcal{C}$ of $e'$ has no part omitted when type checking within the context.} Written, given that $\analysis{\C\{e'\}}{\tau}$:
-\[\analysisslice[\Gamma']{\C}{e'}{\tau'}{[\varsigma\mid \gamma]}\]
-
-This judgement can be defined syntactically, similarly to \textit{synthesis slices}. While the Hazel core calculus only has one analysis rule (for unannotated lambdas), there are several other valid analysis rules\footnote{Flipping synthesis and analysis where \textit{mode correctness} is preserved.} that are omitted to preserve determinacy of typing. Using these is useful to demonstrate this criterion. 
-
-For example, for the atomic terms: constants, variables, holes etc. the empty context trivially satisfies the criterion:
-\[\inference[\tiny AConst]{\synthesis{c}{b'} & b \sim b'}{\analysisslice{\C}{c}{b}{[\mark\mid \emptyset]}}\]
-And for unannotated functions:
-\[\inference[\tiny AFun]{\analysisslice[\Gamma, x:\tau_1]{\C\circ(\lambda x.\ \mark)}{e}{\tau_2}{[\varsigma\mid \gamma, x : \tau_1]}}{\analysisslice{\C}{\lambda x.\ e}{\tau_1 \to \tau_2}{[\lambda x.\ \varsigma\mid \gamma]}}\]
-\[\inference[\tiny AFun]{\analysisslice[\Gamma, x:\tau_1]{\C\circ(\lambda x.\ \mark)}{e}{\tau_2}{[\varsigma\mid \gamma]} & x \not \in \mathrm{dom}(\gamma)}{\analysisslice{\C}{\lambda x.e}{\tau_1 \to \tau_2}{[\lambda \gap.\ \varsigma\mid \gamma]}}\]
-As it turns out, variables are never added to $\gamma$ so the first version of the rule above cannot happen. The rule is stated as this may not necessarily be the case in general and for consistency with \textit{criterion 3}. Finally, function applications:
-\[\inference[\tiny AApp]{\tau \neq \dyn &\synthesis{e_1}{\tau_1} & \tau_1 \funmatch \tau_2 \to \tau' & \tau \sim \tau'\\ \analysisslice{\C\circ (e_1(\mark))}{e_2}{\tau_2}{[\varsigma \mid \gamma]}}{\analysisslice{\C}{e_1(e_2)}{\tau}{[\gap(\varsigma)\mid \gamma]}}\]
-As with \textit{synthesis slices}, if the checked type is $\dyn$ then an empty slice should be returned. Intuitively, the checked type is $\dyn$, and cannot be further decomposed, so there is not much use in slicing further structure. This has the second purpose of omitting all regions of code that are \textit{dynamically typed}.
-
-I believe, this formulation does indeed find the minimum such slice in the context:
-\begin{conjecture}[Correctness]
-For $\analysis{e}{\tau}$ and any context $\C$ and term $e'$ such that $e = \C\{e'\}$. If $\analysisslice[\Gamma']{\C}{e'}{\tau'}{\rho}$ for $\rho = [\varsigma\mid \gamma]$:
+\begin{definition}[Analysis Slice]\label{def:analysisslice}
+For a term $e$ which type checks against type $\tau$ under context $\Gamma$, that $\analysis{e}{\tau}$. An \textit{analysis slice} of a sub-term $e'$ of $e$ inside context $\mathcal{C}$, that is, $e = \C\{e'\}$, is a \textit{program context slice} $\p = [\Cs, \gamma]$ such that:
 \begin{itemize}
-\item $\rho$ is an \textit{analysis slice}: $\analysis[\gamma]{\varsigma}{\tau'}$ and $\analysis{\C\{\varsigma\}}{\tau}$
-\item $\rho$ is minimal: if also $\rho' = [\varsigma' \mid \gamma']$ and $\analysis[\gamma]{\varsigma}{\tau'}$ and $\analysis{\C\{\varsigma\}}{\tau}$, then $\rho \sqsubseteq \rho'$.
+\item $\Cs$ is a slice of $\C$, that is, $\Cs \sqsubseteq \C$.
+\item $e'$ also checks against $\tau$ within slice context $\Cs$ under $\Gamma$, that is, $\analysis[\Gamma]{\Cs \{e'\}}{\tau}$.
+\item $\gamma$ retains enough assumptions to type \textit{only} the context slice $\Cs$, that is, $\analysis[\gamma]{\Cs\{\gap\}}{\tau}$.
 \end{itemize}
+\end{definition}
+
+The \textit{minimum analysis slice} is just the minimum under the precision ordering $\sqsubseteq$. And it must be unique:
+
+\begin{conjecture}[Uniqueness]\label{conj:AnalysisSliceUniqueness}
+If $\rho$ and $\rho'$ are \textit{minimum analysis slices} for sub-terms $e'$ of $e$ where $\analysis{e}{\tau}$, then $\rho = \rho'$.
 \end{conjecture}
 
-\textbf{Consider if manipulating the context $\C$ is useful, for example if the context includes an annotation, we could find also the \textit{minimum context} such that .}
+Similarly, the minimum slice can be defined syntactically by a judgement, notated (with $e = \C\{e'\}$ implicit):
+\[\analysisslice[\Gamma]{\C}{e'}{\tau}{\p}\]
+Meaning that, for $e$ which type checks against $\tau$ under context $\Gamma$, we have a minimum analysis slice $\p$.
+
+This judgement can be defined syntactically upon possible contexts. For the empty context:
+\[\inference[\tiny Empty]{\analysis{e}{\tau}}{\analysisslice{\mark}{e}{\tau}{[\mark\mid \emptyset]}}\]
+
+\textbf{...}
+
+I believe, this formulation does indeed find the minimum such slice in the context:
+\textbf{fix prop below}
+\begin{conjecture}[Correctness]\label{conj:AnalysisSliceCorrectness}
+If $\analysis{e}{\tau}$ and $e = \C\{e'\}$ then:
+\begin{itemize}
+\item $\analysisslice{\C}{e}{\tau}{\p}$ where $\p = [\Cs \mid \gamma]$ with $\analysis[\gamma]{\Cs\{e'\}}{\tau}$.
+\item For any $\p' = [\Cs' \mid \gamma'] \sqsubseteq [\C\mid \Gamma]$ such that $\analysis[\gamma']{\Cs'\{e'\}}{\tau}$ then $\p \sqsubseteq \p'$.
+\end{itemize}
+\end{conjecture}
 
 \subsection{Criterion 3: \textit{good\_name\_here}}
 Combines the previous two criteria. The main difficulty is how to combine the two slices during subsumption, kinda extends the previous.

@@ -5,7 +5,7 @@
 \usepackage{amssymb}
 \usepackage{stmaryrd}
 \usepackage{semantic}
-
+\usepackage{dutchcal}
 \usepackage{minted}
 \usemintedstyle{colorful}
 
@@ -48,7 +48,7 @@
 
 \newcommand{\analysis}[3][\Gamma]{#1 \vdash #2 {\color{BlueViolet}\ \Leftarrow}\ #3}
 \newcommand{\typeassignment}[3][\Delta;\Gamma]{#1 \vdash #2 : #3}
-\newcommand{\analysisslice}[5][\Gamma]{#1; #2 \vdash #3 {\color{BlueViolet}\ \Leftarrow}\ #4 \dashv #5}
+\newcommand{\analysisslice}[5][\Gamma]{#1 \vdash #2\{#3\} {\color{BlueViolet}\ \Leftarrow}\ #4 \dashv #5}
 
 \newcommand{\typeassignment}[3][\Delta;\Gamma]{#1 \vdash #2 : #3}
 \newcommand{\elaborationSynthesis}[5][\Gamma]{#1 \vdash #2 {\color{BrickRed}\ \Rightarrow\ } #3 \leadsto #4 \dashv #5}
@@ -88,6 +88,7 @@
 \usepackage{cleveref}
 
 \newtheorem{conjecture}{Conjecture}
+\newtheorem{definition}{Definition}
 
 \urlstyle{same}
 \newcommand{\secref}[1]{\S\ref{#1}}
