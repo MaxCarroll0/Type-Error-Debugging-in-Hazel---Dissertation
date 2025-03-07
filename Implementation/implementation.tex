@@ -9,7 +9,7 @@ Then, I implemented the theories, making it suitable for implementation and exte
 \section{Type Slicing Theory}\label{sec:TypeSlicingTheory}
 \textbf{Replace all occurrences of `typing context' with `typing assumptions' to avoid name clash with expression/program contexts.}
 
-I develop \textit{type slicing} as a mechanism to aid programmers in understanding \textit{why} a term has a given type via static means. Three slicing mechanism have been devised with differing characteristics, all of which associate terms with their typing derivation to produce a \textit{program slice}. 
+I develop \textit{type slicing} as a mechanism to aid programmers in understanding \textit{why} a term has a given type via static means. Three slicing mechanism have been devised with differing characteristics, all of which associate terms with their typing derivation to produce a \textit{expression typing slice}. 
 
 The first two criteria attempt to give insight on the structure of the typing derivations, and hence how types are decided. While the third criterion gives a complete picture of the regions of code which, if changed, could cause a change in type of the whole expression.
 
@@ -17,12 +17,12 @@ The first two criteria attempt to give insight on the structure of the typing de
 
 \textbf{PLACE ALL IMPORTANT DEFINITIONS INSIDE DEFINITION ENVIRONMENTS}
 
-\subsection{Program Slices}
-A \textit{program slice} $\rho$, is a pair $\varsigma^\gamma$, consisting of an \textit{expression slice} $\varsigma$ and \textit{typing context slice} $\gamma$ which are calculated based on some typing \textit{criterion}\footnote{One of the three slicing mechanisms.} based on the typability of the slice $\varsigma$ under context $\gamma$. 
+\subsection{Expression Typing slices}
+A \textit{expression typing slice} $\rho$, is a pair $\varsigma^\gamma$, consisting of an \textit{expression slice} $\varsigma$ and \textit{typing context slice} $\gamma$ which are calculated based on some typing \textit{criterion}\footnote{One of the three slicing mechanisms.} based on the typability of the slice $\varsigma$ under context $\gamma$. 
 
 Intuitively, an expression slice is a Hazel external expression highlighting the sub-terms of relevance to the \textit{typing criterion}. For example if my criterion is to \textit{omit terms which are typed as} \code{Int}, then the following expressions highlights as:
 
-\[\hlcmaths[yellow!30]{(\lambda x: \code{Int}.\ \lambda y : \code{Bool}.}\ x\hlcmaths[yellow!30]{)(}1\hlcmaths[yellow!30])}\]
+\[\hlcmaths[yellow!30]{(\lambda x: \code{Int}.\ \lambda y : \code{Bool}.}\ x\hlcmaths[yellow!30]{)(}1\hlcmaths[yellow!30]{)}\]
 
 Formally, I represent this by specifying which sub-terms are omitted in the highlighted expression. So, Replace each omitted sub-term with a \textit{gap}, notated $\gap$. This is the same definition of a slice as presented in \cite{FunctionalProgExplain}.\footnote{With their `holes' equating with my `gaps'. Different terminology used to distinguish with Hazel's holes} i.e. representing the above highlighting we get slice:
 \[(\lambda x : \code{Int}.\ \lambda y : \code{Bool}.\ \gap)(\gap)\]
@@ -47,26 +47,26 @@ An expression slice $\varsigma$ \textit{of} $e$ is a slice such that $e \sqsubse
 
 \textit{Typing context slices} are simply a typing context $\Gamma$, which is used to represent the notion of \textit{relevant typing assumption}. Typing contexts are just functions mapping variables to types notated $x : \tau$ (see \cref{sec:TypingJudgements}). Functions are sets, so they also have a partial order of subset inclusion, $\subseteq$. Again, we have a bottom element, $\emptyset$.  These are notated $\gamma$ and if $\gamma \subseteq \Gamma$ then $\gamma$ is a slice \textit{of} $\Gamma$.
 
-The precision relation and subset inclusion can be extended pointwise to give a partial order, $\sqsubseteq$, on program slices:
+The precision relation and subset inclusion can be extended pointwise to give a partial order, $\sqsubseteq$, on expression typing slices:
 \[[\varsigma_1\mid \gamma_1] \sqsubseteq [\varsigma_2\mid \gamma_2] \iff  \varsigma_1 \sqsubseteq \varsigma_2 \text{ and } \gamma_1 \subseteq \gamma_2\]
 
-Program slices will often be grouped and indexed upon expressions and typing contexts, $P_e^{\Gamma}$ which contains all slices $\rho \sqsubseteq (e, \Gamma)$. So, the set $P_e^{\Gamma}$ forms a lattice (\textbf{cite}) with unique least upper bound $[e, \Gamma]$ and greatest lower bound $[\gap, \emptyset]$. Similarly, an element $\rho$ in $P_e^{\Gamma}$ can referred to as a program slice \textit{of} $e$ under $\Gamma$.
-\subsection{Program Context Slices}
+expression typing slices will often be grouped and indexed upon expressions and typing contexts, $P_e^{\Gamma}$ which contains all slices $\rho \sqsubseteq (e, \Gamma)$. So, the set $P_e^{\Gamma}$ forms a lattice (\textbf{cite}) with unique least upper bound $[e, \Gamma]$ and greatest lower bound $[\gap, \emptyset]$. Similarly, an element $\rho$ in $P_e^{\Gamma}$ can referred to as a expression typing slice \textit{of} $e$ under $\Gamma$.
+\subsection{Context Slices}
 \textbf{add pattern slices. }
 
-\newcommand{\C}{\mathcal{C}}
-Formally, an \textit{expression context} $\mathcal{C}$ is an expressions with \textit{exactly one} sub-term marked as $\mark$:\footnote{The two separate syntax definition for application allow a \textit{mark} to be in either the left or right expression, but \textit{not both}.}
-\[\C ::=  \mark \mid \lambda x : \tau.\ \C \mid \lambda x.\ \C \mid \C(e) \mid e(\C) \mid \C : \tau\]
+\newcommand{\C}{\mathdcal{C}}
+Formally, an \textit{expression context} $\mathdcal{C}$ is an expressions with \textit{exactly one} sub-term marked as $\cmark$:\footnote{The two separate syntax definition for application allow a \textit{mark} to be in either the left or right expression, but \textit{not both}.}
+\[\C ::=  \cmark \mid \lambda x : \tau.\ \C \mid \lambda x.\ \C \mid \C(e) \mid e(\C) \mid \C : \tau\]
 
-Where $\C\{e\}$ substitutes expression $e$ for the mark $\mark$ in $\C$, the result of this is necessarily an expression. Additionally, contexts are composable: substituting a context into a context, $\C_1\{\C_2\}$ produces another valid context, notate this by $\C_1 \circ \C_2$\footnote{Context can alternatively be though of as functions from expressions to expressions.}.
+Where $\C\{e\}$ substitutes expression $e$ for the mark $\cmark$ in $\C$, the result of this is necessarily an expression. Additionally, contexts are composable: substituting a context into a context, $\C_1\{\C_2\}$ produces another valid context, notate this by $\C_1 \circ \C_2$\footnote{Context can alternatively be though of as functions from expressions to expressions.}.
 
 
-\newcommand{\Cs}{\mathcal{c}}
-\newcommand{\p}{\mathcal{p}}
+\newcommand{\Cs}{\mathdcal{c}}
+\newcommand{\p}{\mathdcal{p}}
 Similarly to expressions, contexts can be extended to \textit{context slices} by allowing slices within:
-\[\Cs ::= \mark \mid \lambda p : \upsilon. \Cs \mid \Cs(\varsigma) \mid \varsigma(\C) \mid \Cs : \upsilon\]
+\[\Cs ::= \cmark \mid \lambda p : \upsilon. \Cs \mid \Cs(\varsigma) \mid \varsigma(\C) \mid \Cs : \upsilon\]
 
-However, the precision relation $\sqsubseteq$ is defined differently, requiring that the mark $\mark$ must remain in the same position in the context structurally speaking. For example $\mark(\gap) \sqsubseteq \mark(1)$, but $\mark \not \sqsubseteq \mark(1)$. This can be concisely defined by \textit{extensionality} (\textbf{cite}):
+However, the precision relation $\sqsubseteq$ is defined differently, requiring that the mark $\cmark$ must remain in the same position in the context structurally speaking. For example $\cmark(\gap) \sqsubseteq \cmark(1)$, but $\cmark \not \sqsubseteq \cmark(1)$. This can be concisely defined by \textit{extensionality} (\textbf{cite}):
 
 \begin{definition}[Context Precision]\label{def:ContextPrecision}
 If $\Cs'$ and $\Cs$ are context slices, then $\Cs' \sqsubseteq \Cs$ if and only if, for all expressions $e$, that $\Cs'\{e\} \sqsubseteq \Cs\{e\}$.
@@ -81,35 +81,35 @@ Therefore, context slices $\Cs$ can be though of as monotone function (\textbf{c
 
 Show that composition is also preserved over precision, i.e. it is a functor.
 
-\textit{Make some references to category theory, i.e. category of slices with morphisms being context slices. Or that slices form categories on expression $e$ and contexts are a functor between program slice categories. i.e. contexts are monotonic functions}
+\textit{Make some references to category theory, i.e. category of slices with morphisms being context slices. Or that slices form categories on expression $e$ and contexts are a functor between expression typing slice categories. i.e. contexts are monotonic functions}
 
 \textbf{rewrite}
 The accompanying notion of a \textit{typing co-context slice} is retained representing the notion of \textit{irrelevant typing assumptions}, those assumptions which would be used within portions of the context which were omitted. i.e. for a a term placed in the mark, we could type it using the original context minus the ones used only in typing the context.
 
-This pair of context slice and typing assumptions slice is together referred to as a \textit{program context slice} and notated $\p^\gamma$, should $\gamma$ be empty it may be omitted shorthand.
+This pair of context slice and typing assumptions slice is together referred to as a \textit{context slice} and notated $\p^\gamma$, should $\gamma$ be empty it may be omitted shorthand.
 
-Extend composition to program contexts and substitution of program slices. Again as slices are a superset of expressions, then this extends to expression etc.
+Extend composition to program contexts and substitution of expression typing slices. Again as slices are a superset of expressions, then this extends to expression etc.
 
 When 
 
 \subsection{Type-Indexed Slices}
-For \textit{criteria 2 \& 3 and cast slicing}, there is a need to decompose slices to find sub-slices which contribute to specific portions of a compound type. For example, which part of the program slice was related to the argument type of a function specifically.
+For \textit{criteria 2 \& 3 and cast slicing}, there is a need to decompose slices to find sub-slices which contribute to specific portions of a compound type. For example, which part of the expression typing slice was related to the argument type of a function specifically.
 
 \textbf{Give EXAMPLE}
 
-A \textit{type(-indexed) slice} consists of: a program slice, a program context slice, and a \textit{type} \textit{index} $i$. This index is either an \textit{atomic} type label or is \textit{compound}, consisting of type slices conforming to the structure of types:
+A \textit{type(-indexed) slice} consists of: a expression typing slice, a context slice, and a \textit{type} \textit{index} $i$. This index is either an \textit{atomic} type label or is \textit{compound}, consisting of type slices conforming to the structure of types:
 \[i ::= \dyn \mid b \mid s \to s\]
 \[s ::= \p\{i \mid \rho\}\]
 The type that a type slice $s$ \textit{represents} is the slice retaining only it's type labels. This will be notated by $\type{s}$, defined inductively:
 \[\type{\p\{\dyn\mid \rho\}} = \dyn \quad \type{\p\{b \mid \rho\}} = b\]
 \[\type{\p\{s_1 \to s_2 \mid \rho\}} = \type{s_1} \to \type{s_2}\]
 
-A term $e$ in some context $\C$ will be associated with a \textit{type slice} with the meaning that $\rho$ contains a program slice for typing $e$ and $\p$ contains a program context slice for typing $e$ in context $\C$ according to some criterion. Typically the context slice would correspond to type analysis and the program slice would correspond to type synthesis.
+A term $e$ in some context $\C$ will be associated with a \textit{type slice} with the meaning that $\rho$ contains a expression typing slice for typing $e$ and $\p$ contains a context slice for typing $e$ in context $\C$ according to some criterion. Typically the context slice would correspond to type analysis and the expression typing slice would correspond to type synthesis.
 
 The compound type slices must satisfy the crucial property that the sub-terms are sub-\textit{slices} of $\rho$. That is:
 \[\p\{\p_1\{i_1 \mid \rho_1\} \to \p_2\{i_2 \mid \rho_2\} \mid \rho\} \implies \p_1\{\rho_1\} \sqsubseteq \rho\text{ and }\p_2\{\rho_2\} \sqsubseteq \rho\]
 
-The precision relation can be extended to slices pointwise upon the program slice and context slice, and atomic types $a$ (i.e. $a ::= \dyn \mid b$):
+The precision relation can be extended to slices pointwise upon the expression typing slice and context slice, and atomic types $a$ (i.e. $a ::= \dyn \mid b$):
 \[\p'\{a' \mid \rho'\} \sqsubseteq \p\{a \mid \rho\} \iff \p' \sqsubseteq \p,\ \rho' \sqsubseteq \rho,\text{ and }a' \sqsubseteq a\]
 And recursively for compound slices:\footnote{Note, function arguments are \textit{covariant} for this.}
 \begin{align*}
@@ -117,9 +117,9 @@ And recursively for compound slices:\footnote{Note, function arguments are \text
 &s_1' \sqsubseteq s_1,\text{ and }s_2' \sqsubseteq s_2
 \end{align*}
 
-Composition of program slices to the outer context is possible, $(\p' \circ \p)\{i \mid \rho\}$, and is notated shorthand as $\p'\{s\}$ for $s = \p\{i \mid \rho\}$.
+Composition of expression typing slices to the outer context is possible, $(\p' \circ \p)\{i \mid \rho\}$, and is notated shorthand as $\p'\{s\}$ for $s = \p\{i \mid \rho\}$.
 
-Additionally, if $\p$ is empty, $\mark^\emptyset$, a type slice may be notated without it: $i \mid \rho$. Equally, when $\rho$ is empty, $\gap^\emptyset$, then notate $\p'\{i\}$. This means that if both $\p, \rho$ are both empty then we have $i$ which is syntactically identical to types $\tau$, so we can trivially treat types as \textit{empty type slices}.  
+Additionally, if $\p$ is empty, $\cmark^\emptyset$, a type slice may be notated without it: $i \mid \rho$. Equally, when $\rho$ is empty, $\gap^\emptyset$, then notate $\p'\{i\}$. This means that if both $\p, \rho$ are both empty then we have $i$ which is syntactically identical to types $\tau$, so we can trivially treat types as \textit{empty type slices}.  
 
 Then function matching $\funmatch$ can be extended to slices in multiple different ways with different uses depending on the context, see the appendix \textbf{ref}.
 
@@ -169,11 +169,15 @@ If $\synthesis{e}{\tau}$ then:
 \end{itemize}
 \end{conjecture}
 
+\subsubsection{Extension to Type-Indexed Slices}
+This mechanism can be trivially extended to type-indexed slices, where types being synthesised can be replaced by slices directly, i.e. \textit{slice synthesis}. See the appendix \textbf{ref AND FIX}.
 
 \subsection{Criterion 2: Analysis Slices}\label{sec:AnalysisSlices}
+\textbf{Try find the minimum slice of the below definition \textit{without} type indexed slices}
+
 A similar idea can be devised for analysis slices. Essentially, we do the opposite of \textit{criterion 1} and omit sub-terms where \textit{synthesis} was used. The objective is to show \textit{why} a checked term is required to check against it's type.
 
-The useful notion to represent this are \textit{context slices}. It is the terms immediately \textit{around} the sub-term where the type checking deconstructs a checking type:
+The useful notion to represent these are \textit{context slices}. It is the terms immediately \textit{around} the sub-term where the type checking deconstructs a checking type:
 
 For example, when checking this term against $\code{Bool} \to \code{Int}$:
 \[(\lambda x. \hole^u)\]
@@ -184,14 +188,12 @@ Intuitively, this means that the \textit{contextual} reason for $\hole^u$ to be 
 There are also subterms:
 \[\hole^u : \code{Int} : \dyn : \code{Bool}\]
 
-\textbf{GO BACK TO ORIGINAL IDEA OF INPUT CONTEXT AND OUTPUT EXPRESSION SLICE. Then the actual slice for a term is it's context slice plus expression slice. Minimum slice that still checks same type without subsumption.}
 
 \begin{definition}[Analysis Slice]\label{def:analysisslice}
-For a derivation $\analysis{e}{\tau}$ containing a sub-derivation $\analysis[\Gamma']{e'}{\tau'}$ in context $\C$, that is, $e = \C\{e'\}$. An \textit{analysis slice} of $e'$ is a \textit{program context slice} $\p = [\Cs, \gamma]$ such that:
+For a derivation $\analysis{e}{\tau}$ containing a sub-derivation $\analysis[\Gamma']{e'}{\tau'}$ in context $\C$, that is, $e = \C\{e'\}$. An \textit{analysis slice} of $e'$ is a \textit{context slice} $\p = [\Cs, \gamma]$ such that:
 \begin{itemize}
 \item $\Cs$ is a slice of $\C$, that is, $\Cs \sqsubseteq \C$.
-\item $e'$ also checks against $\tau$ within slice context $\Cs$ under $\Gamma$, that is, $\analysis[\Gamma]{\Cs \{e'\}}{\tau}$, and still requires a sub-derivation for $\analysis[\Gamma'\backslash \gamma]{e'}{\tau'}$ using . 
-\item $\gamma$ retains enough assumptions to type (only) the context slice $\Cs$, that is, $\analysis[\gamma]{\Cs\{\gap\}}{\tau}$.
+\item $\analysis{\Cs\{e'\}}{\tau}$ contains a sub-derivation for $\analysis[\Gamma'\backslash \gamma]{e'}{\tau}$.
 \end{itemize}
 \end{definition}
 
@@ -201,33 +203,25 @@ The \textit{minimum analysis slice} is just the minimum under the precision orde
 If $\rho$ and $\rho'$ are \textit{minimum analysis slices} for sub-terms $e'$ of $e$ where $\analysis{e}{\tau}$, then $\rho = \rho'$.
 \end{conjecture}
 
-Similarly, the minimum slice can be defined syntactically by a judgement, notated (with $e = \C\{e'\}$ implicit):
-\[\analysisslice[\Gamma]{\C}{e'}{\tau}{\p}\]
-Meaning that, for $e$ which type checks against $\tau$ under context $\Gamma$, we have a minimum analysis slice $\p$.
+\textbf{...}
 
-This judgement can be defined syntactically upon possible contexts. For the empty context:
-\[\inference[ ASEmpty]{\analysis{e}{\tau}}{\analysisslice{\mark}{e}{\tau}{[\mark\mid \emptyset]}}\]
-
-Then (unannotated) function contexts mimic the rule for checking against functions, again with two rules depending on if $x$ is used in typing the context:
-\[\inference[ASFun]{\tau \funmatch \tau_1 \to \tau_2 & \analysisslice[\Gamma, x:\tau_1]{\C}{e}{\tau_2}{[\Cs \mid \gamma, x: \tau_1]}}{\analysisslice{(\lambda x.\ \C)}{e}{\tau}{[\lambda x.\ \Cs \mid \gamma]}}\]
-\[\inference[ASFunConst]{\tau \funmatch \tau_1 \to \tau_2 & \analysisslice[\Gamma, x:\tau_1]{\C}{e}{\tau_2}{[\Cs \mid \gamma]}\\ x \not \in \mathrm{dom}(\gamma)}{\analysisslice{(\lambda x.\ \C)}{e}{\tau}{[\lambda \gap.\ \Cs \mid \gamma]}}\]
-All the remaining situations will use \textit{consistency}. Any term that used consistency could have been checked 
-\[\inference[ASAnnot]{\analysisslice{\C}{e}{\tau'}{[\Cs\mid\gamma]} & \tau'' \sqsubseteq \tau' & \tau'' \sim \tau \\ \tau'' \text{ is \textit{minimal} satisfying the above}}{\analysisslice{(\C : \tau')}{e}{\tau}{[\Cs : \tau''\mid\gamma]}}\]
-This minimal $\tau''$ does indeed exist as it is known that $\tau$ is consistent with $\tau$.\footnote{As the original term type checked successfully.}
-The same is applied to annotated functions. Then for applications, a type is received by synthesis but we still check using this minimal 
-\[\inference[ASApp1]{\synthesis{\C\{e_1\}}{\tau_1} & \tau_1 \funmatch \tau_2 \to \tau'\\ \tau' \sim \tau & \analysisslice{\C}{e_1}{\tau_2 \to \tau}{[\Cs \mid \gamma]}}{\analysisslice{\C(e_2)}{e_1}{\tau}{[\Cs(\gap)\mid \gamma]}}\]
-In the second case:
-\[\inference[ASApp2]{\synthesis{\C\{e_1\}}{\tau_1} & \tau_1 \funmatch \tau_2 \to \tau'\\ \analysisslice{\C}{e_2}{\tau_2}{[\Cs \mid \gamma]}}{\analysisslice{e_1(\C)}{e_2}{\tau}{[\gap(\Cs) \mid \gamma]}}\]
 This formulation does indeed find the minimum such slice in the context:
 \begin{conjecture}[Correctness]\label{conj:AnalysisSliceCorrectness}
-If $\analysis{e}{\tau}$ and $e = \C\{e'\}$ then:
+If $\analysis{e}{\tau}$ and $e = \C\{e'\}$ such that $\analysis[\Gamma']{e}{\tau'}$ then:
 \begin{itemize}
-\item $\analysisslice{\C}{e'}{\tau}{\p}$ where $\p = [\Cs \mid \gamma]$ with $\analysis[\Gamma]{\Cs\{e'\}}{\tau}$ and $\analysis[\gamma]{\Cs\{\gap\}}{\tau}$.
-\item For any $\p' = [\Cs' \mid \gamma'] \sqsubseteq [\C\mid \Gamma]$ such that $\analysis[\Gamma']{\Cs'\{e'\}}{\tau}$ and $\analysis[\gamma']{\Cs'\{\gap\}}{\tau}$ then $\p \sqsubseteq \p'$.
+\item $p$ ...
+\item For any $\p' = [\Cs' \mid \gamma'] \sqsubseteq [\C\mid \Gamma]$ such that $\analysis{\Cs'\{e'\}}{\tau}$ and $\analysis[\Gamma'\backslash \gamma']{e'}{\tau'}$  then $\p \sqsubseteq \p'$.
 \end{itemize}
 \end{conjecture}
 
-In the case of Hazel, it turns out that this minimum program context slice is always just the least precise version of the input context and never requires typing assumptions, so $\gamma$ is empty. But, other language features may have more complex behaviour\footnote{Type functions, for example.} and formalising it this way helps build intuition for \textit{criterion 3} and it's extension in \textit{cast slicing}.
+In the case of Hazel, it turns out that this minimum context slice is always just the least precise version of the input context and never requires typing assumptions, so $\gamma$ is empty. But, other language features may have more complex behaviour\footnote{Type functions, for example.} and formalising it this way helps build intuition for \textit{criterion 3} and it's extension in \textit{cast slicing}.
+
+\subsubsection{Extension to Type-Indexed Slices}
+Given that type analysis does not outputs types, the useful trivial extension that worked for \textit{synthesis slices} is not possible here.
+
+However, if we instead check against \textit{type slices} then extension is possible. Further, it provides this method with more power, the input slices carry their own information in an extended context, and the resulting slices for subterms may reference this. 
+
+For example, if the input slice was derived from an annotation, then a subterm checking against a sub-term of the slice will be able to output a slice highlighting \textit{only the relevant part} of the annotation. \textbf{SHOW}
 
 \subsection{Criterion 3: \textit{good\_name\_here}}
 Both the previous criterion only extracted information about one half of the typing rules, either synthesis or analysis.
@@ -257,7 +251,7 @@ The Hazel core calculus is very primitive, only consisting of \textit{base types
 A join of two types $\tau_1 \sqcup \tau_2$ (if one exists) is the least precise (most general) type that more precise than both $\tau_1, \tau_2$: that $\tau_1 \sqsubseteq \tau_1 \sqcup \tau_2$ and $\tau_1 \sqsubseteq \tau_1 \sqcup \tau_2$. Therefore, the join is therefore is consistent with both $\tau_1, \tau_2$. Type consistency can be reformulated in terms of joins: $\tau_1, \tau_2$ are consistent \textit{if and only if} they have a join. This is the \textit{order-theoretic} \textbf{(cite)} join with respect to the precision partial order on types. 
 For example, the type of an \textit{if statement} would be the join of the types of it's branches.
 
-These add an additional way to generate a \textit{new type} other than by synthesis or from annotations.\textit{ add some machinery to demonstrate how a program slice could be constructed by taking the `deepest' branch in the join and working out if it was the left/right branch etc.}
+These add an additional way to generate a \textit{new type} other than by synthesis or from annotations.\textit{ add some machinery to demonstrate how a expression typing slice could be constructed by taking the `deepest' branch in the join and working out if it was the left/right branch etc.}
 
 Also has application in combining slices at subsumption (so each term has one slice, rather than some having two).
 
@@ -265,10 +259,10 @@ Also has application in combining slices at subsumption (so each term has one sl
 
 Fairly trivial, just treat slices as types and decompose accordingly. The whole reason of indexing by type was to allow this.
 
-The idea of it being a minimal program slice producing the same cast doesn't really work here due to dynamics. Explore the maths of this. Either way, it is a useful construct in practice. Exploring this in more detail, looking at \textit{dynamic program slicing} could be a good future direction.
+The idea of it being a minimal expression typing slice producing the same cast doesn't really work here due to dynamics. Explore the maths of this. Either way, it is a useful construct in practice. Exploring this in more detail, looking at \textit{dynamic program slicing} could be a good future direction.
 
 
-\subsection{Indexing Program Slices by Types}
+\subsection{Indexing Slices by Types}
 
 
 \subsection{Elaboration}
@@ -296,7 +290,7 @@ Use of `Typ. Explain how this allows it to easily be disabled and saves space (m
 Incremental/Global. Detail the choice to not annotate many analysis slices.
 \subsubsection{Mapping Functions}
 \subsubsection{Type Slice Joins}
-Just unions of the lists. Double check that we can't have elements from more than one branch highlighted.\footnote{Type variables might make this possible??}
+Show example where multiple branches of join highlighted, i.e. $Int \to \dyn$ and $\dyn \to Bool$.
 
 \subsection{Static Type Checking}\label{sec:TypeChecking}
 Detail the statics and Info types. Explain the distinction between Self.re and Mode.re, which links very nicely with the synthesis and analysis slice distinctions.

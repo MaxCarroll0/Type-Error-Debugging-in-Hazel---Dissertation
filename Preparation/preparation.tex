@@ -153,7 +153,7 @@ d &::= c \mid x \mid \lambda x : \tau d \mid d(d) \mid \hole^u_\sigma \mid \hole
 
 \subsubsection{External Language}\label{sec:HazelExternalLang}
 \index{External language type system}
-We have a bidirectionally static semantics for the \textit{external language}, giving the bidirectional typing judgements: $\synthesis{e}{\tau}$ and $\analysis{e}{\tau$}. Holes synthesise the \textit{dynamic type}, a natural choice made possible by the use of gradual types:
+We have a bidirectionally static semantics for the \textit{external language}, giving the bidirectional typing judgements: $\synthesis{e}{\tau}$ and $\analysis{e}{\tau}$. Holes synthesise the \textit{dynamic type}, a natural choice made possible by the use of gradual types:
 \[\inference[\tiny SNEHole]{\synthesis{e}{\tau}}{\synthesis{\hole[e]^u}{\dyn}} \qquad \inference[\tiny SEHole]{}{\synthesis{\hole^u}{\dyn}}\] 
 One notable consequence of combining gradual and bidirectional typing is that the \textit{subsumption rule} in bidirectional typing is naturally extended to allow subsuming any terms of \textit{consistent} types:
 \[\inference[\tiny ASubsume]{\synthesis{e}{\tau'}& \tau \sim \tau'}{\analysis{e}{\tau}}\]
