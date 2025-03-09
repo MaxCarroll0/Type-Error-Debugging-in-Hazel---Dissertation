@@ -64,6 +64,9 @@ Annotations will create casts, but in many cases these annotations will never ac
 \subsection{Cast Errors during Evaluation}
 Cast errors may appear during evaluation, but subsequently ignored as they may be discarded upon further evaluation. i.e. we get to a safe result, even though a cast error appeared on the way. It is debatable if this should count as an error. Should be easy to implement a version which catches this and do some tests?
   
+\subsection{Static-Dynamic Error Correspondence}
+How to find dynamic errors for specific chosen static errors. Works well for some types of errors (inconsistency ones). But not for ones like inconsistent branches, show how this could be extended. Indet evaluation still allows these to be witnessed, but they just don't actually go to a cast error.
+  
 \subsection{Categorising Programs Lacking Type Error Witnesses}
 \subsubsection{Non-Termination}
 The original procedure would get stuck on programs that loop forever. (To) Fix with iterative deepening
