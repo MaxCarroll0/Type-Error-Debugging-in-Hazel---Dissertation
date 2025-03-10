@@ -64,7 +64,7 @@ Where $\C\{e\}$ substitutes expression $e$ for the mark $\cmark$ in $\C$, the re
 \newcommand{\Cs}{\mathdcal{c}}
 \newcommand{\p}{\mathdcal{p}}
 Similarly to expressions, contexts can be extended to \textit{context slices} by allowing slices within:
-\[\Cs ::= \cmark \mid \lambda p : \upsilon. \Cs \mid \Cs(\varsigma) \mid \varsigma(\C) \mid \Cs : \upsilon\]
+\[\Cs ::= \cmark \mid \lambda p : \upsilon. \Cs \mid \Cs(\varsigma) \mid \varsigma(\Cs) \mid \Cs : \upsilon\]
 
 However, the precision relation $\sqsubseteq$ is defined differently, requiring that the mark $\cmark$ must remain in the same position in the context structurally speaking. For example $\cmark(\gap) \sqsubseteq \cmark(1)$, but $\cmark \not \sqsubseteq \cmark(1)$. This can be concisely defined by \textit{extensionality} (\textbf{cite}):
 
@@ -93,7 +93,12 @@ Extend composition to program contexts and substitution of expression typing sli
 When 
 
 \subsection{Type-Indexed Slices}
-For \textit{criteria 2 \& 3 and cast slicing}, there is a need to decompose slices to find sub-slices which contribute to specific portions of a compound type. For example, which part of the expression typing slice was related to the argument type of a function specifically.
+\textbf{Have context i.e. contexts with a $_$ and let the syntax write it directly as a \textit{type-indexed context slice}, i.e. a type-indexed slice, but with the slice $\rho$s replaced with $\p$s. Then allow easy syntax to create from a type indexed slice i.e.}
+\[(\p\{\dyn \mid \rho\})(\cmark) = \p\{\dyn \mid \rho(\cmark)\}\]
+Reverse composition order for this?? Also, syntax for going from indexed context to indexed expression i.e. $\{\}$
+
+
+For \textit{criteria 3 and cast slicing}, there is a need to decompose slices to find sub-slices which contribute to specific portions of a compound type. For example, which part of the expression typing slice was related to the argument type of a function specifically.
 
 \textbf{Give EXAMPLE}
 
@@ -210,11 +215,13 @@ It is clear that this must then be the smallest context containing derivations o
 
 An \textit{analysis slice} is a slice of a checked term's \textit{checking context}:
 \begin{definition}[Analysis Slice]\label{def:analysisslice}
-For a derivation $\synthesis{e}{\tau}$, containing a sub-derivation $\analysis[\Gamma']{e'}{\tau'}$ with checking context $\C$. Then we have that $\synthesis[\Gamma]{\C\{e'\}}{\tau''}$. An \textit{analysis slice} of $e'$ is a program context slice $\Cs^\gamma$ such that:
+For a derivation $\synthesis{e}{\tau}$, containing a sub-derivation $\analysis[\Gamma']{e'}{\tau'}$ with checking context $\C$. Then we have that $\synthesis[\Gamma]{\C\{e'\}}{\tau''}$. 
+
+An \textit{analysis slice} of $e'$ is a program context slice $\Cs^\gamma$ such that:
 \begin{itemize}
 \item $\Cs$ is a slice of $\C$, that is, $\Cs \sqsubseteq \C$.
-\item $e$ still synthesises a type and contains a sub-derivation checking $e'$ against $\tau'$ in checking context $\Cs$.
-\item $\gamma$ contains the required assumptions to type the context with a type consistent\footnote{$e'$ within the sliced context might now synthesise a \textit{less precise} type.} with $\tau''$: $\analysis[\gamma]{\Cs\{\gap\}}{\tau''}$.
+\item $\Cs\{e\}$ still synthesises a type consistent\footnote{$e'$ within the sliced context might now synthesise a \textit{less precise} type.} with $\tau''$ and contains a sub-derivation checking $e'$ against $\tau'$ in checking context $\Cs$.
+\item $\gamma$ contains the required assumptions to type the context with a type consistent with $\tau''$: $\analysis[\gamma]{\Cs\{\gap\}}{\tau''}$.
 \end{itemize}
 \end{definition}
 
@@ -256,25 +263,53 @@ Additionally, the rules in this form end up being more closely tied to the Hazel
 
 \textbf{See appendix}
 
-\subsection{Criterion 3: \textit{good\_name\_here}}
-This criterion aims to highlight all regions of code which \textit{contribute} to the given type (either synthesised or analysed). Where \textit{contribute} means that if the sub-term changed it's type, then the overall term would also, or would become ill-typed.
+\subsection{Criterion 3: Contribution Slices}
+This criterion aims to highlight all regions of code which \textit{contribute} to the given type (either synthesised or analysed). Where \textit{contribute} means that if the sub-term changed it's type, then the overall term would\footnote{No matter which type it was changed to specifically.} also, or would become ill-typed. Importantly, we also consider \textit{contexts} for expression which are analysed, again considering any component terms which having their type changed would result in an error when trying to analyse against the type. For example in the following term:
 
-\textbf{Give example here}
+\[(\lambda f: \code{Int} \to \dyn.\ f(1))(\lambda x : \code{Int}.\ x)\]
+The terms which \textit{contribute} to the \textit{second}\footnote{Underlined below from now on.} lambda term checking successfully against $\code{Int} \to \dyn$ is everything \textit{except} the $x$ term, while context slice is just the annotation (and required structural constructs). Highlighting related to synthesis will be a darker shade:
+\[\hlcmaths[yellow!30]{(\lambda} f\hlcmaths[yellow!30]{: \code{Int} \to \dyn}.\ f(1)\hlcmaths[yellow!30]{)}\underline{\hlcmaths[yellow!70]{(\lambda x : \code{Int}.}\ x\hlcmaths[yellow!70]{)}}\]
 
-Notice that, in any typing derivation the only sub-terms which \textit{can} be changed without causing the rule to no longer apply are those which the premises and conclusion are \textit{not} linked \textit{syntactically}. There is only one such rule: \textit{subsumption}. The only way a replacing a subterm with a new type could be valid is if the new type is 
+Notice that, in any typing derivation the only sub-terms which \textit{can} have their type changed without causing the rule to no longer apply are those which use type \textit{consistency}.\footnote{Note that this logic does \textit{not} extend to globally inferred languages.} The only such rule is \textit{subsumption}. Further, the only time a term could be changed to \textit{any} type and still remain valid is when it is checked for consistency with the dynamic type $\dyn$.
 
-Talk about annotations as analysis slices?
+Therefore, this criterion just \textit{omits all dynamically annotated regions} of the program.\footnote{But does not omit the dynamic annotations themselves.} And, the contextual part of the slices are just \textit{analysis slices}.
 
-The objective of this criterion is to determine which parts of an expression required to be typed checked. Therefore, it omits the sub-terms which could be changed to a different type, but still have the whole expression check against the same type. 
+\begin{definition}[Contribution Slices]\label{def:ContributionSlice}
+For $\synthesis{e}{\tau}$ containing sub-derivation $\analysis[\Gamma']{e'}{\tau'}$ with checking context $\C$.
 
-\textbf{Give example here with highlighting.}
+A \textit{contribution slice} of $e'$ is an \textit{analysis slice} for $e'$ in $\C$ paired with an expression typing slice $\varsigma^\gamma$ such that:
+\begin{itemize}
+\item $\varsigma$ is a slice of $e'$, that $\varsigma \sqsubseteq e'$.
+\item Under restricted typing context $\gamma$, that $\varsigma$ checks against any $\tau'_2$ at least as precise as $\tau'$:\footnote{Essentially, sub-terms that check against $\dyn$ also synthesise $\dyn$. Defined this way to include the case of unannotated lambdas (which do not synthesise).}
+\[\forall \tau'_2.\ \tau' \sqsubseteq \tau'_2 \implies \analysis[\gamma]{e'}{\tau'_2}\]
+\end{itemize}
+A contribution slice for a sub-term $e''$ involved in sub-derivation $\synthesis[\Gamma'']{e''}{\tau''}$ where $e'' \neq e'$ is an expression typing slice $\varsigma''^\gamma''$ which also synthesises $\tau''$ under $\gamma''$, that $\synthesis[\gamma'']{\varsigma''}{\tau''}$. Further, any sub-term of $e''$ which has a contribution slice of the above variety, is replaced inside $\varsigma$ by that corresponding expression typing slice.
+\end{definition} 
+This is most naturally calculated using \textit{type-indexed slices} exactly replicating the Hazel typing rules:
 
-Formally, this criterion considers expressions $e$ type checked against a type $\tau$ under typing context $\Gamma$:
-\[\analysis{e}{\tau}{\varsigma}\]
-And finds the minimum slice of $e$ in this context such that 
+\textbf{Think more about type indexed context slices. Think how to reconstruct }
+\newcommand{\s}{\mathdcal{s}}
+\begin{figure}[h]
+\[\inference[\tiny SConst]{}{\synthesissliceindexed{c}{b\mid c}} \quad
+\inference[\tiny SVar]{x : \tau \in \Gamma}{\synthesissliceindexed{x}{\mathrm{map}{(x^{\{x:\tau\}}, \tau)}}}\]
+\[ 
+\inference[\tiny SFun]{s_1 = (\gap : \cmark)\circ \mathrm{annot}(\tau_1) &\synthesissliceindexed[\Gamma,x:\tau_1]{e}{s_2}\\ s_2 = i_2 \mid \varsigma^\gamma & x \match{\gamma} p}{\synthesissliceindexed{\lambda x:\tau_1.\ e}{(\lambda \cmark.\ \gap) \circ s_1 \to (\lambda \gap : \gap.\ \cmark) \circ s_2 \mid (\lambda p : \tau_1.\ \varsigma)^{\gamma\backslash x:\tau_1}}}\]
+\[\inference[\tiny SApp]{\synthesissliceindexed{e_1}{s_1} & s_1 \funmatch s_2 \to s \\ \analysissliceindexed{e_2}{s_2(\cmark)}{s_2'}}{\synthesissliceindexed{e_1(e_2)}{\text{app}(s_2')}}\]
+ 
+\[\inference[\tiny SEHole]{}{\synthesissliceindexed{\hole^u}{\dyn \mid \hole^u}} \quad \inference[\tiny SNEHole]{\synthesissliceindexed{e}{\p\{i \mid \varsigma^\gamma\}}}{\synthesissliceindexed{\hole[e]^u}{\dyn \mid {\hole[\varsigma]^u}^\gamma}}\]
+\[\quad 
+\inference[\tiny SAsc]{c = \cmark : \text{annot}(\tau) & \analysissliceindexed{e}{\s}{s}}{\synthesis{e : \tau}{\mathrm{app}(s)}}\]
 
+\[\inference[\tiny AFun]{\s \funmatch \s_1 \to \s_2\\ \analysissliceindexed[\Gamma, x:\type{\s_1}]{e}{\s_2 \circ (\lambda x.\ \cmark)}{s_2}}{\analysissliceindexed{\lambda x.e}{\s}{\s_1\{\lambda \gap. \gap\} \to s_2}}\] 
+\[\inference[\tiny ASubsume]{\synthesissliceindexed{e}{s}\\ \type{s} \sim \type{\s}}{\analysissliceindexed{e}{\s}{\bigsqcup\mathrm{static}(\type{\s}, s)}}\]
+\caption{Contribution Slices}
+\label{fig:ContributionSliceRules}
+\end{figure} 
 
-Mention pattern slices.
+Where $\mathrm{map}(\rho, \tau)$ creates a type-indexed slice of type $\tau$ with the slice context $\cmark$ and expression typing slice $\rho$ tagged on all components of $\tau$. Annot is as defined in criterion 1 extended to type-indexed slices. $x \match_\gamma = p$ matches $p$ with $x$ if $x \in \text{dom}(\gamma)$, otherwise returns $\gap$. $\funmatch$ is extended to slices as follows:
+\[\p\{s_1 \to s_2 \mid \rho\} \funmatch \p\circ s_1 \to \p \circ s_2\]
+\[\p\{\dyn \mid \rho\} \funmatch \p\{\dyn \mid \rho\} \to \p\{\dyn \mid \rho\}\]
+static replaces a (sub)slice term if it is in the position of a $\dyn$ on the input. Reconstructing the term is just taking the join down one level \textbf{PROVE, maybe require as a property in type-indexed slices}. 
 
 \subsection{Join Types}\label{sec:JoinTypesTheory}
 The Hazel core calculus is very primitive, only consisting of \textit{base types}, \textit{annotations}, and \textit{functions}. Extensions to gradual types \cite{GradualJoins}, and Hazel \cite{MarkedLocalisation}\footnote{Here as the \textit{meet} of the opposite of my \textit{precision} order.}: \textit{if} expressions, \textit{pattern matching}, \textit{sum types} etc. all require\footnote{Or are easiest formulated with.} \textit{join types}. 
@@ -364,6 +399,8 @@ Use EV\_Mode to select next hole to instantiate
 \subsubsection{Synthesising Terms for Types}
 Difficulties instantiating strings...
 Functions with or without annotations?
+
+Seems that there was actually a refine hole editor action that I didn't notice?
 
 \subsubsection{Substituting Holes}\label{sec:HoleSubstitutionImplementation}
 Detail that this was an unexpected extra task, and is therefore not exactly the same as hole substitution as detailed in Preparation (i.e. no metavars or contexts annotated on holes, but it is enough for the search procedure to work)
