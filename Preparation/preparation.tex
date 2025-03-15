@@ -220,6 +220,8 @@ As Hazel is a \textit{pure language}\footnote{Having no side effects.} and as ho
 \subsection{The Hazel Implementation}\label{sec:HazelImplementation}
 The Hazel implementation \cite{HazelCode} is written primarily in ReasonML and OCaml with approx. 65,000 lines of code. It implements the Hazel core calculus along with many additional features. Relevant features and important abstractions are discussed here.
 
+\textbf{Discuss why the main branch was chosen over THI, hole substitution one etc. (main point being better documentation, sum types, though still very lacking}
+
 \subsubsection{Language Features}\label{sec:HazelAdditionalFeatures}
 \begin{itemize}
 \item \textbf{Lists} -- 
@@ -233,6 +235,8 @@ The Hazel implementation \cite{HazelCode} is written primarily in ReasonML and O
 
 \subsubsection{Monadic Evaluator}\label{sec:HazelEvaluator}
 \textbf{This is extremely hard to explain concisely!! or at all... Ask on Slack?}
+
+\textbf{Move most of this to implementation, give vague description/motivation and emphasise it's complexity}
 
 The transition semantics are defined on an intricate \textit{monadic} \textbf{is this is actually a monad...?} evaluator which is discussed in depth in the Implementation section \textbf{REF}. It is equipped with custom \code{let.} and \code{and.} binding operators\footnote{Which allow a convenient for writing code with binding functions.} \cite{OCamlManual}, and a \code{otherwise} and \code{req_final} function. Allowing transition rules to be simply written (simplified):
 \begin{minted}[fontsize=\footnotesize]{reason}
@@ -272,7 +276,9 @@ Each evaluation method module is transformed into an evaluator module by being p
 Model View Update model.
 
 \subsection{Non-Determinism}\label{sec:Nondeterminism}
+Various options considered: Effect handlers (requires multiple continuations but JSOO doesn't support this), continuations and call/cc, delimited continuations, lazy lists/sequences. Sequences were chosen, using Jane Street Base (reasons being that it is industrial standard and very flexible).
 
+Detail the Base.Sequence module type (i.e. unfold, interleave, init).
 
 \section{Starting Point}\label{sec:StartingPoint}
 \subsubsection{Concepts}
@@ -284,7 +290,11 @@ My only experience in OCaml was from the Part IA Foundations of Computer Science
 \section{Requirement Analysis}\label{sec:RequirementAnalysis}
 
 \section{Software Engineering Methodology}\label{sec:EngineeringMethodology}
-Do the theory first.
+Do the theory first. 
+
+Git. Merging from dev frequently (many of which were very difficult, as my code touches all of type checking and much of dynamics; and some massive changes, i.e. UI update). 
+
+Using existing unit tests & tests in web documentation to ensure typing is not broken.
 
 \section{Legality}\label{sec:Legality}
 MIT licence for Hazel.

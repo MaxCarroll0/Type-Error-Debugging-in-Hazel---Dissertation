@@ -9,15 +9,19 @@ Then, I implemented the theories, making it suitable for implementation and exte
 \section{Type Slicing Theory}\label{sec:TypeSlicingTheory}
 \textbf{Replace all occurrences of `typing context' with `typing assumptions' to avoid name clash with expression/program contexts.}
 
-I develop \textit{type slicing} as a mechanism to aid programmers in understanding \textit{why} a term has a given type via static means. Three slicing mechanism have been devised with differing characteristics, all of which associate terms with their typing derivation to produce a \textit{expression typing slice}. 
+I develop a novel method I term \textit{type slicing} as a mechanism to aid programmers in understanding \textit{why} a term has a given type via static means. Three slicing mechanism have been devised with differing characteristics, all of which associate terms with their typing derivation to produce a \textit{typing slices}. 
 
-The first two criteria attempt to give insight on the structure of the typing derivations, and hence how types are decided. While the third criterion gives a complete picture of the regions of code which, if changed, could cause a change in type of the whole expression.
+The first two criteria attempt to give insight on the structure of the typing derivations, and hence how types are decided. While the third criterion gives a complete picture of the regions of code which contribute to the a term's type.
+
+I would like to stress that the second and third criterion were \textiwt{very challenging} to formalise, requiring extensive mathematical machinery: \textit{context slices} (\cref{sec:ContextTypingSlices}), \textit{type flows} (\textbf{ref appendix}), \textit{checking context} (\cref{def:CheckingContext}), \textit{type-indexed slices} (\cref{sec:TypeIndexedSlices}).
+
+\textbf{Clarify on and ensure terminology is consistent (typing vs checking/analysis vs synthesis)}
 
 \textbf{Make some brief arguments into why the first two criteria are still useful.}
 
 \textbf{PLACE ALL IMPORTANT DEFINITIONS INSIDE DEFINITION ENVIRONMENTS}
 
-\subsection{Expression Typing slices}
+\subsection{Expression Typing slices}\label{sec:ExpressionTypingSlices}
 A \textit{expression typing slice} $\rho$, is a pair $\varsigma^\gamma$, consisting of an \textit{expression slice} $\varsigma$ and \textit{typing context slice} $\gamma$ which are calculated based on some typing \textit{criterion}\footnote{One of the three slicing mechanisms.} based on the typability of the slice $\varsigma$ under context $\gamma$. 
 
 Intuitively, an expression slice is a Hazel external expression highlighting the sub-terms of relevance to the \textit{typing criterion}. For example if my criterion is to \textit{omit terms which are typed as} \code{Int}, then the following expressions highlights as:
@@ -51,7 +55,7 @@ The precision relation and subset inclusion can be extended pointwise to give a 
 \[[\varsigma_1\mid \gamma_1] \sqsubseteq [\varsigma_2\mid \gamma_2] \iff  \varsigma_1 \sqsubseteq \varsigma_2 \text{ and } \gamma_1 \subseteq \gamma_2\]
 
 expression typing slices will often be grouped and indexed upon expressions and typing contexts, $P_e^{\Gamma}$ which contains all slices $\rho \sqsubseteq (e, \Gamma)$. So, the set $P_e^{\Gamma}$ forms a lattice (\textbf{cite}) with unique least upper bound $[e, \Gamma]$ and greatest lower bound $[\gap, \emptyset]$. Similarly, an element $\rho$ in $P_e^{\Gamma}$ can referred to as a expression typing slice \textit{of} $e$ under $\Gamma$.
-\subsection{Context Slices}
+\subsection{Context Typing Slices}\label{sec:ContextTypingSlices}
 \textbf{add pattern context. }
 
 \newcommand{\C}{\mathdcal{C}}
@@ -101,7 +105,7 @@ Extend composition to program contexts and substitution of expression typing sli
 
 When 
 
-\subsection{Type-Indexed Slices}
+\subsection{Type-Indexed Slices}\label{sec:TypeIndexedSlices}
 \textbf{Have context i.e. contexts with a $_$ and let the syntax write it directly as a \textit{type-indexed context slice}, i.e. a type-indexed slice, but with the slice $\rho$s replaced with $\p$s. Then allow easy syntax to create from a type indexed slice i.e.}
 \[(\p\{\dyn \mid \rho\})(\cmark) = \p\{\dyn \mid \rho(\cmark)\}\]
 Reverse composition order for this?? Also, syntax for going from indexed context to indexed expression i.e. $\{\}$
@@ -364,6 +368,10 @@ Though, these would need to retrieve information about parts of slices that were
 Do if there is time. Prove that analysis slice contexts actually make sense, that they maintain a valid term that is \textit{still} minimal.
 
 \section{Type Slicing Implementation}\label{sec:TypeSlicingImplementation}
+
+\subsection{Hazel Terms}
+\label{sec:HazelTerms}
+Give basic structure of term data types, with a diagram? and coloured example of code.
 \subsection{Type Slice Data-Type}\label{sec:TypeSliceDataType}
 Detail initial implementation (just tagging existing types). Compare with final implementation, quantitative numbers for improve could be obtained but would require quite a bit of coding work... Polymorphic Variants :))
 
