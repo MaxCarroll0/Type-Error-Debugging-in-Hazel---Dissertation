@@ -422,7 +422,53 @@ Small Hole hypothesis, quick check
 Use EV\_Mode to select next hole to instantiate
 
 \subsubsection{Match Expressions}
-Instantiate based on each branch. Casts are stored on a per branch basis. Don't instantiate redundant branches (which can be found via the constraints code).
+Hazel match expressions can be dynamic, allowing scrutinees to be of varying type:
+
+\texttt{case ? | 0 => 0 | [] => 1 end} etc.
+
+This means that casts are placed on the \textit{branches} rather than the scrutinee, meaning I need a special case for instantiating match scrutinees on a per-branch-type basis. This can be done by listing the possible types for the branches, then inserting a cast $\castcast{\dyn}$ on the scrutinee hole. Then re-running instantiation (which will use this inner cast to instantiate.
+
+There was an \textit{unboxing} bug which was discovered here.
+
+\subsubsection{Extended Match Expression Instantiation}
+One extension I attempted in order to improve code coverage was instantiating holes to fairly explore branches in a match statement (as opposed to just going by increasing length list etc.). 
+
+The \textit{pattern-matching-instantiation} branch implements a way to instantiate sub-parts of an indet term such that the new term can be deconstructed by the the pattern in the most general way. \textbf{show example}
+
+However, this is not enough to actually \textit{allow} deconstruction. The possibility that \textit{more specific} patterns could be present above the current branch means this term is still an indeterminate match. i.e. the following would make sense to run:
+
+\texttt{case ?::? | [] => [] | x::xs => xs}
+
+But it could also be possible for this, where the \textit{more specific} 2nd branch would have a indeterminate match on the tail hole:
+
+\texttt{case ?::? | [] => [] | x::y::[] => [] | x::xs => xs}
+
+\textbf{(Find this problem in the Paper and Cite)}
+Hazel is conservative and doesn't even allow the first example to evaluate.
+
+Hence, many of these most general deconstructions don't work. Therefore, I modified this to replace the tail of cons to instantiate the sequence of all lists, which allows this to work. \textbf{(explain better...)} However, this introduces the problem of branch instantiations overlapping, e.g. instantiations of list of length $>=1$ and one of length $>=2$ overlap severely. 
+
+To solve this, I introduce the idea of a \textit{not patterns}, and \textit{or patterns}, \textit{and patterns}, \textit{truth patterns}, and \textit{impossible patterns}. This is just a theory to transform pattern matching into equivalents with \textit{no overlapping branches}, these patterns do not actually need to be implemented directly, except for not pattern instantiation on base types (though \textit{or patterns} would be useful).
+
+\[\overline{\overline{p}} = p \qquad \overline{[\ ]} = \top::\top \qquad \overline{p :: q} = [\ ] \mid \overline{p}::q \mid p::\overline{q} \mid \overline{p} :: \overline{q}\]
+\[\overline{\top} = \bot \qquad \bot :: p = q :: \bot = \bot \qquad p \mid \bot = p \qquad x = \top\]
+\[ p \mid \overline{p} = \top \qquad p :: q \mid \overline{p} :: q = \top ::q \qquad p :: q \mid p :: \overline{q} = p::\top\]
+Therefore: 
+{\tiny
+\begin{align*}
+\overline{[1,2]} = \overline{1::2::[]} = &[] \mid \overline{1} :: 2::[] \mid 1 :: \overline{2 :: []} \mid \overline{1} :: \overline{2::[]}\\
+= &[] \mid \overline{1} :: 2::[] \mid 1 :: ([] \mid \overline{2} :: [] \mid 2 :: \overline{[]} \mid \overline{2} :: \overline{[]}) \\
+&\mid \overline{1} :: ([] \mid \overline{2} :: [] \mid 2 :: \overline{[]} \mid \overline{2} :: \overline{[]})\\
+= &[] \mid \overline{1} :: 2::[] \mid 1 :: [] \mid 1 :: \overline{2} :: [] \mid 1::2 :: \overline{[]} \mid 1::\overline{2} :: \overline{[]}\\
+&\mid \overline{1} :: [] \mid \overline{1} ::\overline{2} :: [] \mid \overline{1} ::2 :: \overline{[]} \mid \overline{1} ::\overline{2} :: \overline{[]}\\
+= &[] \mid \overline{1} :: 2::[] \mid 1 :: [] \mid 1 :: \overline{2} :: [] \mid 1::2 :: \top::\top\\
+&\mid 1::\overline{2} :: \top::\top \mid \overline{1} :: [] \mid \overline{1} ::\overline{2} :: [] \mid \overline{1} ::2 :: \top::\top \mid \overline{1} ::\overline{2} :: \top :: \top\\
+= &[] \mid \top::[] \mid 1::\overline{2}::[] \mid \overline{1}::2::[] \mid \overline{1}::\overline{2}::[] \mid \top::\top::\top::\top
+\end{align*}
+}
+Basically, a boolean algebra... To ensure no overlapping branches we must disallow the Idempotent law in one direction ($p \to p \mid p$)...
+
+Very closely related to \textit{exhaustiveness checking}. Difference being is we don't allow idempotence.
 
 \subsubsection{Synthesising Terms for Types}
 Difficulties instantiating strings...
