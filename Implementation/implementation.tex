@@ -435,20 +435,17 @@ One extension I attempted in order to improve code coverage was instantiating ho
 
 The \textit{pattern-matching-instantiation} branch implements a way to instantiate sub-parts of an indet term such that the new term can be deconstructed by the the pattern in the most general way. \textbf{show example}
 
-However, this is not enough to actually \textit{allow} deconstruction. The possibility that \textit{more specific} patterns could be present above the current branch means this term is still an indeterminate match. i.e. the following would make sense to run:
+\textbf{(note: bug was found here with matching ?::?)}
+
+Hence, we could try instantiating the match scrutinee with least specific versions which match the patterns on each branch, e.g. \code{?::?} for \code{x::xs}. i.e. 
 
 \texttt{case ?::? | [] => [] | x::xs => xs}
 
-But it could also be possible for this, where the \textit{more specific} 2nd branch would have a indeterminate match on the tail hole:
+However, this is not always enough to actually \textit{allow} deconstruction in a match statement. The possibility that \textit{more specific} patterns could be present above the current branch means this term is still an indeterminate match. For example, the following would be an indeterminate match:
 
 \texttt{case ?::? | [] => [] | x::y::[] => [] | x::xs => xs}
 
-\textbf{(Find this problem in the Paper and Cite)}
-Hazel is conservative and doesn't even allow the first example to evaluate.
-
-Hence, many of these most general deconstructions don't work. Therefore, I modified this to replace the tail of cons to instantiate the sequence of all lists, which allows this to work. \textbf{(explain better...)} However, this introduces the problem of branch instantiations overlapping, e.g. instantiations of list of length $>=1$ and one of length $>=2$ overlap severely. 
-
-To solve this, I introduce the idea of a \textit{not patterns}, and \textit{or patterns}, \textit{and patterns}, \textit{truth patterns}, and \textit{impossible patterns}. This is just a theory to transform pattern matching into equivalents with \textit{no overlapping branches}, these patterns do not actually need to be implemented directly, except for not pattern instantiation on base types (though \textit{or patterns} would be useful).
+To solve this\footnote{Also, having the side effect of allowing the representation of inequalities symbolically, i.e. \textit{not 1} $\overline{1}$. This is useful for symbolic execution of if statements.}, I introduce the idea of a \textit{not patterns}, and \textit{or patterns}, \textit{and patterns}, \textit{truth patterns}, and \textit{impossible patterns}. This is just a theory to transform pattern matching into equivalents with \textit{no overlapping branches}, these patterns do not actually need to be implemented directly, except for not pattern instantiation on base types (though \textit{or patterns} would be useful).
 
 \[\overline{\overline{p}} = p \qquad \overline{[\ ]} = \top::\top \qquad \overline{p :: q} = [\ ] \mid \overline{p}::q \mid p::\overline{q} \mid \overline{p} :: \overline{q}\]
 \[\overline{\top} = \bot \qquad \bot :: p = q :: \bot = \bot \qquad p \mid \bot = p \qquad x = \top\]
