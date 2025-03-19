@@ -6,40 +6,57 @@ Type systems aim to alleviate some of this burden by classifying expressions and
 
 In static typing, blame for type errors are typically localised to a \textit{single} location in the code. However, this localisation may be misleading, as the actual cause of the error might be rooted in a broader context, for example in OCaml 65\% of type errors related to \textit{multiple} locations \cite{StudentTypeErrorFixes}. This is a particularly prevalent issue in \textit{type inferred} languages.
 
-In dynamic typing, type errors are often missed as they only appear during runtime with specific inputs. However, a dynamic type error can be \textit{more intuitive} \cite{TraceVisualisation} due to it being accompanied by an \textit{evaluation trace} demonstrating concretely why values are \textit{not} consistent with their expected type.
+In dynamic typing, type errors are often missed as they only appear during runtime with specific inputs.
+Additionally, they don't generally specify any source code context which caused them. Instead, a dynamic type error is accompanied by an \textit{evaluation trace}, which can be \textit{more intuitive} \cite{TraceVisualisation} by demonstrating concretely why values are \textit{not} consistent with their expected type as required by a \textit{runtime cast}.
 
-This project seeks to enhance the debugging experience in Hazel \cite{Hazel}, a functional locally inferred and gradually typed research language under active development at the University of Michigan. 
+This project seeks to improve user understanding of type errors by localising static type errors \textit{more completely}, and \textit{combining} the benefits of static and dynamic type errors.
 
-\textbf{INTRODUCE HAZEL \& IT'S VISION HERE WITH IT'S BASIC UNUSUAL FEATURES}
-
-I introduce two novel features to improve user comprehension of type errors, \textit{type slicing} and \textit{cast slicing}; additionally, mathematical foundations have been devised for these by building upon the Hazel Calculus \cite{HazelLivePaper}. Further, I implement a \textit{type error witness search procedure} based upon a similar idea implemented for a subset of OCaml by Seidel et al. \cite{SearchProc}:
+I consider three research problems and implement three features to solve them in the Hazel language \cite{Hazel}:\footnote{The answers may differ greatly for other languages. Hazel provides a good balance between complexity and usefulness.}
 \begin{itemize}
-\item \textbf{Type slicing} highlights larger sections of code that contribute to an expression having a required type. Hence, a \textit{static type error} location can be selected and the context enforcing the erroneous type revealed.
+\item Can we statically highlight code which explains \textit{static type errors} more \textit{completely}, including all code that \textit{contributes} to the error? 
 
-\item \textbf{Cast slicing} propagates type slice information throughout evaluation, allowing the context of \textit{runtime casts} to be examined. Hence, a \textit{runtime type error} (that is, a \textit{cast error}) can be selected to reveal the context enforcing it's expected type.
+This would eliminate the issue of static errors being \textit{incorrectly localised}.
 
-\item The \textbf{type error witness search procedure} finds inputs to expressions that will cause a \textit{cast error} upon evaluation, these accompanied with their execution trace are referred to as \textit{type error witnesses}. Hence, dynamic type errors can be found automatically, and \textit{concrete} type witnesses can be found for known static type errors.
-\end{itemize}
+Solution: I devise a \textit{novel} method of \textbf{type slicing} with formal mathematical foundations built upon the formal \textit{Hazel calculus} \cite{HazelLivePaper}. Further, it generalises to highlight all code relevant to typing \textit{any} expressions (not just erroneous expressions).
 
-These three features work well together to allow both static and dynamic type errors to be located and explained to a greater extent than in any existing languages. Arguably, these explanations are intuitive, and should help reduce debugging times and aid in students understanding type systems.
+\item Can we dynamically highlight source code which contributes to a \textit{dynamic type error}?
 
-For example, here is a walk-through for how a simple error could be diagnosed using these three features. 
+This would provide missing source code context to understand how types involved in a dynamic type error originate.
+
+Solution: I devise a \textit{novel} method of \textbf{cast slicing}, also with formal mathematical foundations. Further, it generalises to highlight source code relevant to requiring any specific \textit{runtime casts}.
+
+\item Can we provide dynamic \textit{evaluation traces} to explain \textit{static type errors}?
+
+This would provide an intuitive concrete explanation for static type errors.
+
+Solution: I implement a \textbf{type error witness search procedure}, which finds inputs (witnesses) to expressions which cause a \textit{dynamic type error}. This is based on research by Seidel et al. \cite{SearchProc} which devised a similar procedure for a subset of OCaml.
+\end{itemize} 
+
+Hazel \cite{Hazel} is a functional locally inferred and gradually typed research language allowing the writing of \textit{incomplete programs} under active development at the University of Michigan. 
+
+\textbf{INTRODUCE HAZEL \& IT'S VISION HERE WITH IT'S BASIC UNUSUAL FEATURES \& Show why it is a good choice to answer the research questions for}.
+
+(i.e. a notebook environment, easy teaching language for students, teaching language to understand complex type systems... All are situations where better error explanations are useful (\textbf{cite that students struggle more with type errors}))
+
+These three features work well together in Hazel to allow both static and dynamic type errors to be explained to a greater extent than in any existing languages. Arguably, these explanations are intuitive, and should help reduce debugging times and aid in students understanding type systems.\footnote{Proving this would require a human study.}
+
+For example, here is a walk-through for how a simple error could be diagnosed using the three features. 
 
 \textbf{MAP function? show a static error version}
 
 \section{Related Work}
 \label{sec:RelatedWork}
-There has been extensive research into attempting to understand \textit{what} is needed \cite{DebugNeeds}, \textit{how} developers fix bugs \cite{HowFixBugs}, and a plethora of compiler \textit{improvements} and \textit{tools} \textbf{add citations here, primarily functional language tools}. This project builds upon this body of research in new ways focusing on the Hazel language, which is itself a research project being taken in various directions but generally as a \textit{teaching language} for students. 
+There has been extensive research into attempting to understand \textit{what} is needed \cite{DebugNeeds}, \textit{how} developers fix bugs \cite{HowFixBugs}, and a plethora of compiler \textit{improvements} and \textit{tools} \textbf{add citations here, primarily functional language tools}. This project builds upon this body of research in new ways focusing on the Hazel language, which is itself a research project being taken in various directions (\textbf{cite the directions}) but generally as a \textit{teaching language} (\textbf{cite the explainthis paper}) for students. 
 
-To my knowledge the ideas of \textit{type slicing} and \textit{cast slicing} are novel. However, they do output \textit{program slices} which were originally explored by Weiser \cite{ProgSlice}, though my definition of program slices matches more with functional program slices \cite{FunctionalProgExplain}, and the properties I explore are more similar to \textit{dynamic program slicing} \cite{DynProgSlice} but with type characteristics rather than evaluation characteristics, in a sense similar \textit{type error slicing} \cite{ErrSlice}.
+To my knowledge the ideas of \textit{type slicing} and \textit{cast slicing} are novel. However, they do output \textit{program slices} which were originally explored by Weiser \cite{ProgSlice}, though my definition of program slices matches more with functional program slices \cite{FunctionalProgExplain}.  The properties I explore are more similar to \textit{dynamic program slicing} \cite{DynProgSlice} but with type characteristics rather than evaluation characteristics, in a sense similar \textit{type error slicing} \cite{ErrSlice}.
 
 The \textit{type witness search procedure} is	 based upon Seidel et al. \cite{SearchProc}, though there are significant differences in workings due to my use of Hazel and various extensions as compared to the subset of OCaml used by Seidel et al.
 
 \section{Dissertation Outline}
 \label{sec:Outline}
-\Cref{chap:Preparation} introduces the \textit{type theories} (\cref{sec:TypeSystems}) underpinning the \textit{Hazel core calculus} (\cref{sec:CoreHazel}), followed by the \textit{Hazel implementation} (\cref{sec:HazelImplementation}).
+\Cref{chap:Preparation} introduces the \textit{type theories} (\cref{sec:TypeSystems}) underpinning the \textit{Hazel core calculus} (\cref{sec:CoreHazel}), followed by basic background on the \textit{Hazel implementation} (\cref{sec:HazelImplementation}). Additionally, methods of non-deterministic programming are introduced (\cref{sec:Nondeterminism}).
 
-\Cref{sec:TypeSlicingTheory} and \cref{sec:CastSlicingTheory} formalise the ideas of \textit{type slices} and \textit{cast slices} in the Hazel core calculus, with properties proven\footnote{\textbf{TODO}} in \cref{sec:Proofs}. 
+\Cref{sec:TypeSlicingTheory} and \cref{sec:CastSlicingTheory} formalise and prove\footnote{TODO} the ideas of \textit{type slices} and \textit{cast slices} in the Hazel core calculus. 
  
  An implementation (\cref{sec:TypeSlicingImplementation}-\ref{sec:CastSlicingImplementation}) of these has been created covering \textit{most}\footnote{Except for type substitution.} of the Hazel language, including a user interface. 
  

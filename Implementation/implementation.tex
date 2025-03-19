@@ -7,6 +7,8 @@ Then, I implemented the theories, making it suitable for implementation and exte
 
 \textbf{Annotate the above with the relevant section links!}
 \section{Type Slicing Theory}\label{sec:TypeSlicingTheory}
+\textbf{Might be worth deferring even more mathematical definitions to the appendices in favour shorter worded definitions in this section}
+
 \textbf{Replace all occurrences of `typing context' with `typing assumptions' to avoid name clash with expression/program contexts.}
 
 I develop a novel method I term \textit{type slicing} as a mechanism to aid programmers in understanding \textit{why} a term has a given type via static means. Three slicing mechanism have been devised with differing characteristics, all of which associate terms with their typing derivation to produce a \textit{typing slices}. 
@@ -364,9 +366,6 @@ This in combination with the indexed slices could have some nice mathematical pr
 
 Though, these would need to retrieve information about parts of slices that were lost when decomposing slices. i.e. when a slice $\tau_1 \to \tau_2$ extracts the argument type $\tau_2$, the slicing criterions lose track of the original lambda binding. A way to reinsert these bindings such that we get a minimal term which \textit{Evaluates to the same cast} e.g. But this will have lots of technicalities with correctly tracking the restricted contexts $\gamma'$ for closures (i.e. functions returning functions which have been applied once). \textbf{TALK ABOUT THIS IN THE FURTHER DIRECTIONS SECTION.}
 
-\section{Proofs}\label{sec:Proofs}
-Do if there is time. Prove that analysis slice contexts actually make sense, that they maintain a valid term that is \textit{still} minimal.
-
 \section{Type Slicing Implementation}\label{sec:TypeSlicingImplementation}
 
 \subsection{Hazel Terms}
@@ -465,7 +464,9 @@ Therefore:
 }
 Basically, a boolean algebra... To ensure no overlapping branches we must disallow the Idempotent law in one direction ($p \to p \mid p$)...
 
-Very closely related to \textit{exhaustiveness checking}. Difference being is we don't allow idempotence.
+Very closely related to \textit{exhaustiveness checking}. Difference being is we don't allow idempotence. \textbf{See {https://github.com/hazelgrove/hazel/issues/1127}}
+
+\textbf{Note: Or and As patterns are pending unimplemented tasks for Hazel}
 
 \subsubsection{Synthesising Terms for Types}
 Difficulties instantiating strings...
