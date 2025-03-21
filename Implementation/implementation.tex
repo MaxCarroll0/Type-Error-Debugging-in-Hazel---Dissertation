@@ -367,20 +367,72 @@ This in combination with the indexed slices could have some nice mathematical pr
 Though, these would need to retrieve information about parts of slices that were lost when decomposing slices. i.e. when a slice $\tau_1 \to \tau_2$ extracts the argument type $\tau_2$, the slicing criterions lose track of the original lambda binding. A way to reinsert these bindings such that we get a minimal term which \textit{Evaluates to the same cast} e.g. But this will have lots of technicalities with correctly tracking the restricted contexts $\gamma'$ for closures (i.e. functions returning functions which have been applied once). \textbf{TALK ABOUT THIS IN THE FURTHER DIRECTIONS SECTION.}
 
 \section{Type Slicing Implementation}\label{sec:TypeSlicingImplementation}
-
+Here I detail how the theories above were adapted to produce an implementation for Hazel.
 \subsection{Hazel Terms}
 \label{sec:HazelTerms}
-Give basic structure of term data types, with a diagram? and coloured example of code.
+Hazel represents its abstract syntax tree (AST) \textbf{(cite)} in a standard way by creating a mutually recursive algebraic data-type (\textbf{cite}). 
+
+Terms are classified into similar groups as described in the calculus (see \cref{sec:HazelSyntax}), though combining external and internal expressions, and adding \textit{patterns}:
+\begin{itemize}
+\item \textbf{Expressions}: The primary encompassing term including: constructors\footnote{The basic language constructs: integers, lists, labelled tuples etc. Also, user-defined constructors via sum types.}, holes, operators, variables, let bindings, functions \& closures, type functions, type aliases, pattern match expressions, casts, explicit fix\footnote{Fixed point combinator for recursion.} expression.
+\item \textbf{Types}: Unknown type\footnote{Either dynamic type, or a type hole.}, base types, function types, product types, record types, sum types, type variables, universal types, recursive types.
+\item \textbf{Patterns}: Destructuring constructs for bindings, used in functions, match statements, and let bindings, including: Holes, variables (to bind values to), wildcard, constructors, annotations (enforcing type requirements on bound variables). 
+\item \textbf{Closure Environments}: a closure mapping variables to their assigned values in it's syntactic context.
+\end{itemize}
+
+For example \cref{fig:tupletermstructure} shows a let binding expression whose binding is a tuple pattern (in blue) binding two variables \code{x}, \code{y} annotated with a type (in purple).
+
+\begin{figure}[h]
+\center\includegraphics[width=0.75\textwidth]{Media/Figures/tuple_term_structure}
+\caption{Let binding a tuple with a type annotation.}
+\label{fig:tupletermstructure}
+\end{figure}
+
+Every term (and sub-term) is annotated with an \textit{identifier} (ID, \code{Id.t}) in the AST which refers back to the syntax structure tree. In a sense, this is the equivalent of \textit{code locations}, but Hazel is edited via a structure editor. 
 \subsection{Type Slice Data-Type}\label{sec:TypeSliceDataType}
-Detail initial implementation (just tagging existing types). Compare with final implementation, quantitative numbers for improve could be obtained but would require quite a bit of coding work... Polymorphic Variants :))
+I detail here \textit{how} and \textit{why} I implement type slices for Hazel.
 
-Recursive nature of type slices might mean that data structure persistence could allow easy usage while automatically keeping low space. A good point about persistence would be very good, especially if I can show difficulties with the automatic version, since mine explictly maintains incremental and global parts (i.e. does not repeat references), maybe mine would use less pointers?
+\subsubsection{Expression slices as slices}
+Directly storing expression slices directly as ASTs is both \textit{space and time inefficient}. Even though the AST type is a persistent data structures \cite[ch. 2]{PurelyFunctionalDataStructures}, meaning that some structural sharing between expression slices and the program is possible while maintaining both structures, see \cref{fig:PersistentTrees}. However, when slicing off a branch of the tree we need to copy all the nodes on the path from the root to the slicing point. Expression slices do exactly this operation, so require extensive copying.
+\begin{figure}[h]
+\textbf{Produce Tikz Diagram Here.}
+\caption{Persistent Trees}
+\label{fig:PersistentTrees}
+\end{figure}
 
- Using actual expressions has big overhead and also restrictive (must have valid terms, obviously this is what the theory ensures, but I deviate), so I use ids of terms.
-\subsubsection{Code Slices}\label{sec:CodeSlices}
-id based. Has ctx used but not actually required as I decide to directly store typslices in context (explain how this differs from the theory).
+There are ways to avoid this, for example the \textit{Zipper} data structure represents trees by three parts from the perspective of any specific node (the cursor):
+\begin{itemize}
+\item Cursor: The node 
+\item Path: An `upside-down' version of the tree up until the cursor. A path to the cursor from the root containing the rest of the data structure.
+\item Subtrees: Subtrees of the node at the cursor.
+\end{itemize} 
+See \Cref{fig:PersistentZipper} for a diagrammatic example.
 
-Mention that full slices as in the theory is very inefficient.
+We could derive an analogous \textit{one-hole context} type for the AST by \textit{differentiating} it's type \cite{OneHoleContext, TypeDerivatives}. However, we still have to copy nodes when shifting the cursor; during type-checking all nodes will be visited by the cursor so we would get at least a \textit{doubling} in space used. Additionally, converting an expression slice into an expression would take linear time and still require copying the path to the gap as before.\footnote{Still advantageous as it delays the copying only for when the slice is actually \textit{used} in a way that requires this conversion. UI for slices would still work directly on the zipper structure without copying.} 
+
+\begin{figure}[h]
+\textbf{Produce Tikz Diagram Here.}
+\caption{Tree Zipper}
+\label{fig:PersistentZipper}
+\end{figure}
+
+However, the biggest issue is that expressions slices have \textit{multiple} gaps, so cannot be represented by a \textit{one}-hole context. Further, the slices vary in their number of holes, so generalising one-hole contexts to two-hole contexts etc. is not an option as each would require it's own distinct type. There are extensions to zippers allowing multiple holes which would work, \textit{multi-zippers} \cite{MultiZipper} for example, but has large constant overhead and would be very complicated to implement for such an extensive AST.
+
+\subsubsection{Unstructured Code Slices}
+With this in mind, given that the structure of expression slices does not actually matter for highlighting\footnote{Only matters for type checking slices, which always succeeds by design.}, I represent slices indirectly by these IDs in an \textit{unstructured} list, reffered to now as a \textit{Code Slice} (see the code_slice type).
+
+ Additionally, this has the side effect of allowing more \textit{granular} control over slices, as they now need not conform with the structure of expressions which is taken advantage of to reduce slice size, \textbf{(ref to section discussing this + evaluation)}.
+
+Equally, the typing assumption slices are only required for formal type checking, however I maintain these is code slices to allow for different UI styling of slices originating from the use of the typing context (bold outerline).
+
+\subsubsection{Type-Indexed Slices}
+Future cast slicing techniques and the more complex slicing criteria \textbf{(ref section)} required type indexed slices. My initial implementation recursively tagged types directly with (unstructured) code slices.
+
+\textit{inefficient due to analysis slices being repeated on every subslice...}
+
+Compare with final implementation, quantitative numbers for improve could be obtained but would require quite a bit of coding work... Polymorphic Variants :))
+
+
 \subsubsection{Integration with Existing Type Data-Type}
 Use of `Typ. Explain how this allows it to easily be disabled and saves space (maybe).
 \subsubsection{Synthesis \& Analysis Slices}
@@ -411,6 +463,8 @@ Mainly talk about the Model-view architecture and passing the cursor into the ev
 Very complex!!!
 
 \section{Indeterminate Evaluation}\label{sec:IndetEval}
+(Probably) Cannot use evaluator state for tracking trace lengths etc. because it is mutable (and IndetEval is non-deterministic). Instead thread through evaluation :(
+
 \subsection{Futures Data-Type}\label{sec:Futures}
 Lazy lists, often infinite
 \subsection{Hole Instantiation}\label{sec:HoleInstantiation}
@@ -434,7 +488,7 @@ One extension I attempted in order to improve code coverage was instantiating ho
 
 The \textit{pattern-matching-instantiation} branch implements a way to instantiate sub-parts of an indet term such that the new term can be deconstructed by the the pattern in the most general way. \textbf{show example}
 
-\textbf{(note: bug was found here with matching ?::?)}
+\textbf{(note: bug was found here with matching 1::?)}
 
 Hence, we could try instantiating the match scrutinee with least specific versions which match the patterns on each branch, e.g. \code{?::?} for \code{x::xs}. i.e. 
 
