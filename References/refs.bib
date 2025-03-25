@@ -745,24 +745,6 @@ keywords = {behavioral specifications, contracts, higher-order functions, predic
   year={2001}
 }
 
-@inproceedings{10.1145/1328438.1328474,
-author = {McBride, Conor},
-title = {Clowns to the left of me, jokers to the right (pearl): dissecting data structures},
-year = {2008},
-isbn = {9781595936899},
-publisher = {Association for Computing Machinery},
-address = {New York, NY, USA},
-url = {https://doi.org/10.1145/1328438.1328474},
-doi = {10.1145/1328438.1328474},
-abstract = {This paper introduces a small but useful generalisation to the 'derivative' operation on datatypes underlying Huet's notion of 'zipper', giving a concrete representation to one-hole contexts in data which is undergoing transformation. This operator, 'dissection', turns a container-like functor into a bifunctor representing a one-hole context in which elements to the left of the hole are distinguished in type from elements to its right.I present dissection here as a generic program, albeit for polynomial functors only. The notion is certainly applicable more widely, but here I prefer to concentrate on its diverse applications. For a start, map-like operations over the functor and fold-like operations over the recursive data structure it induces can be expressed by tail recursion alone. Further, the derivative is readily recovered from the dissection. Indeed, it is the dissection structure which delivers Huet's operations for navigating zippers.The original motivation for dissection was to define 'division', capturing the notion of leftmost hole, canonically distinguishing values with no elements from those with at least one. Division gives rise to an isomorphism corresponding to the remainder theorem in algebra. By way of a larger example, division and dissection are exploited to give a relatively efficient generic algorithm for abstracting all occurrences of one term from another in a first-order syntax. The source code for the paper is available online and compiles with recent extensions to the Glasgow Haskell Compiler.},
-booktitle = {Proceedings of the 35th Annual ACM SIGPLAN-SIGACT Symposium on Principles of Programming Languages},
-pages = {287–295},
-numpages = {9},
-keywords = {datatype, differentiation, dissection, division, generic programming, iteration, polynomial, stack, tail recursion, traversal, zipper},
-location = {San Francisco, California, USA},
-series = {POPL '08}
-}
-
 @article{TypeDerivatives,
 author = {McBride, Conor},
 title = {Clowns to the left of me, jokers to the right (pearl): dissecting data structures},
@@ -784,3 +766,25 @@ keywords = {datatype, differentiation, dissection, division, generic programming
 }
 
 
+
+@book{RealWorldOCaml,
+  title={Real World OCaml: Functional programming for the masses},
+  author={Minsky, Yaron and Madhavapeddy, Anil and Hickey, Jason},
+  year={2013},
+  publisher={" O'Reilly Media, Inc."}
+}
+
+@techreport{PolymorphicVariants,
+  title={A polymorphic type system for extensible records and variants},
+  author={Gaster, Benedict R and Jones, Mark P},
+  year={1996},
+  institution={Technical Report NOTTCS-TR-96-3, Department of Computer Science, University~…}
+}
+
+@inproceedings{StructuralSubtyping,
+  title={Structural subtyping and the notion of power type},
+  author={Cardelli, Luca},
+  booktitle={Proceedings of the 15th ACM SIGPLAN-SIGACT symposium on Principles of programming languages},
+  pages={70--79},
+  year={1988}
+}

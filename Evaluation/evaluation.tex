@@ -58,6 +58,13 @@ Cast slices should be small as they only use sub-parts of terms and mostly exist
 Which constructs are ignored in simplified slices? Why? Do they have the biggest impact on size?
 
 Discuss the usability aspects of the 4 different type slicing ideas. Discuss 
+
+\subsection{Structure Editing}
+Statics are recalculated upon edits and even cursor movement in Hazel. The previous results show that slicing is a \textit{relatively expensive} operation, and not so suitable for such a rapid use case. In this section I discuss ideas for reducing the recalculation during local edits. \textbf{Check out Hazel's incrementalisation efforts too to see if they help} 
+
+The Hazel structure editor allows efficient\footnote{Constant time.} updating of the external syntax tree via the use of a zipper. It would make sense to extend this zipper idea into the abstract syntax tree and it's statics (typing information), allowing allow local changes to propagate to local changes (and type changes) in the AST zipper. Some local changes can propagate type changes \textit{non-locally} (e.g. inserting a new binding) which would require extensive recalculation of the typed AST, but these would be relatively rare (\textbf{provide evidence for this?}). 
+
+This would require an entire rewrite of the Hazel statics.
 \subsection{Cast Laziness}
 Annotations will create casts, but in many cases these annotations will never actually be used. i.e. on a product where only the 2nd element is ever used, a cast error on the 1st element is still caught. Eager casts catch these errors, lazy casts do NOT.
 

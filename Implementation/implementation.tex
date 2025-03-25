@@ -15,7 +15,7 @@ I develop a novel method I term \textit{type slicing} as a mechanism to aid prog
 
 The first two criteria attempt to give insight on the structure of the typing derivations, and hence how types are decided. While the third criterion gives a complete picture of the regions of code which contribute to the a term's type.
 
-I would like to stress that the second and third criterion were \textiwt{very challenging} to formalise, requiring extensive mathematical machinery: \textit{context slices} (\cref{sec:ContextTypingSlices}), \textit{type flows} (\textbf{ref appendix}), \textit{checking context} (\cref{def:CheckingContext}), \textit{type-indexed slices} (\cref{sec:TypeIndexedSlices}).
+I would like to stress that the second and third criterion were \textit{very challenging} to formalise, requiring extensive mathematical machinery: \textit{context slices} (\cref{sec:ContextTypingSlices}), \textit{type flows} (\textbf{ref appendix}), \textit{checking context} (\cref{def:CheckingContext}), \textit{type-indexed slices} (\cref{sec:TypeIndexedSlices}).
 
 \textbf{Clarify on and ensure terminology is consistent (typing vs checking/analysis vs synthesis)}
 
@@ -108,7 +108,9 @@ Extend composition to program contexts and substitution of expression typing sli
 When 
 
 \subsection{Type-Indexed Slices}\label{sec:TypeIndexedSlices}
-\textbf{Have context i.e. contexts with a $_$ and let the syntax write it directly as a \textit{type-indexed context slice}, i.e. a type-indexed slice, but with the slice $\rho$s replaced with $\p$s. Then allow easy syntax to create from a type indexed slice i.e.}
+\textbf{Do type-indexed expressions slices actually need contexts on the sub-slices? Are these every not claculable from the rule they are being used in}
+
+\textbf{Have context i.e. contexts with a $\_$ and let the syntax write it directly as a \textit{type-indexed context slice}, i.e. a type-indexed slice, but with the slice $\rho$s replaced with $\p$s. Then allow easy syntax to create from a type indexed slice i.e.}
 \[(\p\{\dyn \mid \rho\})(\cmark) = \p\{\dyn \mid \rho(\cmark)\}\]
 Reverse composition order for this?? Also, syntax for going from indexed context to indexed expression i.e. $\{\}$
 
@@ -302,7 +304,7 @@ A \textit{contribution slice} of $e'$ is an \textit{analysis slice} for $e'$ in 
 \item Under restricted typing context $\gamma$, that $\varsigma$ checks against any $\tau'_2$ at least as precise as $\tau'$:\footnote{Essentially, sub-terms that check against $\dyn$ also synthesise $\dyn$. Defined this way to include the case of unannotated lambdas (which do not synthesise).}
 \[\forall \tau'_2.\ \tau' \sqsubseteq \tau'_2 \implies \analysis[\gamma]{e'}{\tau'_2}\]
 \end{itemize}
-A contribution slice for a sub-term $e''$ involved in sub-derivation $\synthesis[\Gamma'']{e''}{\tau''}$ where $e'' \neq e'$ is an expression typing slice $\varsigma''^\gamma''$ which also synthesises $\tau''$ under $\gamma''$, that $\synthesis[\gamma'']{\varsigma''}{\tau''}$. Further, any sub-term of $e''$ which has a contribution slice of the above variety, is replaced inside $\varsigma$ by that corresponding expression typing slice.
+A contribution slice for a sub-term $e''$ involved in sub-derivation $\synthesis[\Gamma'']{e''}{\tau''}$ where $e'' \neq e'$ is an expression typing slice $\varsigma''^{\gamma''}$ which also synthesises $\tau''$ under $\gamma''$, that $\synthesis[\gamma'']{\varsigma''}{\tau''}$. Further, any sub-term of $e''$ which has a contribution slice of the above variety, is replaced inside $\varsigma$ by that corresponding expression typing slice.
 \end{definition} 
 This is most naturally calculated using \textit{type-indexed slices} exactly replicating the Hazel typing rules:
 
@@ -326,7 +328,7 @@ This is most naturally calculated using \textit{type-indexed slices} exactly rep
 \label{fig:ContributionSliceRules}
 \end{figure} 
 
-Where $\mathrm{map}(\rho, \tau)$ creates a type-indexed slice of type $\tau$ with the slice context $\cmark$ and expression typing slice $\rho$ tagged on all components of $\tau$. Annot is as defined in criterion 1 extended to type-indexed slices. $x \match_\gamma = p$ matches $p$ with $x$ if $x \in \text{dom}(\gamma)$, otherwise returns $\gap$. $\funmatch$ is extended to slices as follows:
+Where $\mathrm{map}(\rho, \tau)$ creates a type-indexed slice of type $\tau$ with the slice context $\cmark$ and expression typing slice $\rho$ tagged on all components of $\tau$. Annot is as defined in criterion 1 extended to type-indexed slices. $x \match\gamma = p$ matches $p$ with $x$ if $x \in \text{dom}(\gamma)$, otherwise returns $\gap$. $\funmatch$ is extended to slices as follows:
 \[\p\{s_1 \to s_2 \mid \rho\} \funmatch \p\circ s_1 \to \p \circ s_2\]
 \[\p\{\dyn \mid \rho\} \funmatch \p\{\dyn \mid \rho\} \to \p\{\dyn \mid \rho\}\]
 static replaces a (sub)slice term if it is in the position of a $\dyn$ on the input. Reconstructing the term is just taking the join down one level \textbf{(PROVE This)}. 
@@ -392,23 +394,28 @@ Every term (and sub-term) is annotated with an \textit{identifier} (ID, \code{Id
 \subsection{Type Slice Data-Type}\label{sec:TypeSliceDataType}
 I detail here \textit{how} and \textit{why} I implement type slices for Hazel.
 
-\subsubsection{Expression slices as slices}
-Directly storing expression slices directly as ASTs is both \textit{space and time inefficient}. Even though the AST type is a persistent data structures \cite[ch. 2]{PurelyFunctionalDataStructures}, meaning that some structural sharing between expression slices and the program is possible while maintaining both structures, see \cref{fig:PersistentTrees}. However, when slicing off a branch of the tree we need to copy all the nodes on the path from the root to the slicing point. Expression slices do exactly this operation, so require extensive copying.
+\subsubsection{Expression slices as ASTs}
+\textbf{Actually the below might be inaccurate, check the structure of the typing system to see if we would ever need to re traverse an AST?}
+
+\textbf{Either way, there is opportunity to speak about persistence with how type slices are combined and decomposed and how they overlap. etc.}
+
+Directly storing expression slices directly as ASTs is both \textit{space and time inefficient}. The AST type is a persistent data structures \cite[ch. 2]{PurelyFunctionalDataStructures}, meaning that any update to the tree will retain both the old and updated tree. All nodes on the path to the updated sub-tree must be copied; for example, \cref{fig:PersistentTrees} shows how a node G (in blue) can be sliced off from the tree while the old tree (in black) and the new tree (in red) both persist and share some unmodified nodes structurally. Expression slices do exactly this slicing operation extensively, so would require significant copying.
 \begin{figure}[h]
-\textbf{Produce Tikz Diagram Here.}
-\caption{Persistent Trees}
+\center\includegraphics[width=0.75\textwidth]{Media/Figures/persistenttree}
+\caption{Persistent Tree}
 \label{fig:PersistentTrees}
 \end{figure}
 
-There are ways to avoid this, for example the \textit{Zipper} data structure represents trees by three parts from the perspective of any specific node (the cursor):
-\begin{itemize}
-\item Cursor: The node 
-\item Path: An `upside-down' version of the tree up until the cursor. A path to the cursor from the root containing the rest of the data structure.
-\item Subtrees: Subtrees of the node at the cursor.
-\end{itemize} 
-See \Cref{fig:PersistentZipper} for a diagrammatic example.
+\textbf{Maybe talk about a destructive version (always retain the original tree but from the perspective of various cursors}
 
-We could derive an analogous \textit{one-hole context} type for the AST by \textit{differentiating} it's type \cite{OneHoleContext, TypeDerivatives}. However, we still have to copy nodes when shifting the cursor; during type-checking all nodes will be visited by the cursor so we would get at least a \textit{doubling} in space used. Additionally, converting an expression slice into an expression would take linear time and still require copying the path to the gap as before.\footnote{Still advantageous as it delays the copying only for when the slice is actually \textit{used} in a way that requires this conversion. UI for slices would still work directly on the zipper structure without copying.} 
+There are ways to partially avoid this, for example the \textit{Zipper} data structure represents trees by from the perspective of a \textit{cursor} node rather than the \textit{root}. The part of the tree above the cursor is stored as an \textit{upside-down}. This allows the cursor to be 
+
+We can derive an analogous \textit{one-hole context} type for the AST by \textit{differentiating} it's type \cite{OneHoleContext, TypeDerivatives}. 
+
+
+\textbf{Zippers only useful if we need access to the parent node which cannot just be done by passing down info.}
+
+However, we still have to copy nodes when shifting the cursor; during type-checking all nodes will be visited by the cursor so we would get at least a \textit{doubling} in space used. Additionally, converting a zipper back into a tree would take linear time\footnote{In the depth of the cursor.} and still require copying the path to the cursor as before.\footnote{Still advantageous as it delays the copying only for when the slice is actually \textit{used} in a way that requires this conversion. UI for slices would still work directly on the zipper structure without copying.} 
 
 \begin{figure}[h]
 \textbf{Produce Tikz Diagram Here.}
@@ -419,30 +426,157 @@ We could derive an analogous \textit{one-hole context} type for the AST by \text
 However, the biggest issue is that expressions slices have \textit{multiple} gaps, so cannot be represented by a \textit{one}-hole context. Further, the slices vary in their number of holes, so generalising one-hole contexts to two-hole contexts etc. is not an option as each would require it's own distinct type. There are extensions to zippers allowing multiple holes which would work, \textit{multi-zippers} \cite{MultiZipper} for example, but has large constant overhead and would be very complicated to implement for such an extensive AST.
 
 \subsubsection{Unstructured Code Slices}
-With this in mind, given that the structure of expression slices does not actually matter for highlighting\footnote{Only matters for type checking slices, which always succeeds by design.}, I represent slices indirectly by these IDs in an \textit{unstructured} list, reffered to now as a \textit{Code Slice} (see the code_slice type).
+With this in mind, given that the structure of expression slices does not actually matter for highlighting\footnote{Only matters for type checking slices, which always succeeds by design.}, I represent slices indirectly by these IDs in an \textit{unstructured} list, referred to now as a \textit{code slice} (\code{code_slice} type).
 
  Additionally, this has the side effect of allowing more \textit{granular} control over slices, as they now need not conform with the structure of expressions which is taken advantage of to reduce slice size, \textbf{(ref to section discussing this + evaluation)}.
 
-Equally, the typing assumption slices are only required for formal type checking, however I maintain these is code slices to allow for different UI styling of slices originating from the use of the typing context (bold outerline).
+Equally, the typing assumption slices are only required for formal type checking, however I maintain these is code slices to allow for different UI styling of slices originating from the use of the typing context (bold border).
 
 \subsubsection{Type-Indexed Slices}
-Future cast slicing techniques and the more complex slicing criteria \textbf{(ref section)} required type indexed slices. My initial implementation recursively tagged types directly with (unstructured) code slices.
+Cast slicing and contribution slices required \textit{type-indexed} slices. I therefore tag type constructors with slices recursively, i.e.:
 
-\textit{inefficient due to analysis slices being repeated on every subslice...}
+\begin{figure}[h]
+\begin{minted}[fontsize=\small]{reason}
+type typslice_term = 
+  | Unknown
+  | Arrow(slice_t, slice_t)  // Function type
+  | ... // Type constructors
+and typslice_term = (typ_term, code_slice)
+and typslice_t = IdTagged.t(slice_term)
+\end{minted}
+\caption{Initial Type Slice Data-Type}
+\end{figure}
 
-Compare with final implementation, quantitative numbers for improve could be obtained but would require quite a bit of coding work... Polymorphic Variants :))
+However, this did not model the structure of type slices particularly well. Slices are generally incrementally constructed. Synthesis slices build upon slices of sub-terms and analysis slices , demonstrated in \cref{fig:IncrementalSlices}. 
+
+The original data-type works well for synthesis slices as the list data-type is persistent and sub-slices are never modified. But not for analysis slices, which require an id to be added to \textit{all} sub-slices. Hence, analysis slices had \textit{quadratic} space complexity in the depth of the type (\textbf{Get numbers in evaluation to show it being worse if possible}).
+
+\begin{figure}[h]
+\begin{minted}{reason}
+let f : Int -> Int = fun x -> x in f(0)
+\end{minted}
+Synthesis slice for f(0) is just constructed incrementally from the slices for 0 and f. 
+
+Analysis slice for 0, f and all it's sub-slices all depend upon the annotation and binding etc.
+\caption{Slicing is Incremental}
+\label{fig:IncrementalSlices}
+\end{figure}
 
 
-\subsubsection{Integration with Existing Type Data-Type}
-Use of `Typ. Explain how this allows it to easily be disabled and saves space (maybe).
-\subsubsection{Synthesis \& Analysis Slices}
-Incremental/Global. Detail the choice to not annotate many analysis slices.
-\subsubsection{Mapping Functions}
+
+\subsubsection{Incremental Slices}
+Therefore, I explicitly represent slices incrementally, with two modes, for synthesis slice parts (termed \textit{incremental slice tags}) and analysis slice parts (termed \textit{global slice tags}).
+
+I now tag each type constructor with incremental or global slices representing:
+\begin{itemize}
+\item Incremental Slice Tag: The slice of an expression is it's sub-slices adding it's incremental slice. But the sub-slices do not depend on the incremental slice.
+\item Global Slice Tag: All the sub-slices of this term depend on this slice.
+\end{itemize}
+So instead of tagging an id in an analysis slice to all subslices, I tag it only to the constructor as a \textit{global slice}, and \textit{lazily} tag it to sub-slices upon usage (during type destructuring).
+
+We get the following type:
+\begin{figure}[h]
+\begin{minted}[fontsize=\small]{reason}
+type typslice_typ_term = 
+  | Unknown
+  | Arrow(slice_t, slice_t)  // Function type
+  | ... // Type constructors
+and typslice_term = 
+  | SliceGlobal(slice_t, code_slice)
+  | SliceIncr(slice_t, code_slice)
+and typslice_t = IdTagged.t(typslice_term)
+\end{minted}
+\caption{Incremental Slice Data-Type}
+\end{figure}
+
+A key change when using this model is that when deconstructing types via function matching, list matching, etc. used throughout type checking and unboxing, the global slice must be pushed inside the resulting deconstructed types. This ensures that no part of the analysis slice context is lost \textbf{(compare to function matching in the type-indexed slice theory)}. 
+
+\subsubsection{Empty Slices \& Integration with Existing Type Data-Type}
+
+
+Use of `Typ. Explain how this allows it to easily be disabled and saves space (maybe, cite).
+
+\subsubsection{Usability \& Efficiency}
+The type was further changed and many utility functions were added to enforce invariants and to ease development.
+
+\paragraph{Empty Slices} 
+Many type constructors have no associated incremental slice part (\textbf{example}), especially during evaluation. Equally, when type slicing is turned off. A \code{TypSlice(typslice_typ_term)} constructor is added to represent this case.
+
+\paragraph{Fully Empty Slices} For the case when type slicing is turned off we also know that \textit{all} sub-slices are empty, and we get an isomorphism between slices and the original \textit{type}. For convenience in integrating with existing code, a fourth slice type \code{Typ(typ_term)} is added allowing a trivial and \textit{efficient}\footnote{Conversion to the empty slice type would instead take linear time.} injection from types to typeslices by tagging with \code{Typ}. Note that this means the empty slices \code{TypSlice} no longer needs to include atomic types.\footnote{These being equivalent to types, as no sub-slices exist.}
+
+\paragraph{Slice Tag Duplicates}
+The previous formulation allowed structures a type constructor with multiple global slices. For example: \begin{minted}[fontsize=\small]{reason}
+SliceGlobal(SliceIncr(SliceGlobal(Arrow(...,...),...),...),...)\end{minted}
+The possibility of any permutation of slices makes programming awkward when conceptually all we need is \textit{at most one} global and incremental slice tag. 
+I enforce this invariant by refining the type to the actual type used in the final implementation:\footnote{Modulo some insignificant refactorings.}
+\textbf{TODO: Refactor code to use empty type-slices}
+\begin{minted}[fontsize=\small]{reason}
+...
+and typslice_empty_term = [
+  | `Typ(typ_term)
+  | `TypSlice(typslice_typ_term)
+]
+and typslice_incr_term = [
+  | `Typ(typ_term)
+  | `TypSlice(typslice_typ_term)
+  | `SliceIncr(typslice_typ_term, code_slice)
+]
+and typslice_term = [
+  | `Typ(typ_term)
+  | `TypSlice(typslice_typ_term)
+  | `SliceIncr(typslice_empty_term)
+  | `SliceGlobal(typslice_incr_term, code_slice)
+]
+and typslice_t = IdTagged.t(typslice_term)
+...
+\end{minted}
+\textit{Polymorphic Variants} \cite[ch. 7.4]{RealWorldOCaml}, notated \texttt{[ | ... ]} are used here for convenience in incrementally writing functions, explained for an example \textit{apply} function below. These are variants which exhibit \textit{row polymorphism} \cite{PolymorphicVariants} \cite[ch. 10.8]{ATTAPL} where these variants are related by a \textit{structural subtyping} relation \cite{StructuralSubtyping} where polymorphic variants of the same \textit{structure}, with constructors of the same name and types, are subtypes. 
+
+We have that, \code{typslice_empty_term} is a subtype of\\ \code{typslice_incr_term} which is a subtype of \code{typslice_term}. All other type constructors are either co-variant or contra-variant \cite[ch. 2]{BasicCatTheory} with respect to the subtyping relation. For example, id tagging is covariant\footnote{It is just a labelled pair type.}, so an\\ \code{IdTagged.t(typslice_incr_term)} is a subtype of\\ \code{IdTagged.t(typslice_incr_term) = typslice_t}. 
+
+Equally, a function of type\\ 
+$\code{typslice_incr_term} \to \code{typslice_incr_term}$ is a subtype of $\code{typslice_empty_term} \to \code{typslice_term}$, being contravariant in it's argument and covariant in it's result. This function subtyping property significantly reduces work in defining functions on this type as seen below.
+\paragraph{Utility Functions}
+Functions on slices often do not concern the slices, but only the structure of it's underlying type, for example in unboxing\footnote{e.g. checking if a slice is a \textit{list} type.} (\textbf{ref to sec}). In which case it is more convenient to just write a $\code{typ_term} \to 'a$ and $\code{typslice_term} \to 'a$ function directly on the possible empty slice types. 
+
+An \code{apply} function is provided to apply this onto the slice term. See how the bottom two branches can both be passed into the \code{apply} function even though they have different types (but are both subtypes of \code{typslice_term}).  
+\begin{minted}[fontsize=\small]{reason}
+let rec apply = (f_typ, f_slc, s) =>
+  switch (s) {
+  | `Typ(ty) => f_typ(ty)
+  | `TypSlice(slc) => f_slc(slc)
+  | `SliceIncr(s, _) => apply(f_typ, f_slc, s)
+  | `SliceGlobal(s, _) => apply(f_typ, f_slc, s)
+  }
+\end{minted}
+Similarly, mapping function which map a $\code{typ_term} \to \code{typ_term}$ and similar functions onto slices are provided while maintaining the slice tags. Another particularly useful one is a mapping function that maps $\code{typ_term} \to \code{typslice_term}$ etc. and merges the slices around the input term and the output slice of the mapped function. Other utility functions include wrapping functions, deconstruction functions etc. are written.
+
 \subsubsection{Type Slice Joins}
-Show example where multiple branches of join highlighted, i.e. $Int \to \dyn$ and $\dyn \to Bool$.
+Type joins are extensively used in the Hazel implementation for \textit{branching statements}. The type of a branching statement is the \textit{least specific} type which is still \textit{at least as specific} as all the branches. This corresponds to the \textit{lattice join} of the types of the branches with respect to the precision relation. 
+
+Previously in \cref{sec:JoinTypesTheory}, I stated how slices could be joined. To implement this, first any contextual code slices required to place the branches within a common context are wrapped onto the branch slices. Then the slices are joined, unioning the incremental code slices of branches.
+
+For basic synthesis and analysis slices, I decide to take the code slices for each atomic type in the joined type from only \textit{one} branch. This retains a complete explanation of \textit{why} the joined type is synthesised/checked, but does \textit{not} constitute a valid contribution slice.
+
+This slicing is not as easy as just taking the slice of a single branch, as the most specific sub-parts of the joined type may come from differing branches. For example in \cref{fig:TypeSliceJoinExample}, the \textit{then} branch has a type $\code{Int} \to (\dyn,\code{Int})$ and the \textit{else} branch has type $\code{Int} \to (\code{Int}, \dyn)$ meaning the joined type is $\code{Int} \to (\code{Int}, \code{Int})$. We can omit one\footnote{The figure, and my implementation, omits the left branches.} of the redundant annotations on the argument but still must retain a slice of the 0 term in both branches to get the \code{(Int, Int)} slice.
+\begin{figure}[h]
+\textit{if ? then fun x : Int -> (?, 0) else fun x : Int -> (0, ?)}
+\caption{Type Slice Join}
+\label{fig:TypeSliceJoinExample}
+\end{figure}
+
+The unstructured nature of code slices also allows the type constructors to select only \textit{one} branch to take the slice from. The given figure would \textit{not} highlight the function constructor in the \textit{then} branch. However, this is not be a valid expression slice in the theoretic sense and could be confusing for the user \textbf{(discuss in evaluation, missing info)}.
+
+\subsubsection{Weak Head Normalisation}
+This subsection could be elided.
 
 \subsection{Static Type Checking}\label{sec:TypeChecking}
 Detail the statics and Info types. Explain the distinction between Self.re and Mode.re, which links very nicely with the synthesis and analysis slice distinctions.
+
+Designed to not conflict with existing code (i.e. retain type checking exactly and make it easy to add new type rules).
+\subsubsection{Self}
+
+\subsubsection{Mode}
 
 \subsection{Elaboration}\label{sec:Elaboration}
 Make casts use type slices, insertion is mostly the same. Just need to ensure that the slices are preserved (i.e. types are threaded through without being replaced)
@@ -479,7 +613,7 @@ Hazel match expressions can be dynamic, allowing scrutinees to be of varying typ
 
 \texttt{case ? | 0 => 0 | [] => 1 end} etc.
 
-This means that casts are placed on the \textit{branches} rather than the scrutinee, meaning I need a special case for instantiating match scrutinees on a per-branch-type basis. This can be done by listing the possible types for the branches, then inserting a cast $\castcast{\dyn}$ on the scrutinee hole. Then re-running instantiation (which will use this inner cast to instantiate.
+This means that casts are placed on the \textit{branches} rather than the scrutinee, meaning I need a special case for instantiating match scrutinees on a per-branch-type basis. This can be done by listing the possible types for the branches, then inserting a cast $\scastcast{\dyn}{T}{\dyn}$ on the scrutinee hole. Then re-running instantiation (which will use this inner cast to instantiate.
 
 There was an \textit{unboxing} bug which was discovered here.
 

@@ -20,7 +20,10 @@
 \makeatother
 
 \usepackage{soul}
+\usepackage{tikz}
+\usetikzlibrary{shapes.geometric, positioning, chains, trees}
 
+\usepackage{svg}
 
 \newcommand{\hlc}[2][yellow]{{%
     \colorlet{foo}{#1}%
@@ -89,7 +92,7 @@
     }
 
 \usepackage{cleveref}
-
+\usepackage{fvextra} \DefineVerbatimEnvironment{Highlighting}{Verbatim}{breaklines,commandchars=\\\{\}} 
 
 \newtheorem{conjecture}{Conjecture}
 \newtheorem{definition}{Definition}
