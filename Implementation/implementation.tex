@@ -285,6 +285,7 @@ Additionally, the rules in this form end up being more closely tied to the Hazel
 \textbf{See appendix}
 
 \subsection{Criterion 3: Contribution Slices}
+\label{sec:ContributionSlices}
 This criterion aims to highlight all regions of code which \textit{contribute} to the given type (either synthesised or analysed). Where \textit{contribute} means that if the sub-term changed it's type, then the overall term would\footnote{No matter which type it was changed to specifically.} also, or would become ill-typed. Importantly, we also consider \textit{contexts} for expression which are analysed, again considering any component terms which having their type changed would result in an error when trying to analyse against the type. For example in the following term:
 
 \[(\lambda f: \code{Int} \to \dyn.\ f(1))(\lambda x : \code{Int}.\ x)\]
@@ -344,6 +345,7 @@ These add an additional way to generate a \textit{new type} other than by synthe
 Hence, type flow needs to be extended to allow these. Equally, slices themselves can be joined if they have common contexts (though there is a decision whether to include both branches of a join).
 
 \subsection{Type-Indexed Slicing Context}
+\label{sec:TypeSliceContext}
 It seems natural to extend the typing context to a type-indexed slicing context. Then, when accessing typing assumptions via variable references, the source information about the derivation for this type is revealed. But, the problem is, there is no context propagated, these slices are slices of the orignal term; propagating all this would be a big pain.
 
 \section{Cast Slicing Theory}\label{sec:CastSlicingTheory}
@@ -437,11 +439,11 @@ Cast slicing and contribution slices required \textit{type-indexed} slices. I th
 
 \begin{figure}[h]
 \begin{minted}[fontsize=\small]{reason}
-type typslice_term = 
+type typslice_typ_term = 
   | Unknown
   | Arrow(slice_t, slice_t)  // Function type
   | ... // Type constructors
-and typslice_term = (typ_term, code_slice)
+and typslice_term = (typslice_typ_term, code_slice)
 and typslice_t = IdTagged.t(slice_term)
 \end{minted}
 \caption{Initial Type Slice Data-Type}
@@ -491,10 +493,6 @@ and typslice_t = IdTagged.t(typslice_term)
 
 A key change when using this model is that when deconstructing types via function matching, list matching, etc. used throughout type checking and unboxing, the global slice must be pushed inside the resulting deconstructed types. This ensures that no part of the analysis slice context is lost \textbf{(compare to function matching in the type-indexed slice theory)}. 
 
-\subsubsection{Empty Slices \& Integration with Existing Type Data-Type}
-
-
-Use of `Typ. Explain how this allows it to easily be disabled and saves space (maybe, cite).
 
 \subsubsection{Usability \& Efficiency}
 The type was further changed and many utility functions were added to enforce invariants and to ease development.
@@ -549,7 +547,7 @@ let rec apply = (f_typ, f_slc, s) =>
   | `SliceGlobal(s, _) => apply(f_typ, f_slc, s)
   }
 \end{minted}
-Similarly, mapping function which map a $\code{typ_term} \to \code{typ_term}$ and similar functions onto slices are provided while maintaining the slice tags. Another particularly useful one is a mapping function that maps $\code{typ_term} \to \code{typslice_term}$ etc. and merges the slices around the input term and the output slice of the mapped function. Other utility functions include wrapping functions, deconstruction functions etc. are written.
+Similarly, mapping function which map a $\code{typ_term} \to \code{typ_term}$ and similar functions onto slices are provided while maintaining the slice tags. Another particularly useful one is a mapping function that maps $\code{typ_term} \to \code{typslice_term}$ etc. and merges the slices around the input term and the output slice of the mapped function. Other utility functions include wrapping functions, unpacking functions, matching functions etc.
 
 \subsubsection{Type Slice Joins}
 Type joins are extensively used in the Hazel implementation for \textit{branching statements}. The type of a branching statement is the \textit{least specific} type which is still \textit{at least as specific} as all the branches. This corresponds to the \textit{lattice join} of the types of the branches with respect to the precision relation. 
@@ -567,37 +565,183 @@ This slicing is not as easy as just taking the slice of a single branch, as the 
 
 The unstructured nature of code slices also allows the type constructors to select only \textit{one} branch to take the slice from. The given figure would \textit{not} highlight the function constructor in the \textit{then} branch. However, this is not be a valid expression slice in the theoretic sense and could be confusing for the user \textbf{(discuss in evaluation, missing info)}.
 
+\subsubsection{Contribution Slices}
+\label{sec:ContributionSliceImplementation}
+To create a \textit{contribution slice} (definition and correctness reasoning in \cref{sec:ContributionSlices}) we will need to combine analysis and synthesis slices on the same term that:
+\begin{itemize}
+\item Matches compound type constructor slice tags are combined.
+\item Atomic \textit{dynamic} type parts of the \textit{analysis slice} are retained in preference to the synthesis slice part. 
+\item Other atomic type constructors have slices combined.
+\end{itemize} 
+We get a type slice whose type is equivalent to the analysis slice, but includes relevant parts of the synthesis slice.
+\begin{figure}[h]
+\textbf{Use same example here as in theory}
+\caption{Contribution Slice}
+\label{fig:ContributionSliceExample}
+\end{figure}
+
 \subsubsection{Weak Head Normalisation}
-This subsection could be elided.
+Describe where this is used and how slices do this. This subsection could be elided.
 
 \subsection{Static Type Checking}\label{sec:TypeChecking}
-Detail the statics and Info types. Explain the distinction between Self.re and Mode.re, which links very nicely with the synthesis and analysis slice distinctions.
+The Hazel implementation is \textit{bidirectionally typed}. During type checking, the typing \textit{mode} in which to check the term is specified with \code{Mode.t} type: \textit{synthesising}\footnote{Additionally split into synthesising functions and type functions, but this detail is elided here.} (\code{Syn}) or \textit{analysing} (\code{Ana(Typ.t)}).
 
-Designed to not conflict with existing code (i.e. retain type checking exactly and make it easy to add new type rules).
+The type checker associates each term with a type information object \code{Info.t}, stored in a map by term id with efficient access. The \textit{type information} stores the following info:
+\begin{itemize}
+\item The term itself and it's ancestors.
+\item \textbf{Mode}: Typing expectations enforced by the context.
+\item \textbf{Self}: Information derived independent from the \textit{mode}, e.g. synthesised type, or type errors arising from inconsistent branch types, syntax errors.
+\item \textbf{Typing context and co-context}. A co-context
+\item Status: Is it an error, what type of error? For example, inconsistency between type expectations and synthesised/actual type.
+\item \textbf{Type}: The \textit{actual} type of the expression after \textit{accounting for errors}. Errors are placed in holes, so synthesise the dynamic type. 
+\item Constraints: Patterns also store constraints to determine redundant branches and inexhaustive match statements, in the sense of \cite[ch. 13]{PracticalFoundationsEd1}\footnote{Only present in the \textit{first} edition.}. Hazel-specific details in \cite{LivePatternMatching}.
+\end{itemize}
+
+As suggested by my slicing theory, I augment the four bolded fields to refer to type slices, returning type slices from synthesis and analysing directly against type slices. This results in wide-changing code, but I only detail the general workings here.
+
 \subsubsection{Self}
+The \textit{self} data-structure now returns \textit{types slices} instead of \textit{types}. Every expression construct which can be synthesised has a corresponding function in \code{Self.re} to construct the slice from it's sub-derivations (slices of synthesised types of sub-expressions). Hence, the synthesis slicing behaviour for each type of expression can be easily configured uniformly via editing these functions.
+
+For example, the slice of a pattern matching statement, given slices of all it's branches (\code{tys}) is the join of it's branches wrapped in an incremental slice consisting of the ids of the match statement itself. Otherwise if the branches are inconsistent it returns a failure tagging the branch slices with ids of the branches:
+\begin{figure}[h]
+\begin{minted}[fontsize=\footnotesize]{reason}
+let of_match =
+    (ids: list(Id.t), ctx: Ctx.t, tys: list(TypSlice.t), 
+    c_ids: list(Id.t)): t =>
+  switch (
+    TypSlice.join_all(
+      ~empty=`Typ(Unknown(Internal)) |> TypSlice.fresh,
+      ctx,
+      tys,
+    )
+  ) {
+  | None => NoJoin(Id, add_source(c_ids, tys))
+  | Some(ty) => Just(ty |> TypSlice.(wrap_incr(slice_of_ids(ids))))
+  };
+\end{minted}
+\caption{Match Statement \code{Self.t}}
+\end{figure}
+
+This stage also included factoring out some expectation-independent code from the type checking function which had been missed by others.
 
 \subsubsection{Mode}
+The \textit{mode} now analyses against \textit{type slices} instead of \textit{types}. Again, each construct which could deconstruct an analysing type has a corresponding function in \code{Mode.re} which outputs the mode(s) to check the inner expressions. The inner analysis slices are tagged with a \textit{global}\footnote{Being part of the analysis slice, relevant to all sub-slices.} slice tag describing \textit{why} the slice was deconstructed. As mentioned before \textbf{(ref)}, deconstructing types retains the contextual (global) parts of the analysis slice.
 
-\subsection{Elaboration}\label{sec:Elaboration}
-Make casts use type slices, insertion is mostly the same. Just need to ensure that the slices are preserved (i.e. types are threaded through without being replaced)
+For example, I can deconstruct a list slice with a list matching function \code{matched_list}. Using this, the mode to check a term inside a \textit{list literal} is the matched inner list slice wrapped (globally) in the ids of list literal itself (\code{ids}) which enforced this matching. We use this mode to check each element in the list literal.
+
+\begin{figure}
+\begin{minted}[fontsize=\footnotesize]{reason}
+let of_list = (ids: list(Id.t), ctx: Ctx.t, mode: t): t =>
+  switch (mode) {
+  | Syn
+  | SynFun
+  | SynTypFun => Syn
+  | Ana(ty) =>
+    Ana(TypSlice.(matched_list(ctx, ty) 
+    |> wrap_global(slice_of_ids(ids))))
+  };
+\end{minted}
+\caption{List Literal \code{Mode.t}}
+\end{figure}
+
+\subsubsection{Typing (Co-)Context}
+The typing context and co-contexts are modified to use type slices, given that we now always have a slice to accompany a type in any situation. 
+
+\Cref{sec:TypeSliceContext} discusses one major consequence of allowing this. Slices for variables may now include the slice binding it's type. 
+
+This \textit{deviates} from the theoretical notion of an expression slice: the structural context in which the variable is used is untracked when passing through the context. But, it is easy to implement using \textit{unstructured} code slices and is a useful addition conceptually (\textbf{discuss in evaluation}).
+
+\subsubsection{Type}
+The \textit{type} field is extended to a \textit{type slice}. This has special behaviour for contribution slices and errors.
+\paragraph{Basic Slices} 
+If there are no errors, just use the analysed type slice, or if in synthesis mode use the synthesis slice. 
+\paragraph{Contribution Slices: IMPL TODO}
+When synthesis and analysis slices exist, they can be combined here. \Cref{sec:ContributionSliceImplementation} defines and explains this combination.
+
+\paragraph{Error Slices: IMPL TODO}
+Type inconsistency error checking can be extended to type slices via using type slice joins. The analysed and synthesised type slices are inconsistent if and only if a join exists. We can show both conflicting slices in this situation to explain the error \textbf{(Implement)}. Additionally, syntax errors could have a slicing mechanism implemented here.\footnote{Not within the scope of this project. Empty slices are given instead.}
+
+\subsection{Sum Types}
+\textbf{Sum types are the hardest to work with, describe general design and difficulties in all the previous parts.}
 
 \subsection{User Interface}
 Click on analysis or synthesis slices from context inspector
 
+Show figures.
+
+\textbf{Implement UI from cursor inspector. Implement disabling of slicing.}
+
 \section{Cast Slicing Implementation}\label{sec:CastSlicingImplementation}
+To implement cast slicing, I replace casts between \textit{types} by casts between \textit{type slices}. The required type-indexed nature of type slices is already implemented, allowing these casts the be decomposed.
+
+\subsection{Elaboration}\label{sec:Elaboration}
+Cast insertion recursively traverses the unelaborated term, inserting casts to the term's statically determined type as stored in the \code{Info} data-structure and from the type as can be determined directly from the term. 
+
+For example, for list literals we can recursively elaborate the list's terms and join their static slices into \code{inner_type}. Then, intuitively we would know during dynamics from these elaborated sub-terms that the list has a list type of \code{List(inner_type)}:
+\begin{figure}[h]
+Maybe a more diagrammatic option here
+\caption{List Literal Elaboration}
+\end{figure}
+
+We can therefore construct the source type slices in these casts directly form the term during this traversal. \textbf{(TODO impl for atomic types like ints)}
+
+Ensuring that all the type slice information from the \code{Info} map is retained and/or reconstructed during elaboration was a meticulous and error-prone process.
+
 \subsection{Cast Transitions}
+\Cref{sec:HazelDynamics} gave an intuitive overview of how casts are treated at runtime. Type-indexed slices allows cast slices to be decomposed in exactly the same way. 
 
-Cast transition and unboxing logic
+However, as Hazel only checks consistency between casts between \textit{ground types} (\cref{fig:groundtypes}), there are two rules where new\footnote{As opposed to being derived from decomposition.} casts are \textit{inserted} ITGround, ITExpand (\cref{fig:instructions}). The new types are both created via a \textit{ground matching} relation (\cref{fig:groundmatch}) which takes the topmost compound constructor. 
 
+As we already store type slices incrementally, the part of the slice which corresponds \textit{only} to the outer type constructor is just the outer slice tag.
+
+\begin{figure}
+list example
+\caption{Ground Matching List}
+\end{figure}
+
+\subsection{Unboxing}
+When a final form (\cref{sec:HazelFinalForms}) has a type, Hazel often needs to extract parts according to this type during evaluation. But due to casts and holes, this is not trivial.
+
+For example, if a term is a final form of type list, then it could be either:
+\begin{itemize}
+\item A list literal.
+\item A list with casts wrapped around it.
+\item A list cons with indeterminate tail, e.g. \code{1::2::?}.
+\end{itemize}
+Additionally, when the input is not a list at all, it can return \code{DoesNotMatch}. Hence, allowing dynamic errors to be caught and also for use in pattern matching. 
+
+To allow for the varying outputs to unboxing depending on different patterns to match by, GADTs are used \textbf{(cite and explain)}.
+
+Various helper functions for unpacking type slices into it's sub-slices to significantly simplify pattern matching.\footnote{These differ from matching functions, which also match the dynamic type to functions, lists etc.} A uniform function for this could be implemented with a GADT, in a similar way to unboxing, but is not required.
+
+\subsubsection{Hazel Unboxing Bug}
+While writing the search procedure I found an unboxing \textit{bug} which would always \textit{indeterminately match} a cons with indeterminate tail with \textit{any} list literal pattern (of \textit{any} length), even when it is known that it could never match. For example a list cons \code{1::2::?} represents lists with length $\geq 2$, but even when matching a list literal of length 0 or 1 it would indeterminately match rather than explicitly \textit{not} match. 
+
+Pattern matching checks if each pattern matches the scrutinee with the following behaviour:
+\begin{itemize}
+\item \textit{Branch matches?} Execute the branch.
+\item \textit{Branch does not match?} Try the next branch.
+\item \textit{Branch indeterminately matches?} Cannot assume the branch doesn't match so cannot move on and must safely stop evaluation here classifying the entire match as an indeterminate term.
+\end{itemize}
+\Cref{fig:PatternMatchingBug} demonstrates a concrete example which would get stuck in Hazel, but does \textit{not} need to.
+
+\begin{figure}[h]
+See PR example
+\caption{Pattern Matching Bug}
+\label{fig:PatternMatchingBug}
+\end{figure}
+
+I reported and fixed this bug and added additional tests to ensure the bug never reappears. A PR was merged into the dev branch \textbf{(pending)}.
 \subsection{User Interface}
-Mainly talk about the Model-view architecture and passing the cursor into the evaluator view to allow 
+Mainly talk about the Model-view architecture and passing the cursor into the evaluator view to allow clicking on casts in evaluation result/stepper.
 
+Difficulties in ensuring id tags for slices are not subtly aliased during elaboration and evaluation. This caused problems in selecting slices with UI. Look through commits to give example
 
 \section{EV\_MODE Evaluation Abstraction}
 Very complex!!!
 
 \section{Indeterminate Evaluation}\label{sec:IndetEval}
-(Probably) Cannot use evaluator state for tracking trace lengths etc. because it is mutable (and IndetEval is non-deterministic). Instead thread through evaluation :(
+
 
 \subsection{Futures Data-Type}\label{sec:Futures}
 Lazy lists, often infinite
@@ -674,6 +818,11 @@ Eager casts also catch `spurious' errors (see Evaluation).
 
 
 \subsection{User Interface}
+
+\subsection{Threading Evaluation State}
+\textbf{TODO IMPL}
+
+(Probably) Cannot use evaluator state for tracking trace lengths etc. because it is mutable (and IndetEval is non-deterministic). Instead thread through evaluation :(
 
 \section{Evaluation Stepper}\label{sec:Stepper}
 \subsection{Evaluation Contexts}

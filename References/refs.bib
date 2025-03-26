@@ -226,7 +226,7 @@ author = {Oleg Kiselyov}
 }
 
 @book{PracticalFoundations,
-  title = {Practical Foundations for Programming Languages},
+  title = {Practical Foundations for Programming Languages: Second Edition},
   ISBN = {9781316576892},
   url = {http://dx.doi.org/10.1017/CBO9781316576892},
   DOI = {10.1017/cbo9781316576892},
@@ -691,24 +691,6 @@ series = {POPL '89}
   organization={Springer}
 }
 
-@inproceedings{10.1145/581478.581484,
-author = {Findler, Robert Bruce and Felleisen, Matthias},
-title = {Contracts for higher-order functions},
-year = {2002},
-isbn = {1581134878},
-publisher = {Association for Computing Machinery},
-address = {New York, NY, USA},
-url = {https://doi.org/10.1145/581478.581484},
-doi = {10.1145/581478.581484},
-abstract = {Assertions play an important role in the construction of robust software. Their use in programming languages dates back to the 1970s. Eiffel, an object-oriented programming language, wholeheartedly adopted assertions and developed the "Design by Contract" philosophy. Indeed, the entire object-oriented community recognizes the value of assertion-based contracts on methods.In contrast, languages with higher-order functions do not support assertion-based contracts. Because predicates on functions are, in general, undecidable, specifying such predicates appears to be meaningless. Instead, the functional languages community developed type systems that statically approximate interesting predicates.In this paper, we show how to support higher-order function contracts in a theoretically well-founded and practically viable manner. Specifically, we introduce λcon, a typed lambda calculus with assertions for higher-order functions. The calculus models the assertion monitoring system that we employ in DrScheme. We establish basic properties of the model (type soundness, etc.) and illustrate the usefulness of contract checking with examples from DrScheme's code base.We believe that the development of an assertion system for higher-order functions serves two purposes. On one hand, the system has strong practical potential because existing type systems simply cannot express many assertions that programmers would like to state. On the other hand, an inspection of a large base of invariants may provide inspiration for the direction of practical future type system research.},
-booktitle = {Proceedings of the Seventh ACM SIGPLAN International Conference on Functional Programming},
-pages = {48–59},
-numpages = {12},
-keywords = {behavioral specifications, contracts, higher-order functions, predicate typing, solfware reliability},
-location = {Pittsburgh, PA, USA},
-series = {ICFP '02}
-}
-
 @article{Contracts,
 author = {Findler, Robert Bruce and Felleisen, Matthias},
 title = {Contracts for higher-order functions},
@@ -788,3 +770,24 @@ keywords = {datatype, differentiation, dissection, division, generic programming
   pages={70--79},
   year={1988}
 }
+
+@article{LivePatternMatching,
+author = {Yuan, Yongwei and Guest, Scott and Griffis, Eric and Potter, Hannah and Moon, David and Omar, Cyrus},
+title = {Live Pattern Matching with Typed Holes},
+year = {2023},
+issue_date = {April 2023},
+publisher = {Association for Computing Machinery},
+address = {New York, NY, USA},
+volume = {7},
+number = {OOPSLA1},
+url = {https://doi.org/10.1145/3586048},
+doi = {10.1145/3586048},
+abstract = {Several modern programming systems, including GHC Haskell, Agda, Idris, and Hazel, support typed holes. Assigning static and, to varying degree, dynamic meaning to programs with holes allows program editors and other tools to offer meaningful feedback and assistance throughout editing, i.e. in a live manner. Prior work, however, has considered only holes appearing in expressions and types. This paper considers, from type theoretic and logical first principles, the problem of typed pattern holes. We confront two main difficulties, (1) statically reasoning about exhaustiveness and irredundancy when patterns are not fully known, and (2) live evaluation of expressions containing both pattern and expression holes. In both cases, this requires reasoning conservatively about all possible hole fillings. We develop a typed lambda calculus, Peanut, where reasoning about exhaustiveness and redundancy is mapped to the problem of deriving first order entailments. We equip Peanut with an operational semantics in the style of Hazelnut Live that allows us to evaluate around holes in both expressions and patterns. We mechanize the metatheory of Peanut in Agda and formalize a procedure capable of deciding the necessary entailments. Finally, we scale up and implement these mechanisms within Hazel, a programming environment for a dialect of Elm that automatically inserts holes during editing to provide static and dynamic feedback to the programmer in a maximally live manner, i.e. for every possible editor state. Hazel is the first maximally live environment for a general-purpose functional language.},
+journal = {Proc. ACM Program. Lang.},
+month = apr,
+articleno = {96},
+numpages = {27},
+keywords = {typed holes, pattern matching}
+}
+
+@inbook{PracticalFoundationsEd1, place={Cambridge}, title={Contents}, booktitle={Practical Foundations for Programming Languages}, publisher={Cambridge University Press}, author={Harper, Robert}, year={2012}, pages={v–xvi}} <div></div>
