@@ -717,11 +717,11 @@ Various helper functions for unpacking type slices into it's sub-slices to signi
 \subsubsection{Hazel Unboxing Bug}
 While writing the search procedure I found an unboxing \textit{bug} which would always \textit{indeterminately match} a cons with indeterminate tail with \textit{any} list literal pattern (of \textit{any} length), even when it is known that it could never match. For example a list cons \code{1::2::?} represents lists with length $\geq 2$, but even when matching a list literal of length 0 or 1 it would indeterminately match rather than explicitly \textit{not} match. 
 
-Pattern matching checks if each pattern matches the scrutinee with the following behaviour:
+Pattern matching checks if each pattern matches the scrutinee with the following behaviour, starting from the first branch:
 \begin{itemize}
 \item \textit{Branch matches?} Execute the branch.
 \item \textit{Branch does not match?} Try the next branch.
-\item \textit{Branch indeterminately matches?} Cannot assume the branch doesn't match so cannot move on and must safely stop evaluation here classifying the entire match as an indeterminate term.
+\item \textit{Branch indeterminately matches?} Hazel cannot assume the branch doesn't match so cannot move on and must safely stop evaluation here classifying the entire match as an indeterminate term.
 \end{itemize}
 \Cref{fig:PatternMatchingBug} demonstrates a concrete example which would get stuck in Hazel, but does \textit{not} need to.
 
@@ -744,6 +744,10 @@ Very complex!!!
 
 
 \subsection{Futures Data-Type}\label{sec:Futures}
+Various options considered: Effect handlers (requires multiple continuations but JSOO doesn't support this), continuations and call/cc, delimited continuations, lazy lists/sequences. Sequences were chosen, using Jane Street Base (reasons being that it is industrial standard and very flexible).
+
+Detail the Base.Sequence module type (i.e. unfold, interleave, init).
+
 Lazy lists, often infinite
 \subsection{Hole Instantiation}\label{sec:HoleInstantiation}
 Small Hole hypothesis, quick check

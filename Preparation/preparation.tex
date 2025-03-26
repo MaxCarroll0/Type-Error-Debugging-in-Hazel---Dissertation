@@ -276,9 +276,64 @@ Each evaluation method module is transformed into an evaluator module by being p
 Model View Update model.
 
 \subsection{Non-Determinism}\label{sec:Nondeterminism}
-Various options considered: Effect handlers (requires multiple continuations but JSOO doesn't support this), continuations and call/cc, delimited continuations, lazy lists/sequences. Sequences were chosen, using Jane Street Base (reasons being that it is industrial standard and very flexible).
+The search procedure \cite{SearchProc} is effectively a \textit{dynamic type-directed} test generator, attempting to find dynamic type errors. In Hazel, dynamic type errors will manifest themselves as \textit{cast errors}.
 
-Detail the Base.Sequence module type (i.e. unfold, interleave, init).
+Type-directed generation of inputs and searching for one which manifests an error is a \textit{non-deterministic} algorithm \cite{NondeterministicAlgorithms}. 
+
+\subsubsection{High Level}
+Non-determinism can be declaratively represented by two ideas:
+\begin{itemize}
+\item \textit{Choice (\texttt{|||}):} Determines the search space, flipping a coin will return heads \textit{or} tails.
+\item \textit{Failure (\texttt{fail}):} The \textit{empty} result, no solutions to the algorithm.
+\end{itemize}
+Suppose the result of the algorithm has type $\tau$. These can be represented by operations:
+\[\texttt{|||} : \tau \to \tau \to \tau\]
+\[\texttt{fail} : \tau\]
+Where \texttt{|||} should be \textit{associative} and \texttt{fail} should be a \textit{zero element}, forming a \textit{monoid}:
+\[x \texttt{|||} (y \texttt{|||} z) = (x \texttt{|||} y) \texttt{|||} z \qquad \texttt{fail} \texttt{|||} x = x = x \texttt{|||} \texttt{fail}\]
+That is, the order of making binary choices does not matter, and there is no reason to choose failure.
+
+There are many proposed ways to manage programs with choice: 
+\paragraph{Logic Programming:} Languages like Prolog \textbf{(cite)} and Curry \textbf{(cite)} express non-determinism by directly implementing \textit{choice} with non-deterministic evaluation. Prolog searches via backtracking, while Curry abstracts the search procedure.
+
+There are ways to embed this within OCaml. Inspired by Curry, Kiselyov \cite{NondetDSL} created a tagless final style \cite{TaglessFinalDSL} domain specific language within OCaml. This fully abstracts the search procedure from the non-deterministic algorithm definition.
+\paragraph{Continuations:}
+\paragraph{Effect Handlers:} Effect handlers allow the description of effects and factors out the handling of those effects. Non-determinism can be represented by an effect consisting of the choice and fail operators \cite{EffectsExamples, HandlersInAction}, while handlers can flexibly define the search procedure and accounting logic, e.g. storing solutions in a list. 
+
+In order to enumerate try multiple solutions, \textit{multiple continuations} must be used. JSOO\footnote{Javascript of OCaml. A dependency of Hazel.} does not (at time of writing) allow these.
+\paragraph{Monadic:} The non-determinism effect can be expressed as a monad. A monad is a parametric type $m(\alpha)$ equipped with two operations, \texttt{return} and \texttt{bind}, where \texttt{bind} is associative and \texttt{return} acts as an identity with respect to \texttt{bind}:
+\begin{figure}[h]
+A monad $m$, is a parameterised type with operations:
+\[\texttt{bind} : \forall \alpha, \beta.\ m(\alpha) \to (a \to m(\beta)) \to m(beta)\]
+\[\texttt{return} : \forall \alpha.\ a \to m(\alpha)\]
+Satisfying the monad laws:
+\[\texttt{bind}(\texttt{return}(x))(f) = f(x)\]
+\[\texttt{bind}(m)(\texttt{return}) = m\]
+\[\texttt{bind}(\texttt{bind}(m)(f))(g) = \texttt{bind}(m)(\texttt{fun} x \to \texttt{bind}(f(x))(g))\]
+\caption{Monad Definition}
+\end{figure}
+A monad can then be extended to represent nondeterminism by adding a \texttt{choice} and \texttt{fail} operator satisfying the usual laws:
+\[\texttt{choice} : \forall \alpha.\ m(\alpha) \to m(\alpha) \to m(\alpha)\]
+\[\texttt{fail} : \forall \alpha.\ m(\alpha)\]
+Where \texttt{bind} distributes over \texttt{choice}, and \texttt{fail} is a left-identity for \texttt{bind}.
+\[\texttt{bind}(m_1 \texttt{|||} m_2)(f) = \texttt{bind}(m_1)(f) \texttt{|||} \texttt{bind}(m_2)(f)\]
+\[\texttt{bind}(\texttt{fail})(f) = \texttt{fail}\]
+In this context, bind takes a non-deterministic choice and a function which maps each \textit{guess} in the state space to another choice, returning this choice of all the possible resulting choices after applying the function to the possible input choices. See how distributivity represents this interpretation. \texttt{fail} being the left identity of \texttt{bind} states that you cannot make any guesses from the no choice (\texttt{fail}). If a potential guess does not solve the problem, then just return \texttt{fail} (hence the name). For example:
+\begin{figure}[h]
+\caption{Non-determinism Monad Example}
+\end{figure}
+
+While the \texttt{bind} and \texttt{return} operators are \textit{not} required to represent non-determinism, they are a \textit{familiar}\footnote{For OCaml developers and functional programmers.} way to represent a large class of effects in general way. 
+
+\subsubsection{Low Level}
+Which may abstract over different search/backtracking procedures. Writing these directly can be complex, unintuitive, and require much code, but is very flexible. \textbf{(cite evidence/reasoning)}:
+\paragraph{Depth First Search:} 
+Generate options where choice is possible, and backtrack once each option has been fully tested.
+\paragraph{Breadth First Search:}
+\paragraph{Iterative Deepening:}
+
+
+
 
 \section{Starting Point}\label{sec:StartingPoint}
 \subsubsection{Concepts}

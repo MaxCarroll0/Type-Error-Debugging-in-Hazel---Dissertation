@@ -10,11 +10,59 @@
   month = sep,
   pages = {228–242},
   collection = {ICFP’16}
-}@online{Hazel,
+}
+
+@online{Hazel,
 title = {Hazel Project Website},
 url = {https://hazel.org/},
 urldate = {2025-02-28},
 }
+
+@online{EffectsExamples,
+title = {OCaml Effects Examples},
+url = {https://github.com/ocaml-multicore/effects-examples/tree/master},
+urldate = {2025-03-26}
+}
+
+@article{10.1145/2544174.2500590,
+author = {Kammar, Ohad and Lindley, Sam and Oury, Nicolas},
+title = {Handlers in action},
+year = {2013},
+issue_date = {September 2013},
+publisher = {Association for Computing Machinery},
+address = {New York, NY, USA},
+volume = {48},
+number = {9},
+issn = {0362-1340},
+url = {https://doi.org/10.1145/2544174.2500590},
+doi = {10.1145/2544174.2500590},
+abstract = {Plotkin and Pretnar's handlers for algebraic effects occupy a sweet spot in the design space of abstractions for effectful computation. By separating effect signatures from their implementation, algebraic effects provide a high degree of modularity, allowing programmers to express effectful programs independently of the concrete interpretation of their effects. A handler is an interpretation of the effects of an algebraic computation. The handler abstraction adapts well to multiple settings: pure or impure, strict or lazy, static types or dynamic types. This is a position paper whose main aim is to popularise the handler abstraction. We give a gentle introduction to its use, a collection of illustrative examples, and a straightforward operational semantics. We describe our Haskell implementation of handlers in detail, outline the ideas behind our OCaml, SML, and Racket implementations, and present experimental results comparing handlers with existing code.},
+journal = {SIGPLAN Not.},
+month = sep,
+pages = {145–158},
+numpages = {14},
+keywords = {algebraic effects, continuations, effect handlers, effect typing, haskell, modularity, monads}
+}
+
+@inproceedings{HandlersInAction,
+author = {Kammar, Ohad and Lindley, Sam and Oury, Nicolas},
+title = {Handlers in action},
+year = {2013},
+isbn = {9781450323260},
+publisher = {Association for Computing Machinery},
+address = {New York, NY, USA},
+url = {https://doi.org/10.1145/2500365.2500590},
+doi = {10.1145/2500365.2500590},
+abstract = {Plotkin and Pretnar's handlers for algebraic effects occupy a sweet spot in the design space of abstractions for effectful computation. By separating effect signatures from their implementation, algebraic effects provide a high degree of modularity, allowing programmers to express effectful programs independently of the concrete interpretation of their effects. A handler is an interpretation of the effects of an algebraic computation. The handler abstraction adapts well to multiple settings: pure or impure, strict or lazy, static types or dynamic types. This is a position paper whose main aim is to popularise the handler abstraction. We give a gentle introduction to its use, a collection of illustrative examples, and a straightforward operational semantics. We describe our Haskell implementation of handlers in detail, outline the ideas behind our OCaml, SML, and Racket implementations, and present experimental results comparing handlers with existing code.},
+booktitle = {Proceedings of the 18th ACM SIGPLAN International Conference on Functional Programming},
+pages = {145–158},
+numpages = {14},
+keywords = {algebraic effects, continuations, effect handlers, effect typing, haskell, modularity, monads},
+location = {Boston, Massachusetts, USA},
+series = {ICFP '13}
+}
+
+
 @manual{OCamlManual,
   title        = {The OCaml Manual: release 5.2},
   author       = {The OCaml Development Team},
@@ -790,4 +838,52 @@ numpages = {27},
 keywords = {typed holes, pattern matching}
 }
 
-@inbook{PracticalFoundationsEd1, place={Cambridge}, title={Contents}, booktitle={Practical Foundations for Programming Languages}, publisher={Cambridge University Press}, author={Harper, Robert}, year={2012}, pages={v–xvi}} <div></div>
+@inbook{PracticalFoundationsEd1, place={Cambridge}, title={Contents}, booktitle={Practical Foundations for Programming Languages}, publisher={Cambridge University Press}, author={Harper, Robert}, year={2012}, pages={v–xvi}}
+
+@article{NondeterministicAlgorithms,
+author = {Floyd, Robert W.},
+title = {Nondeterministic Algorithms},
+year = {1967},
+issue_date = {Oct. 1967},
+publisher = {Association for Computing Machinery},
+address = {New York, NY, USA},
+volume = {14},
+number = {4},
+issn = {0004-5411},
+url = {https://doi.org/10.1145/321420.321422},
+doi = {10.1145/321420.321422},
+abstract = {Programs to solve combinatorial search problems may often be simply written by using multiple-valued functions. Such programs, although impossible to execute directly on conventional computers, may be converted in a mechanical way into conventional backtracking programs. The process is illustrated with algorithms to find all solutions to the eight queens problem on the chessboard, and to find all simple cycles in a network.},
+journal = {J. ACM},
+month = oct,
+pages = {636–644},
+numpages = {9}
+}
+
+@article{NondetDSL,
+   title={Effects Without Monads: Non-determinism – Back to the Meta Language},
+   volume={294},
+   ISSN={2075-2180},
+   url={http://dx.doi.org/10.4204/EPTCS.294.2},
+   DOI={10.4204/eptcs.294.2},
+   journal={Electronic Proceedings in Theoretical Computer Science},
+   publisher={Open Publishing Association},
+   author={Kiselyov, Oleg},
+   year={2019},
+   month=may, pages={15–40} }
+   
+   @Inbook{TaglessFinalDSL,
+author="Kiselyov, Oleg",
+editor="Gibbons, Jeremy",
+title="Typed Tagless Final Interpreters",
+bookTitle="Generic and Indexed Programming: International Spring School, SSGIP 2010, Oxford, UK, March 22-26, 2010, Revised Lectures",
+year="2012",
+publisher="Springer Berlin Heidelberg",
+address="Berlin, Heidelberg",
+pages="130--174",
+abstract="The so-called `typed tagless final' approach of [6] has collected and polished a number of techniques for representing typed higher-order languages in a typed metalanguage, along with type-preserving interpretation, compilation and partial evaluation. The approach is an alternative to the traditional, or `initial' encoding of an object language as a (generalized) algebraic data type. Both approaches permit multiple interpretations of an expression, to evaluate it, pretty-print, etc. The final encoding represents all and only typed object terms without resorting to generalized algebraic data types, dependent or other fancy types. The final encoding lets us add new language forms and interpretations without breaking the existing terms and interpreters.",
+isbn="978-3-642-32202-0",
+doi="10.1007/978-3-642-32202-0_3",
+url="https://doi.org/10.1007/978-3-642-32202-0_3"
+}
+
+

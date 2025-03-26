@@ -8,6 +8,9 @@ Further directions here, referencing unsatisfactory results from Evaluation. Als
 \subsection{Extension to Full Hazel Language}
 Type functions, recursive types, deferrals
 
+\subsubsection{User Studies}
+Effectiveness gauge in the real world
+
 \subsection{Cast Slicing}
 Cast slicing here doesn't extend the nice properties I have with type slicing: that a program slice will synthesise/analyse the same type. It might be possible to have a system that does?
 
@@ -20,9 +23,21 @@ PRimarily about the search procedure \& casts.
 
 Also about creating a \textit{stronger} link between static type errors and runtime errors, what Hazel considers as a runtime error is somewhat unintuitive, see the points made in evaluation. A formal property of what exactly a type error witness \textit{is} which actually matches with the implementation would be nice.
 
-\subsubsection{User Studies}
-Effectiveness gauge in the real world
 
+\subsection{Indeterminate Evaluation \& Logic Programming}
+The idea of allowing holes to evaluate indeterministically allows for nondeterminism in evaluation. This could be harnessed to write non-deterministic algorithms themselves.
+
+Consider adding a new construct which filters indet terms. Hazel already has a construct for testing expressions which exposes the success/failure to the user directly in the editor. A similar construct could filter all indet evaluations which result in the test being true. \textbf{Give an example for calculating permutations.}
+
+Such programs would want extensive improvements to the efficiency of indeterminate evaluation and would probably want ways to customise the instantiation ordering/search direction via code.
+
+This idea is basically similar to the idea behind Curry, with these holes being like free variables in Curry. The narrowing evaluation strategies would perhaps work for Hazel.
+
+So we could have incomplete programs using holes. Then we could write constraints on these programs. Then we could run the program to synthesise results for these holes, i.e. generating programs by running the program! \textit{Maybe find some research concerning program synthesis using logic programming? `Logic programming and program synthesis'}
+
+Of course, the current instantiation method only generates constant functions, so would be useless for general program synthesis, e.g. one asserting that $f(x) = x$, but could be extended. Also, if $x$ here has infinite number of values, again it would fail (would need to reason by SMT or extensionality etc).
+
+Maybe even dependent types could add more fine grained specifications to instantiate by.
 \subsection{Search Procedure}
 \subsubsection{Jump Trace Compression}
 \subsubsection{Symbolic Execution \& SMT Solvers}
