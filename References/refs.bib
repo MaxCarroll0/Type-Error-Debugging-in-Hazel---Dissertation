@@ -24,26 +24,6 @@ url = {https://github.com/ocaml-multicore/effects-examples/tree/master},
 urldate = {2025-03-26}
 }
 
-@article{10.1145/2544174.2500590,
-author = {Kammar, Ohad and Lindley, Sam and Oury, Nicolas},
-title = {Handlers in action},
-year = {2013},
-issue_date = {September 2013},
-publisher = {Association for Computing Machinery},
-address = {New York, NY, USA},
-volume = {48},
-number = {9},
-issn = {0362-1340},
-url = {https://doi.org/10.1145/2544174.2500590},
-doi = {10.1145/2544174.2500590},
-abstract = {Plotkin and Pretnar's handlers for algebraic effects occupy a sweet spot in the design space of abstractions for effectful computation. By separating effect signatures from their implementation, algebraic effects provide a high degree of modularity, allowing programmers to express effectful programs independently of the concrete interpretation of their effects. A handler is an interpretation of the effects of an algebraic computation. The handler abstraction adapts well to multiple settings: pure or impure, strict or lazy, static types or dynamic types. This is a position paper whose main aim is to popularise the handler abstraction. We give a gentle introduction to its use, a collection of illustrative examples, and a straightforward operational semantics. We describe our Haskell implementation of handlers in detail, outline the ideas behind our OCaml, SML, and Racket implementations, and present experimental results comparing handlers with existing code.},
-journal = {SIGPLAN Not.},
-month = sep,
-pages = {145–158},
-numpages = {14},
-keywords = {algebraic effects, continuations, effect handlers, effect typing, haskell, modularity, monads}
-}
-
 @inproceedings{HandlersInAction,
 author = {Kammar, Ohad and Lindley, Sam and Oury, Nicolas},
 title = {Handlers in action},
@@ -68,7 +48,7 @@ series = {ICFP '13}
   author       = {The OCaml Development Team},
   year         = {2024},
   url          = {https://ocaml.org/manual/5.2/index.html},
-  note         = {Accessed: 2025-02-28}
+  urldate         = {2025-02-28}
 }
 @online{HazelCode,
 title = {Hazel Source Code},
@@ -164,14 +144,21 @@ author = {Oleg Kiselyov}
   month = oct,
   pages = {155–163}
 }
-@article{ProgSlice,
-  doi = {10.7302/11363},
-  url = {http://deepblue.lib.umich.edu/handle/2027.42/180974},
-  author = {Weiser,  Mark David},
-  title = {Program Slices: Formal,  Psychological,  And Practical Investigations Of An Automatic Program Abstraction Method.},
-  publisher = {My University},
-  year = {1979}
+@inproceedings{ProgSlice,
+author = {Weiser, Mark},
+title = {Program slicing},
+year = {1981},
+isbn = {0897911466},
+publisher = {IEEE Press},
+abstract = {Program slicing is a method used by experienced computer programmers for abstracting from programs. Starting from a subset of a program's behavior, slicing reduces that program to a minimal form which still produces that behavior. The reduced program, called a “slice”, is an independent program guaranteed to faithfully represent the original program within the domain of the specified subset of behavior.Finding a slice is in general unsolvable. A dataflow algorithm is presented for approximating slices when the behavior subset is specified as the values of a set of variables at a statement. Experimental evidence is presented that these slices are used by programmers during debugging. Experience with two automatic slicing tools is summarized. New measures of program complexity are suggested based on the organization of a program's slices.},
+booktitle = {Proceedings of the 5th International Conference on Software Engineering},
+pages = {439–449},
+numpages = {11},
+keywords = {Data flow analysis, Debugging, Human factors, Program maintenance, Program metrics, Software tools},
+location = {San Diego, California, USA},
+series = {ICSE '81}
 }
+
 
 @article{HazelLivePaper,
   title = {Live functional programming with typed holes},
@@ -328,7 +315,7 @@ keywords = {staged computation, run-time code generation, binding times}
   number = {04},
   journal = {Mathematical Structures in Computer Science},
   publisher = {Cambridge University Press (CUP)},
-  author = {PFENNING,  FRANK and DAVIES,  ROWAN},
+  author = {Pfenning,  Frank and Davies,  Rowan},
   year = {2001},
   month = jul 
 }
@@ -474,8 +461,7 @@ abstract = {A type system is a syntactic method for automatically checking the a
   title={Dependently typed functional programs and their proofs},
   author={McBride, Conor},
   year={2000},
-  publisher={University of Edinburgh. College of Science and Engineering. School of~…},
-  type={Doctoral Thesis}
+  school={University of Edinburgh. College of Science and Engineering.}
 }
 
 @inproceedings{QuickCheck,
@@ -644,11 +630,11 @@ keywords = {type inference, empirical study, Type-error debugging}
   keywords={Debugging;Interviews;Encoding;Computer bugs;Web services;Testing;debugging;software engineering;interview;professionals;qualitative analysis;program comprehension},
   doi={10.1109/ESEM.2013.43}}
 
-@article{LogicProg,
+@phdthesis{LogicProg,
   title={Applied logic: its use and implementation as a programming tool},
   author={Warren, David HD},
   year={1978},
-  publisher={The University of Edinburgh}
+  school={The University of Edinburgh}
 }
 
 @article{ModeCorrectness,
@@ -705,12 +691,12 @@ abstract = {Girard and Reynolds independently invented System F (a.k.a. the seco
   keywords={Dynamic programming;Java;Runtime;Programming profession;Application software;Computer languages;Error correction;Testing;Mission critical systems;Memory management;dynamic programming languages;PHP;Perl;Ruby},
   doi={10.1109/MC.2007.53}}
 
-@misc{TIOBE,
+@online{TIOBE,
   author       = {TIOBE Software},
   title        = {TIOBE Programming Community Index},
   year         = 2025,
   url          = {https://www.tiobe.com/tiobe-index/},
-  note         = {[Online; accessed 27-February-2025]}
+  urldate = {2025-02-27}
 }
 
 @inproceedings{DynamicTyping,
@@ -739,25 +725,26 @@ series = {POPL '89}
   organization={Springer}
 }
 
-@article{Contracts,
+
+@inproceedings{Contracts,
 author = {Findler, Robert Bruce and Felleisen, Matthias},
 title = {Contracts for higher-order functions},
 year = {2002},
-issue_date = {September 2002},
+isbn = {1581134878},
 publisher = {Association for Computing Machinery},
 address = {New York, NY, USA},
-volume = {37},
-number = {9},
-issn = {0362-1340},
-url = {https://doi.org/10.1145/583852.581484},
-doi = {10.1145/583852.581484},
+url = {https://doi.org/10.1145/581478.581484},
+doi = {10.1145/581478.581484},
 abstract = {Assertions play an important role in the construction of robust software. Their use in programming languages dates back to the 1970s. Eiffel, an object-oriented programming language, wholeheartedly adopted assertions and developed the "Design by Contract" philosophy. Indeed, the entire object-oriented community recognizes the value of assertion-based contracts on methods.In contrast, languages with higher-order functions do not support assertion-based contracts. Because predicates on functions are, in general, undecidable, specifying such predicates appears to be meaningless. Instead, the functional languages community developed type systems that statically approximate interesting predicates.In this paper, we show how to support higher-order function contracts in a theoretically well-founded and practically viable manner. Specifically, we introduce λcon, a typed lambda calculus with assertions for higher-order functions. The calculus models the assertion monitoring system that we employ in DrScheme. We establish basic properties of the model (type soundness, etc.) and illustrate the usefulness of contract checking with examples from DrScheme's code base.We believe that the development of an assertion system for higher-order functions serves two purposes. On one hand, the system has strong practical potential because existing type systems simply cannot express many assertions that programmers would like to state. On the other hand, an inspection of a large base of invariants may provide inspiration for the direction of practical future type system research.},
-journal = {SIGPLAN Not.},
-month = sep,
+booktitle = {Proceedings of the Seventh ACM SIGPLAN International Conference on Functional Programming},
 pages = {48–59},
 numpages = {12},
-keywords = {behavioral specifications, contracts, higher-order functions, predicate typing, solfware reliability}
+keywords = {solfware reliability, predicate typing, higher-order functions, contracts, behavioral specifications},
+location = {Pittsburgh, PA, USA},
+series = {ICFP '02}
 }
+
+  
 
 
 @book{BasicCatTheory,
@@ -801,14 +788,14 @@ keywords = {datatype, differentiation, dissection, division, generic programming
   title={Real World OCaml: Functional programming for the masses},
   author={Minsky, Yaron and Madhavapeddy, Anil and Hickey, Jason},
   year={2013},
-  publisher={" O'Reilly Media, Inc."}
+  publisher={O'Reilly Media, Inc.}
 }
 
 @techreport{PolymorphicVariants,
   title={A polymorphic type system for extensible records and variants},
   author={Gaster, Benedict R and Jones, Mark P},
   year={1996},
-  institution={Technical Report NOTTCS-TR-96-3, Department of Computer Science, University~…}
+  institution={Technical Report NOTTCS-TR-96-3, Department of Computer Science, University of Nottingham}
 }
 
 @inproceedings{StructuralSubtyping,
@@ -838,7 +825,7 @@ numpages = {27},
 keywords = {typed holes, pattern matching}
 }
 
-@inbook{PracticalFoundationsEd1, place={Cambridge}, title={Contents}, booktitle={Practical Foundations for Programming Languages}, publisher={Cambridge University Press}, author={Harper, Robert}, year={2012}, pages={v–xvi}}
+@book{PracticalFoundationsEd1, place={Cambridge}, title={Practical Foundations for Programming Languages}, publisher={Cambridge University Press}, author={Harper, Robert}, year={2012}}
 
 @article{NondeterministicAlgorithms,
 author = {Floyd, Robert W.},
