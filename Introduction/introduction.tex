@@ -12,25 +12,25 @@ Additionally, they don't generally specify any source code context which caused 
 This project seeks to improve user understanding of type errors by localising static type errors \textit{more completely}, and \textit{combining} the benefits of static and dynamic type errors.
 
 I consider three research problems and implement three features to solve them in the Hazel language \cite{Hazel}:\footnote{The answers may differ greatly for other languages. Hazel provides a good balance between complexity and usefulness.}
-\begin{itemize}
+\begin{enumerate}
 \item Can we statically highlight code which explains \textit{static type errors} more \textit{completely}, including all code that \textit{contributes} to the error? 
 
-This would eliminate the issue of static errors being \textit{incorrectly localised}.
+This would alleviate the issue of static errors being \textit{incorrectly localised}, and help give a \textit{greater context} to static type errors.
 
-Solution: I devise a \textit{novel} method of \textbf{type slicing} with formal mathematical foundations built upon the formal \textit{Hazel calculus} \cite{HazelLivePaper}. Further, it generalises to highlight all code relevant to typing \textit{any} expressions (not just erroneous expressions).
+\textbf{Solution:} I devise a \textit{novel} method of \textbf{type slicing} including formal mathematical foundations built upon the formal \textit{Hazel calculus} \cite{HazelLivePaper}. Additionally, it generalises to highlight all code relevant to typing \textit{any} expressions (not just erroneous expressions).
 
 \item Can we dynamically highlight source code which contributes to a \textit{dynamic type error}?
 
-This would provide missing source code context to understand how types involved in a dynamic type error originate.
+This would provide missing source code context to understand how types involved in a dynamic type error originate from the source code.
 
-Solution: I devise a \textit{novel} method of \textbf{cast slicing}, also with formal mathematical foundations. Further, it generalises to highlight source code relevant to requiring any specific \textit{runtime casts}.
+\textbf{Solution:} I devise a \textit{novel} method of \textbf{cast slicing}, also with formal mathematical foundations. Additionally, it generalises to highlight source code relevant to requiring any specific \textit{runtime casts}.
 
 \item Can we provide dynamic \textit{evaluation traces} to explain \textit{static type errors}?
 
-This would provide an intuitive concrete explanation for static type errors.
+This would provide an \textit{intuitive} concrete explanation for static type errors.
 
-Solution: I implement a \textbf{type error witness search procedure}, which finds inputs (witnesses) to expressions which cause a \textit{dynamic type error}. This is based on research by Seidel et al. \cite{SearchProc} which devised a similar procedure for a subset of OCaml.
-\end{itemize} 
+\textbf{Solution:} I implement a \textbf{type error witness search procedure}, which discovers inputs (witnesses) to expressions which cause a \textit{dynamic type error}. This is based on research by Seidel et al. \cite{SearchProc} which devised a similar procedure for a subset of OCaml.
+\end{enumerate}
 
 Hazel \cite{Hazel} is a functional locally inferred and gradually typed research language allowing the writing of \textit{incomplete programs} under active development at the University of Michigan. 
 
@@ -38,11 +38,18 @@ Hazel \cite{Hazel} is a functional locally inferred and gradually typed research
 
 (i.e. a notebook environment, easy teaching language for students, teaching language to understand complex type systems... All are situations where better error explanations are useful (\textbf{cite that students struggle more with type errors}))
 
-These three features work well together in Hazel to allow both static and dynamic type errors to be explained to a greater extent than in any existing languages. Arguably, these explanations are intuitive, and should help reduce debugging times and aid in students understanding type systems.\footnote{Proving this would require a human study.}
+These three features \textit{work well together} in Hazel to allow \textit{both} static and dynamic type errors to be explained to a \textit{greater extent} than in any existing languages. Arguably, these explanations are \textit{intuitive}, and should help reduce debugging times and aid in students understanding type systems.\footnote{Proving this would require a user study.}
 
-For example, here is a walk-through for how a simple error could be diagnosed using the three features. 
+For example, here is a basic walk-through for how a static type error could be diagnosed using the three features. 
 
 \textbf{MAP function? show a static error version}
+\textbf{Reference to detailed analysis in the evaluation section.}
+
+\begin{figure}
+
+\caption{A Static Type Error}
+\label{sec:CognitiveWalkthrough}
+\end{figure}
 
 \section{Related Work}
 \label{sec:RelatedWork}
@@ -60,8 +67,8 @@ The \textit{type witness search procedure} is	 based upon Seidel et al. \cite{Se
  
  An implementation (\cref{sec:TypeSlicingImplementation}-\ref{sec:CastSlicingImplementation}) of these has been created covering \textit{most}\footnote{Except for type substitution.} of the Hazel language, including a user interface. 
  
- A \textit{type witness search procedure} was successfully implemented. This involved creating a \textit{hole instantiation} and a simplified \textit{hole substitution} method (\cref{sec:HoleInstantiation}); there is currently no full hole substitution feature in Hazel despite it's presence in the core calculus (\cref{sec:HoleSubstitution}). Additionally, a customisable instantiation method was implemented (\cref{sec:Stepper}) controllable via a UI.
+ A \textit{type witness search procedure} was successfully implemented. This involved creating a \textit{hole instantiation} and a simplified \textit{hole substitution} method (\cref{sec:HoleInstantiation}); there is currently no full hole substitution feature in Hazel despite it's presence in the core calculus (\cref{sec:HoleSubstitution}). Additionally, a customisable instantiation method was implemented (\cref{sec:Stepper}) controllable via a UI.\footnote{TODO}
 
-The slicing features and search procedure met all goals, \textbf{list eval goals briefly}, showing \textit{effectiveness} (\cref{sec:EffectivenessAnalysis}) and being reasonably \textit{performant} (\cref{sec:PerformanceAnalysis}) over a corpus of \textit{well-typed} and \textit{ill-typed} Hazel programs respectively (\cref{sec:CorpusCollection}). Further, considered deviations from the slicing theories and strengths and weaknesses of the search procedure were evaluated in detail (\cref{sec:CriticalAnalysis}).
+The slicing features and search procedure met all goals, \textbf{list eval goals briefly}, showing \textit{effectiveness} (\cref{sec:EffectivenessAnalysis}) and being reasonably \textit{performant} (\cref{sec:PerformanceAnalysis}) over a corpus of \textit{well-typed} and \textit{ill-typed} Hazel programs respectively (\cref{sec:CorpusCollection}). Further, considered deviations from the slicing theories and strengths and weaknesses of the search procedure were evaluated in detail (\cref{sec:CriticalAnalysis}). A cognitive walk-through is performed in \cref{sec:CognitiveWalkthrough} considering the use of all the features in debugging the static type error presented in the introduction in \cref{fig:StaticError}.
 
 Finally, further directions and improvements have been presented along with discussion on the applicability of these features, slicing in particular, to real world debugging situations in \cref{chap:Conclusions}.

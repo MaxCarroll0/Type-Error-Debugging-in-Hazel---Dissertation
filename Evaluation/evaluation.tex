@@ -95,3 +95,11 @@ It is generally good. Find some cases where bidirectional type error localisatio
 To improve code coverage. i.e. Strings and Floats are annoying, SMT solvers could be used to help explore branches... Equality solvers in particular would be very useful and quite easy to implement, in particular for strings which are generally used via equality as opposed to lists which are used incrementally via pattern matching.
 \subsection{Combinatorial Explosion}
 State space gets very large as more holes are instantiated from other holes, i.e. $[] \to [\dyn] \to [\dyn, \dyn] \to [\dyn,\dyn,\dyn]$...
+
+\section{Cognitive Walkthrough: Debugging a Type Error}
+\label{sec:CognitiveWalkthrough}
+This actually answers the question of how this helps debugging a type error.
+
+Demonstrate how a static error would arise, and be debugged by either using slicing or finding a dynamic error for the expression and using cast slicing.
+
+Could do a cognitive walk-through for this?
