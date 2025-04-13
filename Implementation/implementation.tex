@@ -880,6 +880,8 @@ Instantiation can be represented by a \textit{non-deterministic} function \code{
 
 Classifying the term $d$, into values, indeterminate terms, and expressions with a possible step is done by a \textit{deterministic} function \code{take_step}, discussed in \cref{sec:OneStepEvaluator}: \[\code{OneStepEvaluator.take_step : Exp.t => TryStep.t}\] 
 
+Recursively performing the search is wrapped up as a new level in the search tree. This means that the tree never has an unbounded branching factor, as would occur by not wrapping evaluation steps if the evaluation went into an infinite loop.
+
 To allow for multiple searching methods, the algorithm is placed within a \textit{functor} \textbf{(cite)}, which takes a searching method, \code{S : Search}, with the previously described signature (\cref{sec:ResolvingNondeterminism}). Using \code{S}, the algorithm is defined in \cref{fig:IndetEval}.
 
 \begin{figure}[h]
@@ -894,9 +896,9 @@ module Make = (S: Search) => {
     switch (step) {
     | BoxedValue => return(d)
     | Indet => 
-      d |>- Instantiation.instantiate
-        >>- values;
-    | Step(d') => d' |>- values;
+      d |>- wrap(Instantiation.instantiate
+        >>- values);
+    | Step(d') => wrap(d' |>- values);
     | exception (EvaluatorError.Exception(_)) => fail
     };
   };
@@ -937,10 +939,10 @@ Hazel's transition semantics specifies these rules, and careful use of the evalu
 \subsubsection{Synthesising Terms for Types}
 Suppose we know which hole to instantiate and to which type (\cref{sec:TypesForHoles}). How do we refine these holes \textit{fairly} and lazily, to their \textit{least specific} value that allows evaluation to continue?
 
-Some types are \textit{atomic} and must be instantiated to (possibly infinite set) of concrete types:
+Some types are \textit{atomic} and must be instantiated to (possibly infinite set) of concrete types; again, we must be careful to ensure that the branching factor of the search tree remains finite:
 
 \paragraph{Booleans:} Simple binary choice: \code{return(true) <||> return(false)}.
-\paragraph{Integers:} Integers are countable, so can be enumerated, for example, by constructing the tree in \cref{fig:Integers}. Of course, OCaml integers are not arbitrary precision, so not every mathematical integer is represented here; in the future, Hazel might use arbitrary precision integers.
+\paragraph{Integers:} Integers are countable, so can be enumerated, for example, by constructing the tree in \cref{fig:Integers}, which wraps each integer and it's negative in each level of the tree. Of course, OCaml integers are not arbitrary precision, so not every mathematical integer is represented here; in the future, Hazel might use arbitrary precision integers.
 \begin{figure}[h]
 \begin{minted}{reason}
 let rec ints_from = n => return(n) <||> wrap(n + 1 |>- ints_from)
@@ -1092,22 +1094,94 @@ The use of inequalities here can become inefficient, and representing cases like
 \subsection{User Interface}\label{sec:UIIndetEval}
 
 \section{Search Procedure}\label{sec:SearchProcedure}
-\subsection{Detecting Relevant Cast Errors}
-i.e. failed cast at head of term
-
-\subsubsection{Cast Laziness}
-\label{sec:SearchCastLaziness}
+Now that an framework for indeterminate evaluation has been specified, the following problems can be addressed:
+\begin{itemize}
+\item[\ref{AbstractSearch}] How can indeterminate evaluation be abstracted into a generic search procedure?
+\item[\ref{CastFailureDetection}] What exactly are cast errors? How can they be detected? Which ones are actually \textit{relevant}, causing evaluation to get stuck?\footnote{Some cast errors are known, e.g. from static type checking, but don't actually relate to the evaluation path.}
+\item[\ref{SearchMethods}] How can different search methods be implemented: DFS, BFS, Iterative deepening DFS? 
+\end{itemize}
 
 \subsection{Abstract Indeterminate Evaluation}
+\label{sec:AbstractSearch}
+By making the search procedure take a higher-order \code{logic : Exp.t => TryStep.t => S.t('a)} function, which takes the an input expression $d$ and it's class (value, indet, step possible), and returns nondeterministic results of type \code{'a}.
 
+This allows defining search procedures returning other types, for example, the integer \textit{size} of values. Or those concerning specific types of expressions, for example only those with cast errors. 
+
+Additionally, an `expert' search abstract is given, which also allows the remaining search space to be defined. This allows, for example, customising the instantiation and evaluation methods.
+
+\subsection{Detecting Relevant Cast Errors}
+\label{sec:CastFailureDetection}
+To search for cast errors, we must first define what one is. A reasonable definition is terms which contain \textit{cast failures}, in Hazel these are casts between \textit{inconsistent ground types}. However, this has some issues:
+
+\paragraph{Multiple Cast Failures:} Terms may have multiple cast failures, some of which discovered during static type checking and inserted via elaboration. The aim of this project was to allow give dynamic traces \textit{explaining} a static type error. Clearly these failure must be ignored.
+
+Additionally, the procedure has usage searching for errors in dynamic code. Situations which cause cast errors which don't actually stop evaluation should also be ignored. For example expressions which cannot be statically typed, but are safe, are within this class: \code{if true then "str" else 0}
+
+Therefore, we consider only the casts which are \textit{causing} a term to be indeterminate (therefore getting stuck), this is implemented similarly to choosing which hole to instantiate (\cref{sec:ChooseHole}).
+
+\paragraph{Cast Laziness}
+\label{sec:SearchCastLaziness}
+Only casts between \textit{ground} types are checked for consistency. Due to cast laziness (\cref{sec:CastLaziness}), some are cast between inconsistent types, but \textit{not} placed within a \textit{cast failure}.
+
+This can be fixed by performing eager cast transitions before checking for cast errors, or eagerly treating casts during indeterminate evaluation. However, it could be argued that this \textit{should not} constitute a cast error, after all, the part of the compound type with the error is yet to actually be \textit{used}.
+\begin{figure}
+let x = (1, "str") in 
+(fun x : (Int, Int) -> x)(x)
+\caption{Inconsistent Lazy Casts Failure}
+\end{figure}
+
+\subsection{Explaining Cast Errors}
+A static type error will place a term inside a cast error during elaboration. The id of this error can be tracked, and if it is the one at fault, associated with the static error. Additionally, the type slice enforcing the cast is tracked via cast slicing, and may be displayed as usual.
 
 \subsection{Searching Methods}\label{sec:SearchMethods}
-Does interleaved DFS actually perform DFS? Reimplement both DFS and Interleaved DFS? Do I even need fair choice and conjunction?
+\textbf{Does interleaved DFS actually perform DFS? Reimplement both DFS and Interleaved DFS? Do I even need fair choice and conjunction?}
+
+I implement \textit{three} different search methods, implementing the non-determinism signature specified in \cref{sec:ResolvingNondeterminism}.
+
+\subsubsection{Depth First Search}
+As mentioned previously \textbf{(REF)}, modelling lazy sequences by streams is a typical method, and implementing choice and conjunction via appending leads to depth-first search. In which case, \code{wrap} is just the identity function.
+
+\begin{figure}
+Show how streams \& append represent depth first search
+\caption{Depth First Search as Streams}
+\end{figure}
+
+\subsubsection{Breadth First Search}
+Breadth first search needs to take specific account of the tree structure. Sequences of bags\footnote{Lists, but where ordering doesn't matter.} can be used to represent solutions at each \textit{level} of the tree \cite{BFSCombinators}. Therefore, forcing each element of the stream gives the solutions at successive depths, i.e. iterating through these bags returns the solutions in a breadth first order.
+
+Failure is the empty sequence as before, return injects a solution into a tree giving the solution in the first level. 
+
+Choice can be represented lazily merging of each level of the tree. The merged tree would produce all solutions of the first level of each choice at the same time, as the new first level. This is associative as required, when ignoring the ordering of each level, as is done with bags. 
+
+\begin{figure}[h]
+Merge trees, show that it maintains BFS.
+\caption{Breadth First Choice}
+\end{figure}
+
+Wrapping a tree pushes every solution one level down in the tree, corresponding to prepending with the empty list. Essentially, this adds one cost to every solution.
+
+For a bag \code{b} of elements \code{x1}, \code{x1} $\dots$, \code{xn}. The tree which produces these solutions in the first level, $[b]$\footnote{Using list notation also for sequences}, is equivalent to \code{return(x1) <||> return(x2) <||> ... <||> return(xn)}.
+
+A tree \code{b :: bs} is equivalent to \code{[b] <||> [] :: wrap(bs)}, and by the above, also equivalent to \code{return(x1) <||> ... <||> return(xn) <||> wrap(bs)}.
+
+Therefore, as conjunction distributes over choice, and return is a left unit of conjunction then:
+\[\code{b :: bs >>= f     =    f(x1) <||> ... <||> f(xn) <||> wrap(bs >>= f)}\]
+Additionally, another law for non-determinism \code{fail >>= f = fail}, completes a recursive definition for bind.
+
+As mapping and choice are associative, we get that conjunction is also. Additionally, it satisfies all the remaining monad and non-determinism laws. 
+
+However, as \code{f} is mapped to the entire bag \code{b}, it is difficult to maintain laziness in OCaml. \textbf{TODO - explain how}
+
+\subsubsection{Iterative Deepening Depth First Search}
+
+\subsubsection{Interleaved Streams}
+??? think about removing fairness, and treating this as a search procedure.
+
 \subsection{User Interface}
 
 \section{Repository Overview}
 \subsection{Branches}
-
+Up to date with dev branch up to \textbf{DATE}
 
 \subsection{Hazel Architecture}
 
