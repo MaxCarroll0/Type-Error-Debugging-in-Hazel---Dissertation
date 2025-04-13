@@ -8,7 +8,9 @@ Further directions here, referencing unsatisfactory results from Evaluation. Als
 \subsection{Extension to Full Hazel Language}
 Type functions, recursive types, deferrals
 
-\subsubsection{User Studies}
+\subsection{UI Improvements, User Studies}
+Better UI.
+
 Effectiveness gauge in the real world
 
 \subsection{Cast Slicing}
@@ -18,13 +20,14 @@ The implementation differs by storing slices directly in the context, making ana
 
 Also, the fact that cast slices are manipulated in evaluation is completely opaque to the user \textit{unless} they step through manually. Ways to better represent this information exist (cast dependency graphs etc.)
 
-\subsubsection{Proofs}
+\subsection{Proofs}
 PRimarily about the search procedure \& casts. 
 
 Also about creating a \textit{stronger} link between static type errors and runtime errors, what Hazel considers as a runtime error is somewhat unintuitive, see the points made in evaluation. A formal property of what exactly a type error witness \textit{is} which actually matches with the implementation would be nice.
 
 
 \subsection{Indeterminate Evaluation \& Logic Programming}
+\label{sec:LogicProgramming}
 The idea of allowing holes to evaluate indeterministically allows for nondeterminism in evaluation. This could be harnessed to write non-deterministic algorithms themselves.
 
 Consider adding a new construct which filters indet terms. Hazel already has a construct for testing expressions which exposes the success/failure to the user directly in the editor. A similar construct could filter all indet evaluations which result in the test being true. \textbf{Give an example for calculating permutations.}

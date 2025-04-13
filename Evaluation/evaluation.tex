@@ -76,7 +76,9 @@ How to find dynamic errors for specific chosen static errors. Works well for som
   
 \subsection{Categorising Programs Lacking Type Error Witnesses}
 \subsubsection{Non-Termination}
-The original procedure would get stuck on programs that loop forever. (To) Fix with iterative deepening
+The original procedure would get stuck on programs that loop forever. (To) Fix with iterative deepening.
+
+However, substituting in closures and enforcing the invariant that the bindings must be values, can lead to non-termination. \textit{Verify how fixed points are treated in closures.}
 \subsubsection{Repeated Instantiations}
 A hole being instantiated to a hole. Does this ever happen??
 \subsubsection{Dead Code}
@@ -92,6 +94,9 @@ Useful when type correct code written but used in the wrong way, i.e. write the 
 \subsection{Bidirectional Type Error Localisation}
 It is generally good. Find some cases where bidirectional type error localisation is wrong.
 \subsection{Improving Hole Instantiation}
+\label{sec:EvalHoleInstantiation}
+Make strings inductive!
+
 To improve code coverage. i.e. Strings and Floats are annoying, SMT solvers could be used to help explore branches... Equality solvers in particular would be very useful and quite easy to implement, in particular for strings which are generally used via equality as opposed to lists which are used incrementally via pattern matching.
 \subsection{Combinatorial Explosion}
 State space gets very large as more holes are instantiated from other holes, i.e. $[] \to [\dyn] \to [\dyn, \dyn] \to [\dyn,\dyn,\dyn]$...

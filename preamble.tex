@@ -32,7 +32,8 @@
 \newcommand{\error}[1]{\hlc[pink!50]{#1}}
 \newcommand{\hlcmaths}[2][yellow!50]{\colorbox{#1}{$\displaystyle #2$}}
 
-\newcommand{\code}[1]{\text{\mintinline[escapeinside=||]{reason}{#1}}}
+\newcommand{\code}[1]{\text{\mintinline{reason}{#1}}}
+\newcommand{\codeE}[1]{\text{\mintinline[mathescape=||]{reason}{#1}}}
 \newcommand{\dyn}{{\color{teal}\texttt{?}}}
 \newcommand{\casthl}[4][yellow!50]{\ensuremath{\code{#4}^{\text{\hlc[#1]{${\langle$\code{#2}$ \Rightarrow $\code{#3}$\rangle}$}}}}}
 \newcommand{\cast}[3]{\casthl[red!0]{#1}{#2}{#3}}
