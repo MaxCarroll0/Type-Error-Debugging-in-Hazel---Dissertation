@@ -370,7 +370,7 @@ Ground type casts will be added, but their addition is purely technical and we c
 \subsection{Cast Dependence}
 This in combination with the indexed slices could have some nice mathematical properties.
 
-Though, these would need to retrieve information about parts of slices that were lost when decomposing slices. i.e. when a slice $\tau_1 \to \tau_2$ extracts the argument type $\tau_2$, the slicing criterions lose track of the original lambda binding. A way to reinsert these bindings such that we get a minimal term which \textit{Evaluates to the same cast} e.g. But this will have lots of technicalities with correctly tracking the restricted contexts $\gamma'$ for closures (i.e. functions returning functions which have been applied once). \textbf{TALK ABOUT THIS IN THE FURTHER DIRECTIONS SECTION.}
+Though, these would need to retrieve information about parts of slices that were lost when decomposing slices. i.e. when a slice $\tau_1 \to \tau_2$ extracts the argument type $\tau_2$, the slicing criteria lose track of the original lambda binding. A way to reinsert these bindings such that we get a minimal term which \textit{Evaluates to the same cast} e.g. But this will have lots of technicalities with correctly tracking the restricted contexts $\gamma'$ for closures (i.e. functions returning functions which have been applied once). \textbf{TALK ABOUT THIS IN THE FURTHER DIRECTIONS SECTION.}
 
 \section{Type Slicing Implementation}\label{sec:TypeSlicingImplementation}
 Here I detail how the theories above were adapted to produce an implementation for Hazel.
@@ -1131,12 +1131,13 @@ let x = (1, "str") in
 \end{figure}
 
 \subsection{Explaining Cast Errors}
+\label{sec:StaticCastError}
 A static type error will place a term inside a cast error during elaboration. The id of this error can be tracked, and if it is the one at fault, associated with the static error. Additionally, the type slice enforcing the cast is tracked via cast slicing, and may be displayed as usual.
 
 \subsection{Searching Methods}\label{sec:SearchMethods}
 \textbf{Does interleaved DFS actually perform DFS? Reimplement both DFS and Interleaved DFS? Do I even need fair choice and conjunction?}
 
-I implement \textit{three} different search methods, implementing the non-determinism signature specified in \cref{sec:ResolvingNondeterminism}.
+I implement \textit{four} different search methods, implementing the non-determinism signature specified in \cref{sec:ResolvingNondeterminism}.
 
 \subsubsection{Depth First Search}
 As mentioned previously \textbf{(REF)}, modelling lazy sequences by streams is a typical method, and implementing choice and conjunction via appending leads to depth-first search. In which case, \code{wrap} is just the identity function.
@@ -1170,12 +1171,68 @@ Additionally, another law for non-determinism \code{fail >>= f = fail}, complete
 
 As mapping and choice are associative, we get that conjunction is also. Additionally, it satisfies all the remaining monad and non-determinism laws. 
 
-However, as \code{f} is mapped to the entire bag \code{b}, it is difficult to maintain laziness in OCaml. \textbf{TODO - explain how}
+However, as \code{f} is mapped to the entire bag \code{b}, it is difficult to maintain laziness in OCaml. We need partial applications for f... \textbf{TODO - explain how to do this in OCaml?!?!}
 
 \subsubsection{Iterative Deepening Depth First Search}
+While breadth first search is fair, avoiding non-termination (for finite branching factor), it has \textit{exponential} space complexity in the depth of the level being explored \cite{NorvigAI}. When binding a function \code{f}, it gets lazily and \textit{partially} instantiated at node of each level, tracking these partial instantiations is what causes the exponential complexity.
+
+\begin{figure}
+
+\caption{Monadic BFS Requires Exponential Space}
+\end{figure}
+
+In comparison, depth first search only requires space linear in the depth explored, that is, the number of choices encountered before reaching a certain depth.
+
+The use of iterative deepening, successive depth-bounded depth first searches, retains low space complexity of DFS while also avoiding non-termination (due to the depth bound). However, upper parts of the search tree will be repeatedly explored, but this does not reduce the already exponential time complexity of the search for branching factor greater than 1. But, the deterministic evaluation part does have a branching factor of 1, so it may be the case that the recalculation has a significant impact\textbf{(Ref evaluation)}. 
+
+To represent iterative deepening \cite{SearchAlgebra}, we can use functions \code{int => list(('a, int))}, calculating every\footnote{Again, relying on finite branching factor.} solution found within an integer depth bound \code{d}, alongside it's remaining depth budget \code{r}. Tracking the remaining depth budget simplifies \code{bind} and allows only solutions on the fringe (zero budget) to be output upon each iteration, so the same solution will not appear twice.
+
+Then, \code{return} represents a single solution with unused depth budget, \code{return(x)  =  (d => [(x, d)])}. \code{fail} gives the empty list \code{fail  =  d => []}. Choice appends all solutions at any given depth bound \code{m <||> n  =  d => m(d) @ n(d)}. Binding, \code{m >>= f} takes solutions in \code{m} who have depth budget to use, and applies \code{f} and calculates all solutions from \code{f} using the remaining budget, concatenating these results to form a single list.
+
+Then \code{wrap(m)} (the forest \code{m} wrapped up as a single tree) has solutions at depth incremented by 1, and none at depth 0: \code{wrap(m)(0) = []} and \code{wrap(m)(bound) = p(bound - 1)}.
+
+I implement this as a functor, with a custom bound incrementing function \code{inc : bound => bound} and initial bound \code{init : bound}. Then \code{run} will   search to depth \code{init}, produce all solutions, then search to depth \code{inc(init)} and produce all solutions with remaining depth budget \code{inc(init) - init}, other solution must have already been produced last iteration.
+
+\begin{figure}
+\begin{minted}{reason}
+((m >>= f) >>= g)(bound)
+= m(bound) 
+  |> map((x, rem_bound) => f(x, rem_bound))
+  |> concat
+  |> map((y, rem_bound2) => g(y, rem_bound2))
+  |> concat
+\end{minted}
+Vs.
+\begin{minted}{reason}
+(m >>= (x => f(x) >>= g))(bound)
+= m(bound)
+  |> map((x, rem_bound) => rem_bound |> (f(x) >>= g))
+  |> concat
+= m(bound)
+  |> map((x, rem_bound) => rem_bound |> (f(x) 
+  |> map((y, rem_bound2) => g(y, rem_bound2)) 
+  |> concat))
+  |> concat
+= m(bound)
+  |> map((x, rem_bound) => f(x, rem_bound) 
+  |> map((y, rem_bound2) => g(y, rem_bound2))
+  |> concat)
+  |> concat
+= m(bound)
+  |> map((x, rem_bound) => f(x, rem_bound)) 
+  |> concat
+  |> map((y, rem_bound2) => g(y, rem_bound2))
+  |> concat
+\end{minted}
+\caption{Associativity of Iterative DFS \code{bind}}
+\end{figure}
 
 \subsubsection{Interleaved Streams}
-??? think about removing fairness, and treating this as a search procedure.
+\textbf{TODO: split code into a new option, remove fair operators, move fair conjunction and chocie section to here.}
+
+The use of streams, but with fair choice and conjunction via interleaved ordering ensures termination for every solution. This has the advantage of working even for trees with infinite branching factor. However, interleaving has a linear space complexity, leading to the undesirable exponential space complexity as with breadth-first search.
+
+\code{wrap} for this is the identity, same as DFS.
 
 \subsection{User Interface}
 

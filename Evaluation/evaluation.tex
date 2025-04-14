@@ -1,96 +1,322 @@
 \chapter{Evaluation}\label{chap:Evaluation}
-\textbf{Should I put proposed implementation plans and improvements here or in implementation??}
+\textbf{Add citations to evidence statements on usefulness, i.e. smaller slices are easier to comprehend}
 
-Evaluation Here.\par 
-Evaluate small scope hypothesis for this problem. Note that small inputs don't necessarily correlate with small evaluation traces.
 
 \section{Goals}\label{sec:EvaluationGoals}
-i.e. Project Proposal. But make it with more clarity, i.e. `Most Type Errors Admit Witnesses'
-Completeness etc. most of Hazel...
+This project devised and implemented three features: \textit{type slicing, cast slicing,} and a \textit{static type error witness search procedure}. Each of which had a clear intention for it's use:
+
+\paragraph{Type Slicing:} Expected to give a greater static context to expressions. Explaining why an expression was given a specific type.
+
+\paragraph{Cast Slicing:} Expected to provide static context to runtime type casts and propagate this throughout evaluation. Explaining where a cast originated and why it was inserted.
+
+\paragraph{Search Procedure:} Finds dynamic type errors (cast errors) automatically, linked back to source code by their execution trace and \textit{cast slice}. Therefore, a static type error can be associated automatically with a concrete dynamic type error \textit{witness} to better explain.
+
+\section{Methodology}\label{sec:EvaluationMethodology}
+I evaluate the three features and their various implementations (where applicable) along \textit{four} axes. Quantitative measures were evaluated over a corpus of ill-typed and well-typed Hazel programs (\cref{sec:EvaluationCorpus}):
+
+\subsubsection{Quantitative Analysis}
+\paragraph{Performance: } \textit{Are the features performant enough for use in interactive debugging? Which implementations perform best?}
+
+Measures: The time and space usage was expected to be within the typical \textit{debugging} build times and space usage for small programs. 
+
+The time limit chosen was \textit{one minute} and space limit was \textbf{INSERT LIMIT HERE, 1GB?}.
+
+\paragraph{Effectiveness: } \textit{Do the features effectively solve the problems? Are the results easily interpretable by a user?}
+
+Measures: the \textit{coverage} of the search procedure, what proportion of programs admit a witness. The \textit{size} of witnesses, evaluation traces, type slices, and cast slices. 
+
+The intention is that a smaller size implies that there is less information for a user to parse, and hence easier to interpret.\footnote{Not necessarily \textit{always} true, but a reasonable assumption to an extent.}
+
+The search procedure was expected to provide a \textit{reasonable} coverage, chosen at 70\%. 
+
+\subsubsection{Qualitative Analysis}
+\paragraph{Critical: } \textit{What \textit{classes} of programs are missed by the search procedure? What are the implications of the \textit{quantitative} results? What improvements were, or could be made in response to this?}
+
+This section provides \textit{critical} arguments on \textit{usefulness} or \textit{effectiveness}, which are \textit{evidenced} by quantitative data. 
+
+Differing implementations and \textit{subsequent} improvements are compared. Additionally, further improvements are proposed.
+
+\paragraph{Holistic: } \textit{Do the features work well together to provide a helpful debugging experience? Is the user interface intuitive?}
+
+A cognitive walk-through was performed demonstrating how all three features could be used to debug a type error. Improvements to the UI are discussed.\footnote{Improved UI being a low-priority extension.} 
+
+
 
 \section{Hypotheses}
-Various hypotheses for results, mentioned below.
+Various hypotheses for properties of the results are expected. The evidence and implications of these are discussed in the \textit{critical evaluation}.
+
+\paragraph{Search method space requirements: } The space requirements for DFS and Iterative DFS are expected to be lower than that of BFS and interleaved DFS. Space limit is expected to be a more \textit{pressing} issue than time limit.
+
+\paragraph{Contribution slices are large: } Contribution slices highlight all static regions of a program. This likely shows \textit{too much} information to the user at once. The other slicing methods (synthesis, analysis, ad-hoc) are expected to produce significantly \textit{smaller} slices. 
+
+\paragraph{The Small Scope Hypothesis: } This hypothesis states that a high proportion of errors can be found by generating only \textit{small} inputs. Evidence that this hypothesis holds has been provided for Java data-structures \cite{SmallScopeHypothesis} and answer-set programs \cite{SmallScopeHypothesisAnswerSet}. Does it also hold for finding dynamic type errors from small \textit{hole instantiations}?
+
+\paragraph{Smaller instantiations correlate with smaller traces: } If this and the small scope hypothesis hold, then most errors could be found with \textit{small execution traces}.
+
+\paragraph{Slice size correlates with type size: } Smaller expressions likely have smaller types.
+
+\paragraph{Cast Errors are between small types: } And if small types have small slices, then slices for cast errors are small.
 
 \section{Program Corpus Collection}\label{sec:CorpusCollection}
-\textbf{I need a corpus of programs with type errors and a corpus of programs with annotations (which may be well-typed). Currently have neither!! Think I might need help with this...}
 
-Both the above could be transpiled from OCaml, ill-typed ones by just ignoring all types (though this adds some bias to the search procedure, by ignoring partially annotated examples or annotated but ill-typed situations, but it \textit{should} be roughly ok). But sum types etc. may be harder to transpile.
-\subsection{Methodology}
+A well-typed AND ill-typed program corpus. Note that ill-typed here means one with a type error, even if it isn't statically caught (due to missing annotations).
+
+\subsection{Methodology}Supervisor help, transpiler, data from Seidel...
+
+
 \subsection{Alternatives}
 OCaml $\to$ Hazel transpiler
+\subsection{Statistics}
+The program corpus contains \textbf{X} programs, with averages and standard deviations in size and trace size\footnote{When using normal, deterministic, evaluation.} shown in \cref{fig:CorpusStats}.
+\begin{figure}
+\centering
+\begin{tabular}{c|ccccc}
+& \textbf{Number} & \multicolumn{2}{c}{\textbf{Prog. Size}}& \multicolumn{2}{c}{\textbf{Trace Length}}
+&  & Avg. & Std. dev. & Avg. & Std. dev.\\
+\hline
+\textbf{Well-Typed} &- &- &-&-&-\\
+\textbf{Ill-Typed} &- &- &-&-&-\\
+\hline
+(Both) &- &- &-&-&-\\
+\end{tabular}
+\caption{Hazel Program Corpus}
+\label{fig:CorpusStats}
+\end{figure}
+
+\section{Performance Analysis}\label{sec:PerformanceAnalysis}
+\textbf{Note: this section is the lowest priority results...}
+
+\subsection{Slicing}
+The entire corpus of ill-typed and well-typed programs is used to analyse slicing methods. 
+
+To evaluate \textbf{type slicing} performance, the corpus is \textit{type checked} using three slicing implementations and also no slicing. Time and space usage for each program is \textit{normalised} by it's size, as larger programs take longer and use more space to type check by a linear factor in their size.\footnote{Not exact in the worst case, but true in practice \textbf{(VERIFY)}.}
+
+To evaluate \textbf{cast slicing} performance, each program is \textit{evaluated} using the same implementations. Time is \textit{normalised} by the trace-length, as longer traces take linearly longer time. Space is \textit{normalised} by program size.
+
+In both cases, space usage is measured by the \textit{peak} live memory usage over the period. Calculated via \code{GC.stat} and \code{GC.create_alarm}.
+
+\Cref{fig:SlicingPerformance} gives the results, where \textbf{(n)} means the results were normalised. \code{dev} is the Hazel main branch with no slicing. \code{witnesses-search} (\texttt{ad-hoc}) calculates smaller reduced ad-hoc slices (see \cref{sec:SlicingAnalysis}). \code{full-analysis-slices} (\texttt{full}) calculates the full synthesis \& analysis slices as proposed by the theory in \cref{sec:TypeSlicingTheory}, where analysis slices take priority if both are present. \code{contribution-slices} (\texttt{contribution}) implements full contribution slices in \cref{sec:ContributionSlices}.
+
+Cast slicing has \textit{negligible} impact on performance, whereas type slicing has a \textit{relatively large} impact. However, in absolute terms still small, and far below the 60s and \textbf{(MEM TARGET)} targets.
+
+\begin{figure}
+  \centering
+  \textit{(could present this as a bar chart)}
+  \begin{tabular}{lc|cccc}
+  & & \multicolumn{4}{c}{\textbf{Branch}}\\
+   & unit & \texttt{dev} & \texttt{ad-hoc} & \texttt{full} & \texttt{contribution}\\
+   \hline
+   \textbf{Time} Avg. & ms &  - & - & - & -\\
+   Std. dev. &  &  - & - & - & -\\
+   \textbf{Time (n)} Avg.& ms/prog. size& - & - & - & -\\
+   Std. dev. &  &  - & - & - & -\\
+   \textbf{Space} Avg. & words& - & - & - & -\\
+   Std. dev. &  &  - & - & - & -\\
+   \textbf{Space (n)} Avg. & words/prog. size& - & - & - & -\\
+   Std. dev. &  &  - & - & - & -\\
+   && \multicolumn{4}{c}{\textbf{(a)} \textbf{Type Checking}}\\
+   \hline
+   \textbf{Time} Avg. & ms & - & - & - & -\\
+   Std. dev. &  &  - & - & - & -\\
+   \textbf{Time (n)} Avg. & ms/trace size& - & - & - & -\\
+   Std. dev. &  &  - & - & - & -\\
+   \textbf{Space} Avg. & words & - & - & - & -\\
+   Std. dev. &  &  - & - & - & -\\
+   \textbf{Space (n)} Avg. & words/prog. size& - & - & - & -\\
+   Std. dev. &  &  - & - & - & -\\
+   & &\multicolumn{4}{c}{\textbf{(b)} \textbf{Execution}}\\
+  \end{tabular}
+  
+\caption{Normalised Performance Statistics for Slicing}
+\label{fig:SlicingPerformance}
+\end{figure}
+
+\subsection{Search Procedure}
+Only the ill-typed program corpus is used for evaluating the search procedure. After all, any well-typed program cannot have a dynamic type error.
+
+As the search procedure may be non-terminating, the performance goals are directly input, by setting a 60s time limit and \textbf{MEM LIMIT} memory limit. The succeeding \textit{effectiveness} analysis considers the search procedures results under these constraints.
+
+Only \textbf{X}\% of inputs failed due to insufficient time or memory, see \cref{fig:PieChart}.
 
 \section{Effectiveness Analysis}\label{sec:EffectivenessAnalysis}
 
+
+\subsection{Slicing}
+\textit{Type slice} sizes were calculated over the entire corpus, where the size is the number of constructs highlighted. For \texttt{full} and \texttt{contribution} slices this corresponds directly with the size of the sliced expression. This statistic is \textit{normalised} by the size of the expression being sliced, to give a \textit{proportion} of the term which is highlighted. As expected, the contribution slices highlight a much larger proportion of the term.\footnote{The only reason the number is this low is due to the presence of mostly-dynamic code in the corpus.}
+
+Cast slices are measured the same way, but it does not make sense to normalise them against anything. Cast slices are generally much smaller than type slices, as casts to complex types are split up into multiple casts between smaller types\footnote{For example, ground types.} (hence, smaller slices).
+
+
+\begin{figure}
+  \centering
+  \textit{(could present this as a bar chart)}
+  \begin{tabular}{lc|cccc}
+  & & \multicolumn{4}{c}{\textbf{Branch}}\\
+   & unit & \texttt{dev} & \texttt{ad-hoc} & \texttt{full} & \texttt{contribution}\\
+   \hline
+   \textbf{Type Slice} Avg. & size &  - & - & - & -\\
+   Std. dev. &  &  - & - & - & -\\
+   \textbf{Type Slice (n)} Avg.& \% & - & - & - & -\\
+   Std. dev. &  &  - & - & - & -\\
+   \textbf{Cast Slice} Avg. & size & - & - & - & -\\
+   Std. dev. &  &  - & - & - & -
+  \end{tabular}
+  
+\caption{(Normalised) Slice Sizes}
+\label{fig:SlicingEffectiveness}
+\end{figure}
+
+
 \subsection{Search Procedure}
+
+\begin{figure}
+\centering
+-----
+Show \textbf{pie chart} for what proportion of programs had a witness found. What proportion of them failed due to time limit vs memory limit. Add a label for total programs failing due to limits. What proportion failed due to no witness under my semantics/no progress possible.
+
+Ideally a proportion for programs with NO witness in actuality would be useful, but this would require knowing from the dataset (manual analysis...).
+
+One chart for each search procedure.
+\caption{Search Procedure Coverage}
+\label{fig:PieChart}
+\end{figure}
+
 \subsubsection{Witness Coverage}
-Describe reasons for failure in next section
+The majority of programs had a witness discovered, meeting the 70\% target for all search methods. Other programs failed due to insufficient time or insufficient space. Additionally, some programs \textit{provably} have no witness under my semantics, that is, the search procedure terminated without finding an error. Finally, some programs actually have no witness, but are classified as running out of time or space due to trying infinitely many instantiations.\footnote{Checking for these requires manual inspection of the corpus. Hence lack of numbers for this.} 
+
+The pie charts in \cref{fig:PieChart} give the proportions of all these classes of programs for each search procedure. As expected, BFS and interleaved DFS have a higher proportion failing due to insufficient memory requirements and DFS has a higher proportion failing due to insufficient time. Iterative deepening fails to prove any programs have \textit{no} witness, as it repeatedly tries to search to a lower depth, even if the tree is finite. 
+
+\Cref{sec:SearchCategories} further splits the class of programs for which the searches procedures failed, proving possible improvements to improve this coverage.
+
 \subsubsection{Code Coverage}
-Were some branches not taken? `Solvable' via symbolic execution
-\subsubsection{Trace Size}
-Larger trace sizes are harder to comprehend? Cite...
-\subsubsection{Cast Slice Size}
-Common complaints on error slices are large slice sizes. cite... 
-Does this correlate with trace size?
+Exhaustive instantiation does direct the search procedure to explore branches in code which have not yet been explored by other instantiations. Yet, the code coverage was still high overall (\textbf{X}\%). However, for failed searches, the code coverage was significantly worse (\textbf{Y}\%); this suggests that the error may be persistently missed in the uncovered code (see \Cref{sec:SearchCategories}).
 
-\subsection{Type Slicing}
-\subsubsection{Correctness}
-?
-\subsubsection{Code Slice Size}
-Compare large theory slices with the `simplified' slices.
+\begin{figure}\centering
+\begin{subfigure}{.5\textwidth}
+---- Pie chart of code coverage over the entire corpus
+\caption{All Searches}
+\end{subfigure}
+\begin{subfigure}{.5\textwidth}
+--- PIe chart for only the failed searches
+\caption{Failed Searches}
+\end{subfigure}
+\caption{Code Coverage}
+\label{fig:CodeCoverage}
+\end{figure}
+
+\subsubsection{Witness \& Trace Size}
+As predicted by the small-scope hypothesis, most programs admitted \textit{small} witnesses. Further, there was a positive linear correlation (Pearson correlation coefficient \cite{PearsonCorrelation}: r = \textbf{X}, \cref{fig:WitnessTraceCorrelation}), suggesting that the smaller witnesses do indeed lead to smaller traces, which are easier for users to comprehend \cite{SmallerTraces}.
+
+\begin{figure}\centering
+\begin{tabular}{l|cccc}
+& DFS & BFS & Iterative & Interleaved\\
+\hline
+\textbf{Witness Size} Avg. & -& -& -& -\\
+Std. dev. & -& -& -& -\\
+\textbf{Trace size} Avg. & -& -& -& -\\
+Std. dev. & -& -& -& -
+\end{tabular}
+\caption{Witness \& Trace Sizes}
+\label{fig:WitnessSize}
+\end{figure}
+
+\begin{figure}\centering
+Plot graph of the size and trace pairs with a (linear?) correlation.
+\caption{Witness size-Trace size Correlation}
+\label{fig:WitnessTraceCorrelation}
+\end{figure}
 
 
-\section{Performance Analysis}\label{sec:PerformanceAnalysis}
-\subsection{Search Procedure}
-\subsubsection{Time}
-\subsubsection{Space}
-Lazy list stuff in particular...
-
-\subsection{Slices}
-\subsubsection{Time}
-Very slice when used continuously... This might be due to bad design or bugs?
-\subsubsection{Space}
-Compare with using using `Typ (slices turned off). Compare with old implementation (if possible)
-
-Cast slices should be small as they only use sub-parts of terms and mostly exist at the leaves, or are incremental parts (i.e. to [?]). Compare the slice size of \textit{casts} vs \textit{type} slices.
 
 \section{Critical Analysis}\label{sec:CriticalAnalysis}
-\subsection{Slicing}
-Which constructs are ignored in simplified slices? Why? Do they have the biggest impact on size?
+This section discusses the implications of the previous results and delves deeper into the reasoning behind them. As a response to this analysis, many improvements have been devised, some of which have been implemented.
+\subsection{Ad-Hoc Slicing}\label{sec:SlicingAnalysis}
+\textit{Contribution slicing} produces large slices (\cref{fig:SlicingEffectiveness}, of which, much of the information is not particularly \textit{useful}, with much of it explaining why the use of \textit{subsumption} in subterms was valid, see \cref{fig:VerboseSlice1} and \ref{fig:VerboseSlice2}. 
 
-Discuss the usability aspects of the 4 different type slicing ideas. Discuss 
+On the other hand, an \textit{analysis slice} or \textit{synthesis slice} provides the key information explaining why that expression was checked against some type, or synthesised a type. The drawback being that changing the type of a \textit{non-highlighted} sub-term might cause type checking to fail, causing a new type error. However, if the term is \textit{already} highlighted as a static type error, then changing such a sub-term could \textit{never} fix the type error.\footnote{As a type error is caused by inconsistency between types retrieved from the direct analytic and synthetic type contexts.} So these slices are a better choice for use in \textit{debugging} type errors.
+
+Additionally, some of the constructs highlighted are purely structural, not changing the type of the expression. For example, bindings when the bound variable is dynamic or unused in the particular expression considered. These cannot contribute to the type of the expression in any way, so can be omitted. I call these \textit{ad-hoc} slices, because they no longer produce valid expression slices \textbf{(ref)} as per the theoretical definition, this requires \textit{unstructured slices} (\cref{sec:UnstructuredCodeSlice}). \textit{\underline{I might also remove things like functions from the slices too... not as easily justifiable}}
+
+\begin{figure}[h]
+Compare the same program with a large contribution slice, vs a smaller analysis slice, vs an even smaller ad-hoc slice. Synthesis slice... Have bindings etc.
+\caption{A Verbose Contribution Slice: Analysis}\label{fig:VerboseSlice1}
+\end{figure}
+\begin{figure}
+Compare the same program with a large contribution slice, vs a smaller analysis slice, vs an even smaller ad-hoc slice. Synthesis slice
+\caption{A Verbose Contribution Slice: Synthesis}
+\label{fig:VerboseSlice2}
+\end{figure}
+
+\subsubsection{One-Level-Deep Contribution Slices}
+To understand why a term \textit{successfully} type checked, you may need to look at \textit{both} the synthesis and analysis slice for a term. But, if the analysing type has a dynamic sub-part, then the corresponding part of the synthesis slice is not actually relevant for type checking to succeed, so can be trimmed.\footnote{This is the same trim as performed  in contribution slices \textbf{(REF)}, but not doing so \textit{recursively}.} 
+
+Therefore, the UI was implemented to, by default, display this combined analysis and trimmed synthesis slice \textbf{TODO}. However, casts use \textit{only} the analysis slices, since this is what actually \textit{enforces} the type, understanding why it \textit{successfully} type checks has less use for this.\footnote{Instead, we just want to why it has it's type.}
+
+\begin{figure}
+One level deep contribution slices help give a simpler explanation for expression type checks successfully vs using analysis and synthesis seperately.
+\caption{One-Level-Deep Contribution Slices}
+\end{figure}
+
+\subsubsection{Errors}
+When looking specifically at a \textit{type error}, there will be an inconsistency between the term's analysis and synthesis slices. Or, for synthesising branch statements, may also occur from inconsistent branches (whom are \textit{all} synthesising).
+
+But, some portions of the type might actually be consistent, and hence not causing to the error. A form of type joining which extracts only the inconsistent slice parts was therefore implemented \textbf{(TODO)}, and provides the default UI when clicking on a type error.
+
+\begin{figure}
+Figure to show how consistent parts of the syn/ana slices can be omitted, to draw attention to the erroneous parts.
+\caption{Error Slice}
+\end{figure}
 
 \subsection{Structure Editing}
-Statics are recalculated upon edits and even cursor movement in Hazel. The previous results show that slicing is a \textit{relatively expensive} operation, and not so suitable for such a rapid use case. In this section I discuss ideas for reducing the recalculation during local edits. \textbf{Check out Hazel's incrementalisation efforts too to see if they help} 
+Hazel uses a structure editor with an update calculus \cite{HazelStructureCalculus}. Statics are recalculated upon edits and even \textit{cursor movements}. \Cref{fig:SlicingPerformance} shows that slicing makes type checking significantly slower. Slicing is not so suitable for such a rapid use case. Therefore, a way to turn off slicing would be beneficial\footnote{My implementation architecture allows easy implementation of this, just use \code{`Typ} for everything.}, only performing slicing upon requesting slices or performing elaboration.
 
-The Hazel structure editor allows efficient\footnote{Constant time.} updating of the external syntax tree via the use of a zipper. It would make sense to extend this zipper idea into the abstract syntax tree and it's statics (typing information), allowing allow local changes to propagate to local changes (and type changes) in the AST zipper. Some local changes can propagate type changes \textit{non-locally} (e.g. inserting a new binding) which would require extensive recalculation of the typed AST, but these would be relatively rare (\textbf{provide evidence for this?}). 
+Another improvement would be to only partially recalculate types upon updates. The Hazel structure editor allows efficient\footnote{Constant time.} updating of the \textit{syntax} tree via the use of a zipper \cite{HuetZipper, OneHoleContext}. It might be possible to extend this zipper idea into the abstract syntax tree and it's statics (typing information), allowing local changes (and type changes) to propagate in the AST zipper. However, some local changes can propagate type changes \textit{non-locally} (e.g. inserting a new binding) which would require extensive recalculation of the typed AST. But, these non-local updates would be relatively rare, especially given most edit actions leave the tree in an incomplete state \cite{IncompleteEditStates}, whose expressions are dynamically typed (quickly calculable). 
 
-This would require an entire rewrite of the Hazel statics.
-\subsection{Cast Laziness}
-Annotations will create casts, but in many cases these annotations will never actually be used. i.e. on a product where only the 2nd element is ever used, a cast error on the 1st element is still caught. Eager casts catch these errors, lazy casts do NOT.
+This is very complex and would require an entire rewrite of the Hazel statics.
 
-\subsection{Cast Errors during Evaluation}
-Cast errors may appear during evaluation, but subsequently ignored as they may be discarded upon further evaluation. i.e. we get to a safe result, even though a cast error appeared on the way. It is debatable if this should count as an error. Should be easy to implement a version which catches this and do some tests?
   
 \subsection{Static-Dynamic Error Correspondence}
-How to find dynamic errors for specific chosen static errors. Works well for some types of errors (inconsistency ones). But not for ones like inconsistent branches, show how this could be extended. Indet evaluation still allows these to be witnessed, but they just don't actually go to a cast error.
+\Cref{sec:StaticCastError} and \ref{sec:CastDependence} show how a static error that elaborates a cast failure, can be associated with a dynamic error whose cast error is dependent on this failed cast. This works well for most static type errors, which occur from inconsistent analysis and synthesis types.
+
+However, static errors caused by synthesised branches being inconsistent, do not actually directly cause cast errors. Only representing that the branches cannot be placed within any cast (except to the dynamic type). Such errors can only be detected if both branches are used within a static context during the same evaluation path. The search procedure will find such cases if they exist, but cannot associate it back to the static error.
   
 \subsection{Categorising Programs Lacking Type Error Witnesses}
-\subsubsection{Non-Termination}
-The original procedure would get stuck on programs that loop forever. (To) Fix with iterative deepening.
+\label{sec:SearchCategories}
+\subsubsection{Non-Termination \& Unfairness}
+My original search method (DFS) has significant issues with non-termination (\cref{fig:PieChart}). Any time evaluation goes into an infinite loop, no more solutions can be explored. Iterative deepening, BFS, and interleaved DFS were implemented in response to this.
 
-However, substituting in closures and enforcing the invariant that the bindings must be values, can lead to non-termination. \textit{Verify how fixed points are treated in closures.}
+Even so, substituting holes inside closures and enforcing the invariant that the bindings must be values (requiring potentially non-terminating evaluation), can still cause this. As Hazel is pure, it is safe to ignore this invariant, avoiding this class of non-termination, at the expense of efficiency in the general case when variables are used multiple times.\footnote{Corresponding with a \textit{call-by-name} evaluation strategy.}
+
 \subsubsection{Repeated Instantiations}
-A hole being instantiated to a hole. Does this ever happen??
+Sometimes, a hole can get repeatedly refined to increasingly specific types without every actually causing a cast error, see \cref{fig:InfiniteInstantiations}. This situation would be caught statically, but cannot actually directly lead to a cast error.\footnote{So is not classified as having a witness under these semantics.} 
+
+\begin{figure}[h]
+See the `safe' list example from Seidel.
+\caption{Instantiations of Increasingly Specific Types Loop}
+\label{fig:InfiniteInstantiations}
+\end{figure}
+
 \subsubsection{Dead Code}
-Search proc cannot reach, and failed cast detection would never find one there even if it existed (i.e. statically found).
+Dead code may contain or be involved in static type errors, but is unreachable dynamically, such static errors have no dynamic witness. Dead code detection \cite{DeadCodeDetection} could alert the user of this.
+
 \subsubsection{Dynamically Safe Code}
-Code that is safe to run in all situations, but still exhibits a static type error.
+Some code with static errors is inherently dynamically safe, the typical example being \code{if true then 0 else "str"}. These should have \textit{no} dynamic witness. 
+
+Early versions of the search procedure would incorrectly detect cast failures that were inserted statically during elaboration, but weren't actually causing dynamic, leading to dynamically safe code being incorrectly asserted as an error. \Cref{sec:CastFailureDetection} detailed how cast errors were detected \textit{correctly}.
 
 \subsubsection{Needle in a Haystack}
-Very specific input required from multiple hole instantiations. Combinatorial explosion makes this very hard to find (solve with coverage directed search, but this requires SMT solvers at least).
+Some programs have cast errors that are intricately dependent on specific instantiations. These casts only manifest within a branch which requires very specific inputs. When multiple holes are involved, this is an even bigger issue, as the search space increases exponentially in the number of holes.
+
+The fact the a large proportion of programs which failed due to insufficient time or space had lower code coverage (\fig{sec:CodeCoverage}), suggests that this might be the reason behind a large proportion of the failures.
+
+\begin{figure}
+Pair of single inputs leading to cast error
+\caption{Branch Requiring Specific Instantiations}
+\end{figure}
 
 \subsection{Non-Local Errors}
-Useful when type correct code written but used in the wrong way, i.e. write the wrong map function with @ still has a valid type. Especially prevalent with global inference.
+We now know that the procedure has cases it struggles with. So now I turn to a particular class of programs where dynamic traces are particularly \textit{useful} in describing errors.
+
 \subsection{Bidirectional Type Error Localisation}
 It is generally good. Find some cases where bidirectional type error localisation is wrong.
 \subsection{Improving Hole Instantiation}
@@ -101,6 +327,12 @@ To improve code coverage. i.e. Strings and Floats are annoying, SMT solvers coul
 \subsection{Combinatorial Explosion}
 State space gets very large as more holes are instantiated from other holes, i.e. $[] \to [\dyn] \to [\dyn, \dyn] \to [\dyn,\dyn,\dyn]$...
 
+\subsection{Small Scope Hypothesis \& Correlation}
+Does instantiation size and trace size correlate. Does cast size and trace size correlate.
+Are cast error between atomic types, does cast slice size correlate with type size, can we therefore show that slice size is small for errors!
+
+Could even take a cast error slice and match on the parts which have an inconsistent different type!!!
+
 \section{Cognitive Walkthrough: Debugging a Type Error}
 \label{sec:CognitiveWalkthrough}
 This actually answers the question of how this helps debugging a type error.
@@ -108,3 +340,7 @@ This actually answers the question of how this helps debugging a type error.
 Demonstrate how a static error would arise, and be debugged by either using slicing or finding a dynamic error for the expression and using cast slicing.
 
 Could do a cognitive walk-through for this?
+
+\subsection{UI Improvements}
+Highlight inconsistencies in pairs of slices.
+Switch between synthesis and analysis slices via cursor inspector.
