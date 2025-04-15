@@ -1,5 +1,13 @@
 \chapter{Conclusions}\label{chap:Conclusions}
-This project aimed to improve the type error debugging experience in Hazel.
+This project aimed to improve the type error debugging experience in Hazel. Two novel features, \textit{type slicing} and \textit{cast slicing}, were mathematically formalised and implemented successfully. Additionally, upon evaluation, variations on these ideas were devised and implemented. 
+
+These type slicing implementations provided more complete \textit{explanations} for why expressions were given their static type, and therefore, why type errors were detected. The feature was much more \textit{expressive} than originally aimed for (applying to \textit{all} expression rather than just errors), and it's variants applied to \textit{more situations}\footnote{Including: calculating static code regions, extracting inconsistent sub-parts of slices.} than set out in my core goals.
+
+Cast slicing successfully provided a link between \textit{dynamic errors} (cast errors), and the static context (source code) which sourced the parts of the cast. These slices were found to be very small, giving very specific and concise information to the programmer.
+
+Additioanlly, a \textit{type error witness search procedure}  improve the explanation of both static and dynamic type errors in the Hazel language. Together, these features provide richer, more intuitive diagnostics by offering both abstract and concrete perspectives on type errors. Evaluation results show that the features are largely effective and performant, and they complement each other to form a cohesive debugging experience. 
+
+While further user studies would be required to validate their pedagogical impact, this work represents a interesting approach towards a more \textit{explainable} type system.
 
 \section{Further Directions}
 Further directions here, referencing unsatisfactory results from Evaluation. Also various extensions.
