@@ -1057,6 +1057,7 @@ Show how indeterminate matches cause a list to try increasing lengths by repeate
 \end{figure}
 
 \subsubsection{Extended Match Expression Instantiation}
+\label{sec:ExtendedPatternMatching}
 An interesting extension was attempted to improve code coverage of the instantiations \textbf{ref branch}. Given patterns are known, it is possible to instantiate holes according to not only the types, but also the \textit{structure} of each pattern. This allows the instantiation to prioritise searching along each branch.
 
 Hence, we could try instantiating the match scrutinee with least specific versions which match the patterns on each branch, e.g. \code{?::?} for \code{x::xs}. i.e. 
@@ -1126,7 +1127,8 @@ Only casts between \textit{ground} types are checked for consistency. Due to cas
 This can be fixed by performing eager cast transitions before checking for cast errors, or eagerly treating casts during indeterminate evaluation. However, it could be argued that this \textit{should not} constitute a cast error, after all, the part of the compound type with the error is yet to actually be \textit{used}.
 \begin{figure}
 let x = (1, "str") in 
-(fun x : (Int, Int) -> x)(x)
+let f = (fun x : (Int, Int) -> x) 
+in f(x)
 \caption{Inconsistent Lazy Casts Failure}
 \end{figure}
 

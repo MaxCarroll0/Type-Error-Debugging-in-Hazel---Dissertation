@@ -1,7 +1,5 @@
 \chapter{Conclusions}\label{chap:Conclusions}
-
-\section{Conclusion}
-Conclusions Here.
+This project aimed to improve the type error debugging experience in Hazel.
 
 \section{Further Directions}
 Further directions here, referencing unsatisfactory results from Evaluation. Also various extensions.
@@ -9,9 +7,9 @@ Further directions here, referencing unsatisfactory results from Evaluation. Als
 Type functions, recursive types, deferrals
 
 \subsection{UI Improvements, User Studies}
-Better UI.
+The current UI is relatively simple. \Cref{sec:UIImprovements} suggested various improvements to this. To assess how well these features actually work, and compare the usefulness of the different slicing methods, user studies would be beneficial.
 
-Effectiveness gauge in the real world
+Seidel et al. \cite{SearchProc} implemented a similar \textit{type error witness search procedure}, evidencing it's utility. They made use of various techniques to improve usability including: jump-compressed\footnote{Hiding the execution of functions, except for when the error occurs.} execution traces, graph visualisation, and interactive steppers.
 
 \subsection{Cast Slicing}
 Cast slicing here doesn't extend the nice properties I have with type slicing: that a program slice will synthesise/analyse the same type. It might be possible to have a system that does?
@@ -25,6 +23,8 @@ PRimarily about the search procedure \& casts.
 
 Also about creating a \textit{stronger} link between static type errors and runtime errors, what Hazel considers as a runtime error is somewhat unintuitive, see the points made in evaluation. A formal property of what exactly a type error witness \textit{is} which actually matches with the implementation would be nice.
 
+\subsection{Property Testing}
+Use indet eval for property testing, like in quickcheck.
 
 \subsection{Indeterminate Evaluation \& Logic Programming}
 \label{sec:LogicProgramming}
@@ -41,16 +41,11 @@ So we could have incomplete programs using holes. Then we could write constraint
 Of course, the current instantiation method only generates constant functions, so would be useless for general program synthesis, e.g. one asserting that $f(x) = x$, but could be extended. Also, if $x$ here has infinite number of values, again it would fail (would need to reason by SMT or extensionality etc).
 
 Maybe even dependent types could add more fine grained specifications to instantiate by.
-\subsection{Search Procedure}
-\subsubsection{Jump Trace Compression}
-\subsubsection{Symbolic Execution \& SMT Solvers}
-\textit{More details in appendix}
+\subsection{Symbolic Execution}
 Pattern matching in particular already has discussion on integration with SMT solving in the Live Pattern Matching paper.
 
 \subsubsection{Ad-Hoc Polymophism}
-Not in Hazel, but the search procedure can't deal well with it
-\subsubsection{Formal Semantics \& Proofs}
-Was an uncompleted extension goal
+Not in Hazel, but the search procedure can't deal well with it without symbolic execution
 
 \subsection{Let Polymorphism \& Global Inference}
 Errors with global inference errors are often more subtle, where trace visualisation really shines. 
