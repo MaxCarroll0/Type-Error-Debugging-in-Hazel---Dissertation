@@ -52,11 +52,11 @@ The \textit{type witness search procedure} is	 based upon Seidel et al. \cite{Se
 
 \section{Dissertation Outline}
 \label{sec:Outline}
-\Cref{chap:Preparation} introduces the \textit{type theories} (\cref{sec:TypeSystems}) underpinning the \textit{Hazel core calculus} (\cref{sec:CoreHazel}), followed by basic background on the \textit{Hazel implementation} (\cref{sec:HazelImplementation}). Additionally, methods of non-deterministic programming are introduced (\cref{sec:Nondeterminism}).
+\Cref{chap:Preparation} introduces the \textit{type theories} (\cref{sec:TypeSystems}) underpinning the \textit{Hazel core calculus} (\cref{sec:CoreHazel}), followed by basic background on the \textit{Hazel implementation} (\cref{sec:HazelImplementation}), and methods of non-deterministic programming (\cref{sec:Nondeterminism}).
 
-\Cref{sec:TypeSlicingTheory} and \cref{sec:CastSlicingTheory} formalise and prove\footnote{TODO} the ideas of \textit{type slices} and \textit{cast slices} in the Hazel core calculus. 
+\Cref{sec:TypeSlicingTheory} and \cref{sec:CastSlicingTheory} conceive and formalise the ideas of \textit{type slices} and \textit{cast slices} applied to the Hazel core calculus. 
  
- An implementation (\cref{sec:TypeSlicingImplementation}-\ref{sec:CastSlicingImplementation}) of these has been created covering \textit{most}\footnote{Except for type substitution.} of the Hazel language, including a user interface. 
+ An implementation (\cref{sec:TypeSlicingImplementation}-\ref{sec:CastSlicingImplementation}) of the slicing theories was created covering \textit{most}\footnote{Except for type substitution.} of the Hazel language, including a user interface. 
  
  A \textit{type witness search procedure} was successfully implemented (\cref{sec:SearchProcedure}). This involved created a non-deterministic evaluation method (\cref{sec:IndetEval}) abstracting search order and search logic.
 

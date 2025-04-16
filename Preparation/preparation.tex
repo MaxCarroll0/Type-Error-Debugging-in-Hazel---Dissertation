@@ -218,62 +218,31 @@ When substituting a matching hole $u$, we replace it with $d$ and \textit{apply 
 As Hazel is a \textit{pure language}\footnote{Having no side effects.} and as holes act as closures, then performing hole substitution is \textit{commutative} with respect to evaluation. That is, filling incomplete parts of a program \textit{before} evaluation gives the same result as filling \textit{after} evaluation then resuming evaluation. Formalised in \textbf{ref theorems}.
 
 \subsection{The Hazel Implementation}\label{sec:HazelImplementation}
-The Hazel implementation \cite{HazelCode} is written primarily in ReasonML and OCaml with approx. 65,000 lines of code. It implements the Hazel core calculus along with many additional features. Relevant features and important abstractions are discussed here.
-
-\textbf{Discuss why the main branch was chosen over THI, hole substitution one etc. (main point being better documentation, sum types, though still very lacking}
+The Hazel implementation \cite{HazelCode} is written primarily in ReasonML and OCaml with approximately 65,000 lines of code. It implements the Hazel core calculus along with many additional features. 
 
 \subsubsection{Language Features}\label{sec:HazelAdditionalFeatures}
+The relevant additional language features not already discussed are:\footnote{Additionally, Hazel supports other features, which do not concern this project.}
 \begin{itemize}
-\item \textbf{Lists} -- 
-\item \textbf{Tuples} -- 
-\item \textbf{Labelled Sums} -- 
-\item \textbf{Type Aliases} -- 
-\item \textbf{Pattern Matching} -- 
-\item \textbf{Explicit Polymorphism} -- System F style
-\item \textbf{Recursive Types} -- 
+\item \textbf{Lists} -- Linked lists, in the style of ML. By use of the dynamic type, Hazel can represent \textit{heterogeneous} lists, which may have elements of differing types.  
+\item \textbf{Tuples \& Labelled Tuples}\footnote{Merged towards the end of the project's development.} -- Allowing compound terms to be constructed and typed \cite[ch. 11.7-8]{TAPL}.
+\item \textbf{Sum Types} -- Representing a value as one of many labelled variants, each of possibly different types \cite[ch. 11.10]{TAPL}.
+\item \textbf{Type Aliases} -- Binding a name to a type, used to improve code readability or simplify complex type definitions redefining types.
+\item \textbf{Pattern Matching} -- Checks a value against a pattern and destructures it accordingly, binding it's sub-structures to variable names.
+\item \textbf{Explicit Polymorphism} -- System F style parametric polymorphism \cite[ch. 23]{TAPL}. Where explicit type functions bind arbitrary types to names, which may then be used in annotations. Polymorphic functions are then applied to a type, uniformly giving the corresponding monomorphic function. Implicit and ad-hoc polymorphic functions can still be written as dynamic code, without use of type functions.\footnote{In which case, they are untyped.}
+\item \textbf{Iso-Recursive Types} -- Types defined in terms of themselves, allowing the representation of data with potentially infinite or \textit{self-referential} shape \cite[ch. 22-23]{TAPL}, for example linked lists or trees.
 \end{itemize}
 
 \subsubsection{Monadic Evaluator}\label{sec:HazelEvaluator}
 \textbf{This is extremely hard to explain concisely!! or at all... Ask on Slack?}
 
-\textbf{Move most of this to implementation, give vague description/motivation and emphasise it's complexity}
-
-The transition semantics are defined on an intricate \textit{monadic} \textbf{is this is actually a monad...?} evaluator which is discussed in depth in the Implementation section \textbf{REF}. It is equipped with custom \code{let.} and \code{and.} binding operators\footnote{Which allow a convenient for writing code with binding functions.} \cite{OCamlManual}, and a \code{otherwise} and \code{req_final} function. Allowing transition rules to be simply written (simplified):
-\begin{minted}[fontsize=\footnotesize]{reason}
-...
-| Seq(d1, d2) =>
-        let. _ = otherwise(d1 => Seq(d1, d2))
-        and. d1' = 
-          req_final(req(state, env), d1 => Seq1(d1, d2), d1);
-        Step({expr: d2, state});
-...
-| Int(i) =>
-      let. _ = otherwise(env, Int(i));
-      Value;
-...
- | EmptyHole =>
-      let. _ = otherwise(env, EmptyHole);
-      Indet;
-...
-\end{minted}
-Representing rules by a \code{let. _ = otherwise(env, r)} determining how to rewrap an expression if it is unevaluable. A term may be unevaluable if it requires some subterms to be \textit{final}, but that this is not the case. 
-
-The \code{req_final(req(state, env), _, d)} function will pass a reference the recursive evaluation abstraction \code{req}, which the abstraction may choose to recursively evaluate, and bind a resulting value for use in calculating the next step.
-
-\textbf{Explain the middle EvalCtx arg to \code{req_final}...}
-
-Each transition returns either a possible step \code{Step({expr})}, or states that the term is indeterminate \code{Indet}, or a value \code{Value}.\footnote{Or a constructor, discussed more in the Implementation section.}
-
-The results that these `evaluate' to are abstract, they do not necessarily have to be terms, as demonstrated by the following implementations:
+The Hazel implementation has an abstract monadic (\textbf{Is this actually monadic?}) evaluator abstraction, whose implementation details are discussed in \cref{sec:EVMode}. The results that the evaluator implementations `evaluate' to are abstract, they do not necessarily have to be terms, as demonstrated by the following uses of the evaluator abstraction:
 \begin{itemize}
-\item \textbf{Final Form Checker} -- Returns whether a term is one of each of the final form. Using the evaluator abstraction with this means there is no need to maintain a separate syntactic value checker, instead it is derived directly from the evaluation transitions. Yet, it is still syntactic since the abstraction does not actually perform evaluation steps and continue evaluation, instead it just makes the step accessible\footnote{And the final form checker will just classify such an expression immediately as non-final.} to the implementation.
-\item \textbf{Evaluator} -- Maintains a stack machine and actually performs the reduction steps.
-\item \textbf{Stepper} -- Returns a list of possible evaluation steps in terms of \textit{evaluation contexts} under a non-deterministic evaluation method \textbf{Explain how \code{EvalCtx.t => EvalCtx.t} in \code{req_final} allows this}. The evaluation order can then be user-controlled. 
+\item \textbf{Final Form Checker} -- Returns whether a term is either: a evaluable expression, a value, or an indeterminate term. Using the evaluator abstraction with this means there is no need to maintain a separate syntactic value checker, instead it is derived directly from the evaluation transitions. Yet, it is still \textit{syntactic} as the implementation does not actually \textit{perform} any evaluation steps which the abstraction presents it with.
+\item \textbf{Evaluator} -- Maintains a stack machine to actually perform the reduction steps and fully evaluate terms.
+\item \textbf{Stepper} -- Returns a list of \textit{possible}\footnote{Of any evaluation order.} evaluation steps. This allows the evaluation order to be user-controlled in a stepper environment.
 \end{itemize}
-Each evaluation method module is transformed into an evaluator module by being passed into an OCaml \textit{functor}. The resulting module produces a \code{transition} method that takes terms to evaluation results in an environment\footnote{Mapping variable bindings.}.
+Each evaluation method is transformed into an evaluator by being applied to an OCaml \textit{functor} \cite[ch. 10]{RealWorldOCaml}. The resulting module produces a \code{transition} method that takes terms to evaluation results in an environment\footnote{Mapping variable bindings.}.
 
-\subsubsection{UI Architecture}\label{sec:HazelUIArchitecture}
-Model View Update model.
 
 \subsection{Bounded Non-Determinism}\label{sec:Nondeterminism}
 The search procedure \cite{SearchProc} is effectively a \textit{dynamic type-directed} test generator, attempting to find dynamic type errors. In Hazel, dynamic type errors will manifest themselves as \textit{cast errors}.
@@ -281,59 +250,67 @@ The search procedure \cite{SearchProc} is effectively a \textit{dynamic type-dir
 Type-directed generation of inputs and searching for one which manifests an error is a \textit{non-deterministic} algorithm \cite{NondeterministicAlgorithms}. 
 
 \subsubsection{High Level}
-Non-determinism can be declaratively represented by two ideas:
+At a high level, non-determinism can be represented declaratively by two ideas:
 \begin{itemize}
-\item \textit{Choice (\texttt{|||}):} Determines the search space, flipping a coin will return heads \textit{or} tails.
-\item \textit{Failure (\texttt{fail}):} The \textit{empty} result, no solutions to the algorithm.
+\item \textit{Choice} (\texttt{<||>}): Determines the search space, flipping a coin will return heads \textit{or} tails.
+\item \textit{Failure} (\texttt{fail}): The \textit{empty} result, no solutions to the algorithm.
 \end{itemize}
-Suppose the result of the algorithm has type $\tau$. These can be represented by operations:
-\[\texttt{|||} : \tau \to \tau \to \tau\]
+Suppose the non-deterministic result of the algorithm has type $\tau$. These can be represented by operations:
+\[\texttt{<||>} : \tau \to \tau \to \tau\]
 \[\texttt{fail} : \tau\]
-Where \texttt{|||} should be \textit{associative} and \texttt{fail} should be a \textit{zero element}, forming a \textit{monoid}:
-\[x \texttt{|||} (y \texttt{|||} z) = (x \texttt{|||} y) \texttt{|||} z \qquad \texttt{fail} \texttt{|||} x = x = x \texttt{|||} \texttt{fail}\]
+Where \texttt{<||>} should be \textit{associative} and \texttt{fail} should be a \textit{zero element}, forming a \textit{monoid}:
+\[x \texttt{ <||> } (y \texttt{ <||> } z) = (x \texttt{ <||> } y) \texttt{ <||> } z \qquad \texttt{fail} \texttt{ <||> } x = x = x \texttt{ <||> } \texttt{fail}\]
 That is, the order of making binary choices does not matter, and there is no reason to choose failure.
 
-There are many proposed ways to manage programs with choice: 
-\paragraph{Logic Programming:} Languages like Prolog \textbf{(cite)} and Curry \textbf{(cite)} express non-determinism by directly implementing \textit{choice} with non-deterministic evaluation. Prolog searches via backtracking, while Curry abstracts the search procedure.
+There are many proposed ways to represent and manage non-deterministic programs: 
+\paragraph{Logic Programming:} Languages like Prolog \cite{Prolog} and Curry \cite{CurryLang} express non-determinism by directly implementing \textit{choice} via non-deterministic evaluation. Prolog searches via backtracking, while Curry abstracts the search procedure.
 
-There are ways to embed this within OCaml. Inspired by Curry, Kiselyov \cite{NondetDSL} created a tagless final style \cite{TaglessFinalDSL} domain specific language within OCaml. This fully abstracts the search procedure from the non-deterministic algorithm definition.
-\paragraph{Continuations:}
-\paragraph{Effect Handlers:} Effect handlers allow the description of effects and factors out the handling of those effects. Non-determinism can be represented by an effect consisting of the choice and fail operators \cite{EffectsExamples, HandlersInAction}, while handlers can flexibly define the search procedure and accounting logic, e.g. storing solutions in a list. 
+There are ways to embed this within OCaml. Inspired by Curry, Kiselyov \cite{NondetDSL} created a tagless final style \cite{TaglessFinalDSL} domain specific language within OCaml. This approach fully abstracts the search procedure from the non-deterministic algorithm constructs.
+\paragraph{Delimited Continuations:} Delimited continuations \cite{DelimitedControl, ShiftReset} are a control flow construct that captures a portion of the program's execution context (up to a certain delimiter) as a first-class value, which can be resumed later (in OCaml, a function). This enables writing non-deterministic code by duplicating the continuations and running them on each possibility in a choice.
 
-In order to enumerate try multiple solutions, \textit{multiple continuations} must be used. JSOO\footnote{Javascript of OCaml. A dependency of Hazel.} does not (at time of writing) allow these.
+\paragraph{Effect Handlers:} Effect handlers allow the description of effects and factors out the handling of those effects. Non-determinism can be represented by an effect consisting of the choice and fail operators \cite{EffectsExamples, HandlersInAction}, while handlers can flexibly define the search procedure and accounting logic, e.g. storing solutions in a list. As with delimited continuations, to try multiple solutions, the \textit{continuations} must be cloned.
+
 \paragraph{Monadic:} The non-determinism effect can be expressed as a monad. A monad is a parametric type $m(\alpha)$ equipped with two operations, \texttt{return} and \texttt{bind}, where \texttt{bind} is associative and \texttt{return} acts as an identity with respect to \texttt{bind}:
-\begin{figure}[h]
+\begin{figure}[H]
 A monad $m$, is a parameterised type with operations:
-\[\texttt{bind} : \forall \alpha, \beta.\ m(\alpha) \to (a \to m(\beta)) \to m(beta)\]
+\[\texttt{bind} : \forall \alpha, \beta.\ m(\alpha) \to (a \to m(\beta)) \to m(\beta)\]
 \[\texttt{return} : \forall \alpha.\ a \to m(\alpha)\]
 Satisfying the monad laws:
 \[\texttt{bind}(\texttt{return}(x))(f) = f(x)\]
 \[\texttt{bind}(m)(\texttt{return}) = m\]
-\[\texttt{bind}(\texttt{bind}(m)(f))(g) = \texttt{bind}(m)(\texttt{fun} x \to \texttt{bind}(f(x))(g))\]
+\[\texttt{bind}(\texttt{bind}(m)(f))(g) = \texttt{bind}(m)(\texttt{fun } x \to \texttt{bind}(f(x))(g))\]
 \caption{Monad Definition}
 \end{figure}
+
 A monad can then be extended to represent nondeterminism by adding a \texttt{choice} and \texttt{fail} operator satisfying the usual laws:
 \[\texttt{choice} : \forall \alpha.\ m(\alpha) \to m(\alpha) \to m(\alpha)\]
 \[\texttt{fail} : \forall \alpha.\ m(\alpha)\]
 Where \texttt{bind} distributes over \texttt{choice}, and \texttt{fail} is a left-identity for \texttt{bind}.
-\[\texttt{bind}(m_1 \texttt{|||} m_2)(f) = \texttt{bind}(m_1)(f) \texttt{|||} \texttt{bind}(m_2)(f)\]
+\[\texttt{bind}(m_1 \texttt{ <||> } m_2)(f) = \texttt{bind}(m_1)(f) \texttt{ <||> } \texttt{bind}(m_2)(f)\]
 \[\texttt{bind}(\texttt{fail})(f) = \texttt{fail}\]
-In this context, bind takes a non-deterministic choice and a function which maps each \textit{guess} in the state space to another choice, returning this choice of all the possible resulting choices after applying the function to the possible input choices. See how distributivity represents this interpretation. \texttt{fail} being the left identity of \texttt{bind} states that you cannot make any guesses from the no choice (\texttt{fail}). If a potential guess does not solve the problem, then just return \texttt{fail} (hence the name). For example:
-\begin{figure}[h]
-\caption{Non-determinism Monad Example}
+In this context, bind can be thought of as \textit{conjunction}: if we can map each guess to another set of choices, \texttt{bind} will conjoin all the choices from every guess. \Cref{fig:Conjunction} demonstrates how flipping a coin followed by rolling a dice can be conjoined, yielding the choice of all pairs of coin flip and dice roll.
+
+See how distributivity represents this interpretation:  guessing over a combined choice is the same as guessing over each individual choice and then combining the results. \texttt{fail} being the left identity of \texttt{bind} states that you cannot make any guesses from the no choice (\texttt{fail}). 
+\begin{figure}[h]\centering
+\item Flip a coin
+\item If heads, flip again.
+\item If tails, 
+\end{enumerate}
+\begin{minted}{reason}
+let coin = return(Heads) <||> return(Tails);
+let dice = return(1) <||> ... <||> return(6);
+let m = coin 
+    >>= flip => dice
+    >>= roll => return((flip, roll))
+\end{minted}
+\caption{Bind as Conjunction Example}
+\label{fig:Conjunction}
 \end{figure}
 
 While the \texttt{bind} and \texttt{return} operators are \textit{not} required to represent non-determinism, they are a \textit{familiar}\footnote{For OCaml developers and functional programmers.} way to represent a large class of effects in general way. 
 
 \subsubsection{Low Level}
-Which may abstract over different search/backtracking procedures. Writing these directly can be complex, unintuitive, and require much code, but is very flexible. \textbf{(cite evidence/reasoning)}:
-\paragraph{Depth First Search:} 
-Generate options where choice is possible, and backtrack once each option has been fully tested.
-\paragraph{Breadth First Search:}
-\paragraph{Iterative Deepening:}
-
-
-
+Computers are deterministic, therefore, the declarative specification abstracts over the low level implementation which will concretely try each choice, searching for solutions from the many choices. One way to resolve this non-determinism is by modelling choices as trees and searching the trees by a variety of either uninformed, or informed strategies.
 
 \section{Starting Point}\label{sec:StartingPoint}
 \subsubsection{Concepts}
