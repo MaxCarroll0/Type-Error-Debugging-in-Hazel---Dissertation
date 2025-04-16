@@ -5,63 +5,72 @@ These type slicing implementations provided more complete \textit{explanations} 
 
 Cast slicing successfully provided a link between \textit{dynamic errors} (cast errors), and the static context (source code) which sourced the parts of the cast. These slices were found to be very small, giving very specific and concise information to the programmer.
 
-Additioanlly, a \textit{type error witness search procedure}  improve the explanation of both static and dynamic type errors in the Hazel language. Together, these features provide richer, more intuitive diagnostics by offering both abstract and concrete perspectives on type errors. Evaluation results show that the features are largely effective and performant, and they complement each other to form a cohesive debugging experience. 
+Additionally, a \textit{type error witness search procedure}  improve the explanation of both static and dynamic type errors in the Hazel language. Together, these features provide richer, more intuitive diagnostics by offering both abstract and concrete perspectives on type errors. Evaluation results show that the features are largely effective and performant, complementing each other and the existing error highlighting, to form a cohesive debugging experience. 
 
-While further user studies would be required to validate their pedagogical impact, this work represents a interesting approach towards a more \textit{explainable} type system.
 
 \section{Further Directions}
-Further directions here, referencing unsatisfactory results from Evaluation. Also various extensions.
+This section presents some \textit{extensions} to improve the features as justified by the evaluation (\cref{sec:CriticalAnalysis} \& \ref{sec:HolisticEvaluation}). Also, further interesting \textit{applications} of the features are considered.
+
 \subsection{Extension to Full Hazel Language}
-Type functions, recursive types, deferrals
+Some of the Hazel language was not covered, or was partially covered. Type functions (System-F style polymorphism) was only partially supported. Type functions have especially difficult typing rules, which may lead to more subtle errors, where this project would be \textit{particularly useful}. 
 
 \subsection{UI Improvements, User Studies}
-The current UI is relatively simple. \Cref{sec:UIImprovements} suggested various improvements to this. To assess how well these features actually work, and compare the usefulness of the different slicing methods, user studies would be beneficial.
+The current UI is relatively simple. \Cref{sec:UIImprovements} suggested various improvements to the usability of all three features. 
 
-Seidel et al. \cite{SearchProc} implemented a similar \textit{type error witness search procedure}, evidencing it's utility. They made use of various techniques to improve usability including: jump-compressed\footnote{Hiding the execution of functions, except for when the error occurs.} execution traces, graph visualisation, and interactive steppers.
+To assess how well these features actually work, and compare the usefulness of the different slicing methods, user studies would be beneficial.
+
+Seidel et al. \cite{SearchProc} implemented a similar \textit{type error witness search procedure}, evidencing it's utility by a user study. They additionally made use of various techniques to improve usability including: jump-compressed execution traces\footnote{Hiding the execution of functions, except for when the error occurs.}, graph visualisation, and interactive steppers.
 
 \subsection{Cast Slicing}
-Cast slicing here doesn't extend the nice properties I have with type slicing: that a program slice will synthesise/analyse the same type. It might be possible to have a system that does?
+Cast slicing purely propagated type slice information throughout evaluation, and tracked the a dependency relation on casts. While this is useful for debugging type errors, as demonstrated, it provides no slicing based on \textit{execution properties} of the program. Extensions could include slicing methods which, for example, provide a minimal program which evaluates to the \textit{same} cast around the \textit{same} value. This would be similar to traditional \textit{dynamic slicing} methods \cite{DynProgSlice, FunctionalProgExplain} which take parts of the program relevant to producing a \textit{given} result.
 
-The implementation differs by storing slices directly in the context, making analysis slices.
-
-Also, the fact that cast slices are manipulated in evaluation is completely opaque to the user \textit{unless} they step through manually. Ways to better represent this information exist (cast dependency graphs etc.)
 
 \subsection{Proofs}
-PRimarily about the search procedure \& casts. 
 
-Also about creating a \textit{stronger} link between static type errors and runtime errors, what Hazel considers as a runtime error is somewhat unintuitive, see the points made in evaluation. A formal property of what exactly a type error witness \textit{is} which actually matches with the implementation would be nice.
+Giving proofs of the type slicing theory was an unmet \textit{extension} goal. However, \textit{much thought}\footnote{The largest time-investment of the entire project.} was given to ensuring that the theory is still sensible, and correct, as is demonstrated by the reasoning provided in the implementation (\cref{sec:TypeSlicingTheory}).
+
+Additionally, proofs and formal semantics for cast slicing and the search procedure would be useful to formalise what exactly cast slices, and witness actually \textit{are}.
 
 \subsection{Property Testing}
-Use indet eval for property testing, like in quickcheck.
+Indeterminate evaluation allows for exhaustive generation of inputs to functions, by applying a hole to the function. The searching logic is sufficiently abstract to allow arbitrary property testing of resulting values, indeterminate expressions, and even intermediate expressions.
 
-\subsection{Indeterminate Evaluation \& Logic Programming}
+The current algorithm generates smaller inputs first,\footnote{By default. This is also customisable, as in SmallCheck.} similarly to SmallCheck \cite{SmallCheck}; the approach being justified by the \textit{small scope hypothesis} (\cref{sec:SmallScopeHypothesis}). 
+
+Other property testing models could be implemented, for example QuickCheck \cite{QuickCheck} performs random generation, along with input reduction to find simpler inputs which cause the same error.
+
+Testing of intermediate expressions is \textit{not possible}\footnote{Without refactoring the tested code.} in either SmallCheck or QuickCheck. Indeterminate evaluation would easily allow testing a property like: \textit{Does every execution trace have a length of 5?}.
+
+\subsection{Non-determinism, Connections to Logic Programming, and Program Synthesis}
 \label{sec:LogicProgramming}
-The idea of allowing holes to evaluate indeterministically allows for nondeterminism in evaluation. This could be harnessed to write non-deterministic algorithms themselves.
+\textbf{Discuss this...}
 
-Consider adding a new construct which filters indet terms. Hazel already has a construct for testing expressions which exposes the success/failure to the user directly in the editor. A similar construct could filter all indet evaluations which result in the test being true. \textbf{Give an example for calculating permutations.}
+Allowing holes to evaluate non-deterministically could be harnessed directly to write non-deterministic algorithms themselves in Hazel. The results to search for could be defined in Hazel code, and injected into the indeterminate evaluation algorithm.
 
-Such programs would want extensive improvements to the efficiency of indeterminate evaluation and would probably want ways to customise the instantiation ordering/search direction via code.
+This way of treating holes is reminiscent of \textit{free logic variables} in logic programming, of which functional logic programming languages \cite{FunctionalLogicProgramming} like \textit{Curry} \cite{CurryLang}. Adding unification \cite{UnificationSurvey} to turn these into full-blown logic variables would allow full logic programming in Hazel. A needed-narrowing evaluation strategy \cite{NeededNarrowing} would be an interesting, and more efficient, way to handle and extend indeterminate evaluation in this situation.
 
-This idea is basically similar to the idea behind Curry, with these holes being like free variables in Curry. The narrowing evaluation strategies would perhaps work for Hazel.
+Logic programming has historically been used for \textit{general-purpose program synthesis} \cite{LogicProgramSynthesis}. An incomplete Hazel program could then be used as a specification for it's incomplete parts, where executing the program would synthesise the incomplete parts. However, this approach has been found to be inefficient due to the need to solve \textit{every} possible program, and prone to underspecified problems, among other drawbacks \cite{LogicProgramSynthesisDrawbacks}. 
 
-So we could have incomplete programs using holes. Then we could write constraints on these programs. Then we could run the program to synthesise results for these holes, i.e. generating programs by running the program! \textit{Maybe find some research concerning program synthesis using logic programming? `Logic programming and program synthesis'}
+More modern approaches to program synthesis often use logic programming as specification, but use more specialised and scalable methods making use of machine learning to synthesise the programs \cite{NeuralGuidedLogicProgramSynthesis, ProgramSynthesisSketching}. Therefore, an incomplete Hazel (logic) program sketch could be used as a specification to synthesise the incomplete portions automatically, using more modern methods.
 
-Of course, the current instantiation method only generates constant functions, so would be useless for general program synthesis, e.g. one asserting that $f(x) = x$, but could be extended. Also, if $x$ here has infinite number of values, again it would fail (would need to reason by SMT or extensionality etc).
-
-Maybe even dependent types could add more fine grained specifications to instantiate by.
 \subsection{Symbolic Execution}
-Pattern matching in particular already has discussion on integration with SMT solving in the Live Pattern Matching paper.
+The search procedure was not always able to find witnesses, this was suspected to be due to low code coverage (\cref{sec:ImprovingCodeCoverage}). Improving code coverage for testing has been extensively researched, often via symbolic execution \cite{SymbolicExecutionSurvey}. Often, constraints along execution paths are modelled via \textit{satisfiability modulo theories} (SMTs) \cite{SMTs}, for which there exist many efficient solvers \cite{SMTSolver}.
 
-\subsubsection{Ad-Hoc Polymophism}
-Not in Hazel, but the search procedure can't deal well with it without symbolic execution
+The evaluation of holes can already be consider a form of \textit{symbolic execution}. However, for indeterminate evaluation, the only constraints considered are the type of the hole. \Cref{sec:ExtendedPatternMatching} considered constraining instantiation based on structures of pattern within match statements. Full symbolic execution would also consider more complex constraints on the \textit{values} of base types.
+
+\subsubsection{Polymorphism}
+The set of possible types is infinite. Generating witnesses for polymorphic values is therefore a much expanded state-space. Symbolic theories and solvers for polymorphic operations, would help in this situation \cite{PolymorphicSMTs}.
 
 \subsection{Let Polymorphism \& Global Inference}
-Errors with global inference errors are often more subtle, where trace visualisation really shines. 
+Errors in the presence of global inference are often more subtle (\cite{SubtleOCamlErrors}), as there are fewer annotations which concretely assert the types for expressions. In this situation, type slicing, cast slicing, and the witness search procedure would be particularly useful.
+
+Global inference is difficult to combine with complex type systems, for example polymorphism where global inference for Hazel's System-F style polymorphism is undecidable \cite{SystemFUndecidable}). However, ML-family languages often implement restricted \textit{let-polymorphism} via principal type schemes \cite{PrincipalTypeSchemes}.
+
+The intersection of gradually typing and principal type schemes has been explored by Garcia and Cimini \cite{GradualTI} Miyazaki et al. \cite{DTI}, the latter of which would integrate most smoothly with Hazel and indeterminate evaluation. 
+
+Hazel currently has a branch exploring global inference \textbf{(branch name here)}, although without polymorphism as of yet.
+
 \subsubsection{Constraint Slicing}
-To allow slices to work with constraint solvers. One error slicing paper already does this.
+The search procedure and cast slicing would be relatively easily extended to a let-polymorphic Hazel in the style of Miyazaki et al. However, type slicing would now have to consider non-local constraints involved and the code which sourced them, differing significantly from the proposed theory for bidirectional typing. Somewhat similar ideas have been explored in \textit{constraint-based type error slicing} by Haack and Wells \cite{HaackErrSlice}.
 
-\subsubsection{Gradual Type Inference}
-Miyazaki has a good paper on this. Seems like it could work well in Hazel, though at the loss of parametricity.
-
-\subsubsection{Localisation}
-Bidirectional typing localisation is good, but global inference is bad. The search procedure could improve localisation and also give more meaning (traces, slices) to localisations.
+\section{Reflections}
+TODO

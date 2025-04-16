@@ -49,7 +49,8 @@ Various hypotheses for properties of the results are expected. The evidence and 
 
 \paragraph{Contribution slices are large: } Contribution slices highlight all static regions of a program. This likely shows \textit{too much} information to the user at once. The other slicing methods (synthesis, analysis, ad-hoc) are expected to produce significantly \textit{smaller} slices. 
 
-\paragraph{The Small Scope Hypothesis: } This hypothesis states that a high proportion of errors can be found by generating only \textit{small} inputs. Evidence that this hypothesis holds has been provided for Java data-structures \cite{SmallScopeHypothesis} and answer-set programs \cite{SmallScopeHypothesisAnswerSet}. Does it also hold for finding dynamic type errors from small \textit{hole instantiations}?
+\paragraph{The Small Scope Hypothesis: }
+\label{sec:SmallScopeHypothesis} This hypothesis states that a high proportion of errors can be found by generating only \textit{small} inputs. Evidence that this hypothesis holds has been provided for Java data-structures \cite{SmallScopeHypothesis} and answer-set programs \cite{SmallScopeHypothesisAnswerSet}. Does it also hold for finding dynamic type errors from small \textit{hole instantiations}?
 
 \paragraph{Smaller instantiations correlate with smaller traces: } If this and the small scope hypothesis hold, then most errors could be found with \textit{small execution traces}.
 
@@ -436,7 +437,7 @@ end in
 \label{fig:HalfAnnotated}
 \end{figure}
 
-\subsection{Usability Improvements}
+\subsection{Usability Improvements}\label{sec:UIImprovements}
 As designing an intuitive user interface was not a core goal, the actual use of the features can be quite awkward or unintuitive. Below, I propose various improvements, for which the architecture, of both Hazel and the newly implemented features, is sufficiently abstract and flexible to easily support:\footnote{Some of which were detailed in the Implementation chapter.}
 
 \begin{figure}\centering
