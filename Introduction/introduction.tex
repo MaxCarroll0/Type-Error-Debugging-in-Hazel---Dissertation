@@ -32,18 +32,9 @@ This would provide an \textit{intuitive} concrete explanation for static type er
 \textbf{Solution:} I implement a \textbf{type error witness search procedure}, which discovers inputs (witnesses) to expressions which cause a \textit{dynamic type error}. This is based on research by Seidel et al. \cite{SearchProc} which devised a similar procedure for a subset of OCaml.
 \end{enumerate}
 
-Hazel \cite{Hazel} is a functional locally inferred and gradually typed research language allowing the writing of \textit{incomplete programs} under active development at the University of Michigan. 
+Hazel \cite{Hazel} is a functional locally inferred and gradually typed research language allowing the writing of \textit{incomplete programs} under active development at the University of Michigan. Being gradually typed, allowing both static and dynamic code to coexist, this project successfully demonstrates the utility of these three features in improving understanding of \textit{both} static and dynamic errors. Both, to a \textit{greater extent} than in any existing languages, with the explanations being \textit{useful} in debugging type errors, and is expected to reduce debugging times and aid in students understanding type systems.\footnote{Proving this would require a user study.}
 
-\textbf{INTRODUCE HAZEL \& IT'S VISION HERE WITH IT'S BASIC UNUSUAL FEATURES \& Show why it is a good choice to answer the research questions for}.
-
-(i.e. a notebook environment, easy teaching language for students, teaching language to understand complex type systems... All are situations where better error explanations are useful (\textbf{cite that students struggle more with type errors}))
-
-These three features \textit{work well together} in Hazel to allow \textit{both} static and dynamic type errors to be explained to a \textit{greater extent} than in any existing languages. Arguably, these explanations are \textit{intuitive}, and should help reduce debugging times and aid in students understanding type systems.\footnote{Proving this would require a user study.}
-
-For example, here is a basic walk-through for how a static type error could be diagnosed using the three features. 
-
-\textbf{MAP function? show a static error version}
-\textbf{Reference to detailed analysis in the evaluation section.}
+\prargraph{Example:} \textit{A basic well-formatted \textbf{graphical} walk-through for how a static type error could be diagnosed using the three features. Take simplest example from the evaluation.}
 
 \begin{figure}
 
