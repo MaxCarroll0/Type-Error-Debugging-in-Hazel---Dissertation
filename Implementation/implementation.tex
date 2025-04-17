@@ -95,7 +95,7 @@ Again, the slices $\gamma$ of complete typing assumptions $\Gamma$ form a bounde
 For any typing assumptions $\Gamma$, the set of slices $\gamma$ of $\Gamma$ form a bounded lattice with bottom element of the empty function $\emptyset$ and top element $\Gamma$.
 \end{proposition}
 \subsubsection{Expression Typing Slices}
-Finally, an \textit{expression typing slice} is a pair, $\varsigma^\gamma$, of a term slice and a typing slice. Precision, joins and meets, can be extended pointwise to term typing slices:
+Finally, an \textit{expression typing slice}, $\rho$, is a pair, $\varsigma^\gamma$, of a term slice and a typing slice. Precision, joins and meets, can be extended pointwise to term typing slices with all the same properties:
 \begin{definition}[Expression Typing Slice Precision]
 For expression typing slices $\varsigma_1^{\gamma_1}$, $\varsigma_2^{\gamma_2}$:
 \[\varsigma_1^{\gamma_1} \sqsubseteq \varsigma_2^{\gamma_2} \iff  \varsigma_1 \sqsubseteq \varsigma_2 \text{ and } \gamma_1 \sqsubseteq \gamma_2\]
@@ -192,10 +192,15 @@ For any typing assumption context $\F$, the set of slices $\f$ of $\F$ form a bo
 
 As usual, not all joins exist: if the assumption context slices map the slices to inconsistent typing assumption slices. 
 \subsubsection{Context Typing Slices}
-Finally, an \textit{expression context typing slice} is a pair, $\Cs^\f$, of an expression context slice and a typing assumption context slice. Precision, joins and meets, can be extended pointwise to term typing slices:
+Finally, an \textit{expression context typing slice}, $\p$, is a pair, $\Cs^\f$, of an expression context slice and a typing assumption context slice. Precision, composition, application, joins and meets, can be extended pointwise to term typing slices with all the same properties:
 \begin{definition}[Expression Context Typing Slice Precision]
 For expression context typing slices $\Cs_1^{\f_1}$, $\Cs_2^{\f_2}$:
 \[\Cs_1^{\f_1} \sqsubseteq \Cs_2^{\f_2} \iff  \Cs_1 \sqsubseteq \Cs_2 \text{ and } \f_1 \sqsubseteq \f_2\]
+\end{definition}
+\begin{definition}[Expression Context Typing Slice Composition \& Application]
+For expression context typing slices $\Cs^{\f}$, $\Cs'^{\f'}$, and expression typing slices $\varsigma^{\gamma}$:
+\[\Cs^{\f} \circ \Cs'^{\f'} =  (\Cs \circ \Cs')^{\f \circ \f'}\]
+\[\Cs_1^{\f_1}\{\varsigma^{\gamma}\} =  \Cs_1\{\varsigma\}^{\f_1(\gamma)}\]
 \end{definition}
 \begin{definition}[Expression Context Typing Slice Joins and Meets]
 For expression typing slices $\Cs_1^{\f_1}$, $\Cs_2^{\f_2}$:
@@ -210,44 +215,44 @@ For any expression context $\C$ and typing assumption context $\F$, the set of e
 \end{proposition}
 
 \subsection{Type-Indexed Slices}\label{sec:TypeIndexedSlices}
-\textbf{Do type-indexed expressions slices actually need contexts on the sub-slices? Are these every not claculable from the rule they are being used in}
+Tagging slices by their type and allowing decomposition into sub-slices for each part of the type is required for \textit{cast slicing} and useful in calculating slices according to \textit{analysis slices} and \textit{contribution slices} criteria. For example consider the same context slice:
+\[\underline{(\lambda x. \hole^u )} \hlcmaths[yellow!30]{:  \code{Bool} \hlcmaths[yellow!30]{\to \code{Int}}}\]
+This context slice would be tagged with type $\code{Bool} \to \code{Int}$ and the respective sub-slice considering only the return type would omit the \code{Bool} term:
+\[\underline{(\lambda x. \hole^u )} \hlcmaths[yellow!30]{:}  \code{Bool} \hlcmaths[yellow!30]{\to \code{Int}}\]
 
-\textbf{Have context i.e. contexts with a $\_$ and let the syntax write it directly as a \textit{type-indexed context slice}, i.e. a type-indexed slice, but with the slice $\rho$s replaced with $\p$s. Then allow easy syntax to create from a type indexed slice i.e.}
-\[(\p\{\dyn \mid \rho\})(\cmark) = \p\{\dyn \mid \rho(\cmark)\}\]
-Reverse composition order for this?? Also, syntax for going from indexed context to indexed expression i.e. $\{\}$
+This section will only consider \textit{context slices}, but term slices are type-indexed in exactly the same way. By extending the class of possible contexts, an expression slice can be considered as a \textit{terminal context}\footnote{Being a terminal morphism when thinking of morphisms in a category.} taking any input to the expression slice.\footnote{These will be used interchangeably from now on.}
+\begin{definition}[Term Slices as Terminal Context Slices]
+A terminal context slice for a term typing slice $\rho$ is a context typing slice $\p$ such that for every context typing slice $\p'$ and expression typing slice $\rho'$:
+\[\p \circ \p' = \p \text{ and } \p\{\rho'\} = \rho\]
+\end{definition}
 
+The main property that we want these indexed-slices to maintain is that a slice can be \textit{reconstructed} from their sub-parts. \textit{Joining} the sub-slices should produce the slice for the entire type. As not every slice can be joined, we can pair sub-slices with contexts which place the two sub-slices inside the same structure, making them join-able.
 
-For \textit{criteria 3 and cast slicing}, there is a need to decompose slices to find sub-slices which contribute to specific portions of a compound type. For example, which part of the expression typing slice was related to the argument type of a function specifically.
+\renewcommand{\S}{\mathdcal{S}}
+\newcommand{\s}{\mathdcal{s}}
+\begin{definition}[Type-Indexed Context Typing Slices]
+Syntactically defined: 
+\[\S ::= \p \mid \p * \S \to \p * \S\] 
+With any $\S$ only being valid if it has a full slice. The full slice of $\S$ is notated $\overline{\S}$ and defined recursively:
+\[\overline{\p} = \p\]
+\[\overline{\p_1 * \S_1 \to \p_2 * \S_2} = \p_1 \circ \overline{\S_1} \sqcup \p_2 \circ \overline{S_2}\]
+\end{definition}
+Then left \textit{(incremental)} composition and right \textit{(global)} composition can be defined, by composing at the upper type constructor or at the leaves respectively:
+\begin{definition}[Type-Indexed Context Typing Slice Composition]
+For type-indexed context typing slices $\S$ and $\S'$.  If $\S = \p$ and $\S' = \p'$:\footnote{In shorthand, the overline for a base type slice is often omitted.}
+\[\p' \circ \p = \overline{\p'} \circ \overline{\p}\qquad \p \circ \p' = \overline{\p} \circ \overline{\p'}\]
+If $\S = \p$ and $\S' = \p_1' * \S_1' \to \p_2' * \S_2'$:\footnote{In shorthand, brackets will be omitted.}
+\[S \circ \S' = (\p \circ p_1') * \S_1' \to (\p \circ \p_2') * \S_2'\]
+If $\S = \p_1 * \S_1 \to \p_2 * \S_2$:
+\[\S \circ \S' = \p_1 * (\S_1 \circ \S') \to \p_2 * (\S_2 \circ \S')\]
+\end{definition}
 
-\textbf{Give EXAMPLE}
+This definition stems from it representing regular context typing slice composition over it's full slices.
+\begin{proposition}[Type-Indexed Composition Preserves Full Slice Composition]
+For type-indexed slices $\S$ and $\S'$: 
+\[\overline{\S \circ \S'} = \overline{\S} \circ \overline{\S'}\]
+\end{proposition}
 
-A \textit{type(-indexed) slice} $s$ consists of: a expression typing slice, a context slice, and a \textit{type} \textit{index} $i$. This index is either an \textit{atomic} type label or is \textit{compound}, consisting of type slices conforming to the structure of types:
-\[i ::= \dyn \mid b \mid s \to s\]
-\[s ::= \p\{i \mid \rho\}\]
-The type that a type slice $s$ \textit{represents} is the slice retaining only it's type labels. This will be notated by $\type{s}$, defined inductively:
-\[\type{\p\{\dyn\mid \rho\}} = \dyn \quad \type{\p\{b \mid \rho\}} = b\]
-\[\type{\p\{s_1 \to s_2 \mid \rho\}} = \type{s_1} \to \type{s_2}\]
-
-This same notation will also be used to extract the type of a type index $i$, similarly defined.
-
-A term $e$ in some context $\C$ will be associated with a \textit{type slice} with the meaning that $\rho$ contains a expression typing slice for typing $e$ and $\p$ contains a context slice for typing $e$ in context $\C$ according to some criterion. Typically the context slice would correspond to type analysis and the expression typing slice would correspond to type synthesis.
-
-The compound type slices must satisfy the crucial property that the sub-terms are sub-\textit{slices} of $\rho$. That is:
-\[\p\{\p_1\{i_1 \mid \rho_1\} \to \p_2\{i_2 \mid \rho_2\} \mid \rho\} \implies \p_1\{\rho_1\} \sqsubseteq \rho\text{ and }\p_2\{\rho_2\} \sqsubseteq \rho\]
-
-The precision relation can be extended to slices pointwise upon the expression typing slice and context slice for atomic types $a$ (i.e. $a ::= \dyn \mid b$):
-\[\p'\{a \mid \rho'\} \sqsubseteq \p\{a \mid \rho\} \iff \p' \sqsubseteq \p\text{ and } \rho' \sqsubseteq \rho\]
-And recursively for compound slices:\footnote{Note, function arguments are \textit{covariant} for this.}
-\begin{align*}
-\p'\{s_1' \to s_2' \mid \rho'\} \sqsubseteq \p\{s_1 \to s_2 \mid \rho\} \iff &\p' \sqsubseteq \p,\ \rho' \sqsubseteq \rho,\\
-&s_1' \sqsubseteq s_1,\text{ and }s_2' \sqsubseteq s_2
-\end{align*}
-
-Composition of expression typing slices to the outer context is possible, $(\p' \circ \p)\{i \mid \rho\}$, and is notated shorthand as $\p'\{s\}$ for $s = \p\{i \mid \rho\}$.
-
-Additionally, if $\p$ is empty, $\cmark^\emptyset$, a type slice may be notated without it: $i \mid \rho$. Equally, when $\rho$ is empty, $\gap^\emptyset$, then notate $\p'\{i\}$. This means that if both $\p, \rho$ are both empty then we have $i$ which is syntactically identical to types $\tau$, so we can trivially treat types as \textit{empty type slices}.  
-
-Then function matching $\funmatch$ can be extended to slices in multiple different ways with different uses depending on the context, see the appendix \textbf{ref}.
 
 \subsection{Criterion 1: Synthesis Slices}
 \label{sec:SynthesisSlices}
