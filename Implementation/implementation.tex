@@ -11,13 +11,13 @@ I develop a novel method, \textit{type slicing}, as a mechanism to aid programme
 
 The first two criteria attempt to give insight on the structure of the typing derivations, and hence how types are decided. While the third criterion gives a complete picture of the regions of code which contribute to the a term's type.
 
-I would like to stress that the second and third criterion were \textit{very challenging} to formalise, requiring non-obvious mathematical machinery: \textit{context slices} (\cref{sec:ContextTypingSlices}), \textit{checking context} (\cref{def:CheckingContext}), \textit{type-indexed slices} (\cref{sec:TypeIndexedSlices}).
+I would like to stress that the second and third criterion were \textit{very challenging} to formalise, requiring non-obvious mathematical machinery: \textit{context typing slices} (\cref{sec:ContextTypingSlices}), \textit{checking contexts} (\cref{def:CheckingContext}), and \textit{type-indexed slices} (\cref{sec:TypeIndexedSlices}).
 
 \subsection{Expression Typing Slices}\label{sec:ExpressionTypingSlices}
 First, I introduce what \textit{slices} are in this context. The aim is to provide a formal representation of term \textit{highlighting}. 
 
-\subsubsection{Expression Slices}
-An \textit{expression slice} is an expression with some sub-terms omitted. The omitted terms are those that are \textit{not} highlighted. For example if my slicing criterion is to \textit{omit terms which are typed as} \code{Int}, then the following expressions highlights as:
+\subsubsection{Term Slices}
+A \textit{term slice} is a term with some sub-terms omitted. The omitted terms are those that are \textit{not} highlighted. For example if my slicing criterion is to \textit{omit terms which are typed as} \code{Int}, then the following expressions highlights as:
 
 \[\hlcmaths[yellow!30]{(\lambda x: \code{Int}.\ \lambda y : \code{Bool}.}\ x\hlcmaths[yellow!30]{)(}1\hlcmaths[yellow!30]{)}\]
 
@@ -26,45 +26,44 @@ Omitted sub-terms are replaced by a \textit{gap} term, notated $\gap$. Represent
 \[(\lambda x : \code{Int}.\ \lambda y : \code{Bool}.\ \gap)(\gap)\]
 
 Similarly, this one can omit variable names and parts of types. We get a syntax specified in \cref{def:ExpressionSliceSyntax}, extending the Hazel core syntax from \cref{fig:syntax}: 
-\begin{definition}[Expression Slice Syntax]
+\begin{definition}[Term Slice Syntax]
 \label{def:ExpressionSliceSyntax}
 Pattern expression slices $p$:
 \[p ::= \gap \mid x\]
-Type slices $\upsilon$:\footnote{A \textit{type slice} is also used to refer to this whole mechanism. The overall theory is referred to \textit{typing slices} to distinguish from slices of type expressions where ambiguous.}
+Type slices $\upsilon$:\footnote{A \textit{type slice} is also used to refer to this whole mechanism. The overall theory is referred to \textit{typing slices} to distinguish from slices of type terms where ambiguous.}
 \[\upsilon ::= \gap \mid \dyn \mid b \mid \upsilon \to \upsilon\]
 Expression slices $\varsigma$:
 \[\varsigma ::= \gap \mid  c \mid x \mid \lambda p : \upsilon.\ \varsigma \mid \lambda p.\ \varsigma \mid \varsigma(\varsigma) \mid \hole^u \mid \hole[\varsigma]^u \mid \varsigma : \upsilon\]
 \end{definition}
 
-We then have a \textit{precision} relation on expression slices, $\varsigma_1 \sqsubseteq \varsigma_2$ meaning $\varsigma_1$ is less or equally precise than $\varsigma_2$, that is $\varsigma_1$ matches $\varsigma_2$ structurally except that some subterms may be gaps, see \textbf{ref appendix}. For example, see this precision chain:
+We then have a \textit{precision} relation on term slices: $\varsigma_1 \sqsubseteq \varsigma_2$ meaning $\varsigma_1$ is less or equally precise than $\varsigma_2$. That is, $\varsigma_1$ matches $\varsigma_2$ structurally except that some sub-terms may be gaps. Full definition in appendix \textbf{ref appendix}. For example, see this precision chain:
 \[\gap \sqsubseteq\gap + \gap\sqsubseteq 1 + \gap \sqsubseteq 1 + 2\]
 Precision forms a partial order \cite{PartialOrder}, that is, a reflexive, antisymmetric, and transitive relation. Respectively:
 \[\inference{}{\varsigma \sqsubseteq \varsigma} \quad \inference{\varsigma_1 \sqsubseteq \varsigma_2 & \varsigma_2 \sqsubseteq \varsigma_1}{\varsigma_1 = \varsigma_2} \quad \inference{\varsigma_1 \sqsubseteq \varsigma_2 & \varsigma_2 \sqsubseteq \varsigma_3}{\varsigma_1 \sqsubseteq \varsigma_3}\]
-We also have a \textit{bottom} (least) element, $\gap \sqsubseteq \varsigma$ (for all $\varsigma$). This relation is trivially extended to include \textit{complete expressions}\footnote{With no gaps.} $e$ which are \textit{top} elements of their respective chains: if $e \sqsubseteq \varsigma$ then $e = \varsigma$. Sometimes I refer to this relation as $\varsigma_1$ is an expression slice \textit{of} $\varsigma_2$ iff $\varsigma_1 \sqsubseteq \varsigma_2$.
+We also have a \textit{bottom} (least) element, $\gap \sqsubseteq \varsigma$ (for all $\varsigma$). This relation is trivially extended to include \textit{complete terms}\footnote{With no gaps.} $e$ which are \textit{top} elements of their respective chains: if $e \sqsubseteq \varsigma$ then $e = \varsigma$. Sometimes I refer to this relation as $\varsigma_1$ is a term slice \textit{of} $\varsigma_2$ iff $\varsigma_1 \sqsubseteq \varsigma_2$.
 
-For any \textit{complete expression} $e$, the slices of $e$ form a \textit{bounded lattice structure} \cite{Lattice}. That is, every pair $\varsigma_1, \varsigma_2$ has a \textit{join} $\varsigma_1 \sqcup \varsigma_2$ and \textit{meet} $\varsigma_1 \sqcap \varsigma_2$:
-\begin{definition}[Expression Slice Lattice]
-For any expression $e$ and any slices $\varsigma_1$ and $\varsigma_2$ of $e$:
+For any \textit{complete term} $t$, the slices of $t$ form a \textit{bounded lattice structure} \cite{Lattice}. That is, every pair $\varsigma_1, \varsigma_2$ has a \textit{join} $\varsigma_1 \sqcup \varsigma_2$ and \textit{meet} $\varsigma_1 \sqcap \varsigma_2$:
+\begin{proposition}[Term Slice Bounded Lattice]
+For any term $t$, the set of slices $\varsigma_1$ and $\varsigma_2$ of $t$ forms a bounded lattice:
 
 \begin{minipage}{0.95\textwidth}
 \begin{itemize}
 \item The join, $\varsigma_1 \sqcup \varsigma_2$ exists , being an upper bound for $\varsigma_1, \varsigma_2$:
 \[\varsigma_1 \sqsubseteq \varsigma_1 \sqcup \varsigma_2\qquad \varsigma_2 \sqsubseteq \varsigma_1 \sqcup \varsigma_2\]
-And, any other slice $\varsigma \sqsubseteq e$ which is also an upper bound of $\varsigma_1, \varsigma_2$ is more or equally precise than the join:
+And, any other slice $\varsigma \sqsubseteq t$ which is also an upper bound of $\varsigma_1, \varsigma_2$ is more or equally precise than the join:
 \[\varsigma_1 \sqcup \varsigma_2 \sqsubseteq \varsigma\]
 \item The meet, $\varsigma_1 \sqcap \varsigma_2$ exists, being a lower bound for $\varsigma_1, \varsigma_2$:
 \[\varsigma_1 \sqcap \varsigma_2 \sqsubseteq \varsigma_1\qquad  \varsigma_1 \sqcap \varsigma_2 \sqsubseteq\varsigma_2\]
-And, any other slice $\varsigma \sqsubseteq e$ which is also a lower bound of $\varsigma_1, \varsigma_2$ is less or equally precise than the meet:
+And, any other slice $\varsigma \sqsubseteq t$ which is also a lower bound of $\varsigma_1, \varsigma_2$ is less or equally precise than the meet:
 \[ \varsigma \sqsubseteq\varsigma_1 \sqcup \varsigma_2\]
 \item And the join and meet operations satisfy the absorption laws for any slice $\varsigma$:
 \[\varsigma_1 \sqcap (\varsigma_1 \sqcup \varsigma_2) = \varsigma_1 \qquad \varsigma_1 \sqcup (\varsigma_1 \sqcap \varsigma_2) = \varsigma_1\]
 And idempotent laws:
 \[\varsigma_1 \sqcup \varsigma_1 = \varsigma_1 = \varsigma_1 \sqcap \varsigma_1\]
-\item The lattice is bounded. That is, $\gap \sqsubseteq \varsigma \sqsubseteq e$.
+\item The lattice is bounded. That is, $\gap \sqsubseteq \varsigma \sqsubseteq t$.
 \end{itemize}
 \end{minipage}
-\end{definition}
-
+\end{proposition}
 
 Note that not every pair of slices has a join: consider $1$ and $2$. But, every pair does have a meet as for all $\varsigma_1, \varsigma_2$, $\gap \sqsubseteq \varsigma_1$ and $\gap \sqsubseteq \varsigma_2$.
  
@@ -74,8 +73,8 @@ Expression typing is performed given a set of \textit{typing assumptions}. There
 Therefore, \textit{typing assumptions slices} can be represented by partial functions mapping variables to \textit{type slices}. That is, a typing assumption set is a slice of another if it maps \textit{no more} variables to \textit{at most} as specific types. The precision relation, $\sqsubseteq$, can be extended to typing assumptions by extensionality \cite{Extensionality} and using the subset relation:
 
 \begin{definition}[Typing Assumption Slice Precision]
-For typing slices $\gamma_1, \gamma_2$. Where $\mathrm{dom}(f)$ is the set of variables for which a partial function $f$ is \textit{defined}:
-\[\gamma_1 \sqsubseteq \gamma_2 \iff \mathrm{dom}(\gamma_1) \subseteq \dom(\gamma_2) \text{ and } \forall x \in  \mathrm{dom}(\gamma_1).\ \gamma_1(x) \sqsubseteq \gamma_2(x)\]
+For typing assumption slices $\gamma_1, \gamma_2$. Where $\mathrm{dom}(f)$ is the set of variables for which a partial function $f$ is \textit{defined}:
+\[\gamma_1 \sqsubseteq \gamma_2 \iff \mathrm{dom}(\gamma_1) \subseteq \mathrm{dom}(\gamma_2) \text{ and } \forall x \in  \mathrm{dom}(\gamma_1).\ \gamma_1(x) \sqsubseteq \gamma_2(x)\]
 \end{definition}
 Equally, joins and meet can be extended extensionality:
 \begin{definition}[Typing Assumption Slice Joins and Meets]
@@ -91,8 +90,12 @@ For typing slices $\gamma_1, \gamma_2$, and any variable $x$:
 \end{minipage}
 \end{definition}
 Again, the slices $\gamma$ of complete typing assumptions $\Gamma$ form a bounded lattice. Similarly, not every pair of slices has a join, as not every type slice has a join: consider $x : \code{Int}$ and $x : \code{String}$.
-\subsubsection{Pairing Expression and Typing Assumption Slices}
-Finally, an \textit{expression typing slice} is a pair, $\varsigma^\gamma$, of an expression slice and a typing slice. Precision, joins and meets, can be extended pointwise to expression typing slices:
+
+\begin{proposition}[Typing Assumption Slices form Bounded Lattices]
+For any typing assumptions $\Gamma$, the set of slices $\gamma$ of $\Gamma$ form a bounded lattice with bottom element of the empty function $\emptyset$ and top element $\Gamma$.
+\end{proposition}
+\subsubsection{Expression Typing Slices}
+Finally, an \textit{expression typing slice} is a pair, $\varsigma^\gamma$, of a term slice and a typing slice. Precision, joins and meets, can be extended pointwise to term typing slices:
 \begin{definition}[Expression Typing Slice Precision]
 For expression typing slices $\varsigma_1^{\gamma_1}$, $\varsigma_2^{\gamma_2}$:
 \[\varsigma_1^{\gamma_1} \sqsubseteq \varsigma_2^{\gamma_2} \iff  \varsigma_1 \sqsubseteq \varsigma_2 \text{ and } \gamma_1 \sqsubseteq \gamma_2\]
@@ -105,56 +108,106 @@ For expression typing slices $\varsigma_1^{\gamma_1}$, $\varsigma_2^{\gamma_2}$:
 
 For any pair of complete expressions $e$ and typing assumptions $\Gamma$, then the expression typing slices of these forms a bounded lattice.
 
-The \textit{expression slices} can be \textit{type checked} under the \textit{type assumption slices} by replacing gaps $\gap$ by: holes of arbitrary metavariable $\hole^u$ in \textit{expressions}, fresh variables in \textit{patterns}, and the dynamic type in \textit{types}. Stated formally in the appendix \textbf{(fig APPENDIX)}.
+\begin{proposition}[Expression Typing Slices for Bounded Lattices]
+For any expression $e$ and typing assumption $\Gamma$, the set of expression typing slices $\varsigma^{\gamma}$ of $e^{\Gamma}$ forms a bounded lattice with bottom element $\gap^{\emptyset}$ and top element $e^{\Gamma}$.
+\end{proposition}
+
+The \textit{expression slices} can be \textit{type checked} under the \textit{type assumption slices} by replacing gaps $\gap$ by: holes of arbitrary metavariable $\hole^u$ in \textit{expressions}, fresh variables in \textit{patterns}, and the dynamic type in \textit{types}. This transformation $\type{\cdot}$ is stated formally in the appendix \textbf{(fig APPENDIX)}.
+
+\begin{definition}[Expression Typing Slice Type Checking]
+For expression typing slice $\varsigma^{\gamma}$ and type $\tau$. $\synthesis[\gamma]{e}{\tau}$ iff $\synthesis[\type{\gamma}]{\type{e}}{\tau}$ and $\analysis[\gamma]{e}{\tau}$ iff $\analysis[\type{\gamma}]{\type{e}}{\tau}$.
+\end{definition}
 \subsection{Context Typing Slices}\label{sec:ContextTypingSlices}
-\textbf{add pattern context. }
+Next, some of an expression's type might be enforced by the surrounding \textit{context}. For example, the  type of the underlined expression below is enforced by the surrounding highlighted annotation:
+\[\underline{(\lambda x. \hole^u )} \hlcmaths[yellow!30]{:  \code{Bool} \hlcmaths[yellow!30]{\to \code{Int}}}\]
 
+\subsubsection{Contexts \& Context Slices}
 \newcommand{\C}{\mathdcal{C}}
-Formally, an \textit{expression context} $\mathdcal{C}$ is an expressions with \textit{exactly one} sub-term marked as $\cmark$:\footnote{The two separate syntax definition for application allow a \textit{mark} to be in either the left or right expression, but \textit{not both}.}
-\[\C ::=  \cmark \mid \lambda x : \tau.\ \C \mid \lambda x.\ \C \mid \C(e) \mid e(\C) \mid \C : \tau\]
+We represent these surrounding contexts by a \textit{term context} $\mathdcal{C}$. Which marks \textit{exactly one} sub-term as $\cmark$:
+\begin{definition}[Contexts Syntax]
+Pattern contexts -- mapping patterns to patterns:
+\[\mathdcal{P} ::= \cmark \mid x\]
+Type contexts -- mapping types to types: 
+\[\mathdcal{T} ::= \cmark \mid \dyn \mid b \mid \mathdcal{T} \to \tau \mid \tau \to \mathdcal{T}\]
+Expression contexts -- mapping patterns, types, or expression to expressions:\footnote{Note that $\C$ is also used for generic term contexts sometimes.}
+\[\C ::=  \cmark \mid \lambda \mathdcal{P} : \tau.\ e \mid \lambda x : \mathdcal{T}.\ e \mid \lambda x : \tau.\ \C \mid \lambda \mathdcal{P}.\ e \mid \lambda x.\ \C \mid \C(e) \mid e(\C) \mid e : \mathdcal{T} \mid \C : \tau\]
+\end{definition}
 
-Where $\C\{e\}$ substitutes expression $e$ for the mark $\cmark$ in $\C$, the result of this is necessarily an expression. Additionally, contexts are composable: substituting a context into a context, $\C_1\{\C_2\}$ produces another valid context, notate this by $\C_1 \circ \C_2$\footnote{Context can alternatively be though of as functions from expressions to expressions.}.
+Where $\C\{e\}$ substitutes expression $e$ for the mark $\cmark$ in $\C$, the result of this is necessarily an expression. Similarly for pattern and type contexts $\mathdcal{P}, \mathdcal{T}$ whose substitutions return patterns and types. Additionally, contexts are \textit{composable}: substituting a context into a context, $\C_1\{\C_2\}$ produces another valid context when the domain of $\C_1$ is from expressions. Notate this by $\C_1 \circ \C_2$. From here on I notate all contexts like functions, specifying their domain and co-domain where appropriate: $\C : \code{Typ} \to \code{Exp}$ for example.
 
 
 \newcommand{\Cs}{\mathdcal{c}}
 \newcommand{\p}{\mathdcal{p}}
-Similarly to expressions, contexts can be extended to \textit{context slices} by allowing slices within:
-\[\Cs ::= \cmark \mid \lambda p : \upsilon. \Cs \mid \Cs(\varsigma) \mid \varsigma(\Cs) \mid \Cs : \upsilon\]
-
-However, the precision relation $\sqsubseteq$ is defined differently, requiring that the mark $\cmark$ must remain in the same position in the context structurally speaking. For example $\cmark(\gap) \sqsubseteq \cmark(1)$, but $\cmark \not \sqsubseteq \cmark(1)$. This can be concisely defined by \textit{extensionality} (\textbf{cite}):
+Then, contexts can be extended to slices, $\Cs$, analogously to the previous section. However, the precision relation $\sqsubseteq$ is defined differently, requiring that the mark $\cmark$ must remain in the same position in the structure. For example $\cmark(\gap) \sqsubseteq \cmark(1)$, but $\cmark \not \sqsubseteq \cmark(1)$. This can be concisely defined by \textit{extensionality}:
 
 \begin{definition}[Context Precision]\label{def:ContextPrecision}
-If $\Cs'$ and $\Cs$ are context slices, then $\Cs' \sqsubseteq \Cs$ if and only if, for all expressions $e$, that $\Cs'\{e\} \sqsubseteq \Cs\{e\}$.
+If $\Cs : \code{X} \to \code{Y}$ and $\Cs' : \code{X} \to \code{Y}$ are context slices, then $\Cs' \sqsubseteq \Cs$ if and only if, for all terms $t$ of class $\code{X}$, that $\Cs'\{t\} \sqsubseteq \Cs\{t\}$.
 \end{definition}
-Again, we refer to a context slice $\Cs$ of $\C$ as one satisfying that $\Cs' \sqsubseteq \C$.
 
-We also get that filling contexts preserves the precision relations both on expression slices \textit{and} context slices:
+Again, we refer to a context slice $\Cs'$ \textit{of} $\Cs$ as one satisfying that $\Cs' \sqsubseteq \Cs$.
+
+We also get that filling contexts preserves the precision relations both on term slices \textit{and} context slices:\footnote{The conjectures are heavily suspected but not formally proven in the appendix.}
 \begin{conjecture}[Context Filling Preserves Precision]
-For expression slice $\varsigma$ and context slice $\Cs$. Then if we have slices $\varsigma' \sqsubseteq \varsigma$, $\Cs' \sqsubseteq \Cs$ then also $\Cs'\{\varsigma'\} \sqsubseteq \Cs\{\varsigma\}$.
+For context slice $\Cs : \code{X} \to \code{Y}$ and term slice $\varsigma$ of class \code{X}. Then if we have slices $\varsigma' \sqsubseteq \varsigma$, $\Cs' \sqsubseteq \Cs$ then also $\Cs'\{\varsigma'\} \sqsubseteq \Cs\{\varsigma\}$.
 \end{conjecture}
-Therefore, context slices $\Cs$ can be though of as monotone function (\textbf{cite})...
 
-Show that composition is also preserved over precision, i.e. it is a functor.
+Joins and meets can be defined via extensionality:
+\begin{definition}[Context Slice Joins \& Meets]
+For context slices $\Cs_1 : \code{X} \to \code{Y}$ and $\Cs_2 : \code{X} \to \code{Y}$ and any term $t$ of class \code{X}:
+\[(\Cs_1 \sqcup \Cs_2)\{t\} = \Cs_1\{t\} \sqcup \Cs_2\{t\}\]
+\[(\Cs_1 \sqcap \Cs_2)\{t\} = \Cs_1\{t\} \sqcap \Cs_2\{t\}\]
+\end{definition}
 
-\textit{Make some references to category theory, i.e. category of slices with morphisms being context slices. Or that slices form categories on expression $e$ and contexts are a functor between expression typing slice categories. i.e. contexts are monotonic functions}
+Again, these form a lattice:
+\begin{proposition}[Context Slices form Bounded Lattices]
+For any context $\C$, the set of slices $\Cs$ of $\C$ form a bounded lattice with bottom element of the \textit{purely structural context}\footnote{With the $\cmark$ is the \textit{same position} but every other sub-term being a $\gap$. Defined in appendix.} and top element $\C$.
+\end{proposition}
 
-\textbf{rewrite}
-The accompanying notion of a \textit{typing assumption slice} can be extended to \textit{functions on typing assumptions}. This function can represent what typing assumptions need to be \textbf{added}, or can be \textit{removed} when placing $e$ in it's context slice.
+\subsubsection{Typing Assumption Contexts \& Context Slices}
+The accompanying notion of a \textit{typing assumption slice} can be extended to \textit{functions on typing assumptions}. This function represents what typing assumptions need to be \textit{added}, or can be \textit{removed} when typing an expression $e$ and within it's context slice.
+
+\newcommand{\F}{\mathdcal{F}}
+\newcommand{\f}{\mathdcal{f}}
+\begin{definition}[Typing Assumption Contexts \& Slices]
+A typing assumption context $\F$ is a function from typing assumption to typing assumptions. A typing assumption context slice $\f$ is a function from typing assumption slices to typing assumption slices.
+\end{definition}
 
 Functions can be composed and a precision partial order can also be defined via extensionality:
-\begin{definition}[Function Precision]\label{def:FunctionPrecision}
-If $f'$ and $f$ are functions, then $f' \sqsubseteq f$ if and only if, for all typing contexts $\Gamma$, that $f'(\Gamma) \subseteq f(\Gamma)$.
+\begin{definition}[Typing Assumption Context Slice Precision]\label{def:FunctionPrecision}
+If $\f'$ and $\f$ are typing assumption context slices, then $\f' \sqsubseteq \f$ if and only if, for all typing context slices $\gamma$, that $\f'(\gamma) \sqsubseteq \f(\gamma)$.
 \end{definition}
-Again, such functions are monotone \textbf{(find the name of this mathematical property... sorta an extended monotonicity)}:
+Again, such functions are monotone:
 \begin{conjecture}[Function Application Preserves Precision]
-For typing context $\Gamma$ and function $f$. Then if we have slices $\Gamma' \subseteq \Gamma$, $f' \sqsubseteq f$ then also $f'(\Gamma') \sqsubseteq f(\Gamma)$.
+For typing assumption slice $\gamma$ and typing assumption context slice $\f$. Then if we have slices $\gamma' \sqsubseteq \gamma$, $f' \sqsubseteq f$ then also $f'(\gamma') \sqsubseteq f(\gamma)$.
+\end{conjecture}
+Joins and meets are also defined extensionally:
+\begin{definition}[Typing Assumption Context Slice Joins \& Meets] For typing assumption context slices $\f_1$ and $\f_2$ and any typing assumption slice $\gamma$:
+\[(\f_1 \sqcup \f_2)(\gamma) = \f_1(\gamma) \sqcup \f_2(\gamma)\]
+\[(\f_1 \sqcap \f_2)(\gamma) = \f_1(\gamma) \sqcap \f_2(\gamma)\]
+\end{definition}
+
+\begin{conjecture}[Typing Assumption Context Slices form Bounded Lattices]
+For any typing assumption context $\F$, the set of slices $\f$ of $\F$ form a bounded lattice with bottom element being the constant function to the empty typing assumption function and top element $\F$.
 \end{conjecture}
 
-This pair of context slice and function $f$ will be referred to as a \textit{context slice} and notated $\p^f$, should $f$ be the identity it may be omitted in shorthand.
+As usual, not all joins exist: if the assumption context slices map the slices to inconsistent typing assumption slices. 
+\subsubsection{Context Typing Slices}
+Finally, an \textit{expression context typing slice} is a pair, $\Cs^\f$, of an expression context slice and a typing assumption context slice. Precision, joins and meets, can be extended pointwise to term typing slices:
+\begin{definition}[Expression Context Typing Slice Precision]
+For expression context typing slices $\Cs_1^{\f_1}$, $\Cs_2^{\f_2}$:
+\[\Cs_1^{\f_1} \sqsubseteq \Cs_2^{\f_2} \iff  \Cs_1 \sqsubseteq \Cs_2 \text{ and } \f_1 \sqsubseteq \f_2\]
+\end{definition}
+\begin{definition}[Expression Context Typing Slice Joins and Meets]
+For expression typing slices $\Cs_1^{\f_1}$, $\Cs_2^{\f_2}$:
+\[\Cs_1^{\f_1} \sqcup \Cs_2^{\f_2} = (\Cs_1 \sqcup \Cs_2)^{\f_1 \sqcup \f_2}\]
+\[\Cs_1^{\f_1} \sqcap \Cs_2^{\f_2} = (\Cs_1 \sqcap \Cs_2)^{\f_1 \sqcap \f_2}\]
+\end{definition}
 
-Extend composition to program contexts and substitution of expression typing slices. Again as slices are a superset of expressions, then this extends to expression etc.
+For any pair of expressions contexts $\C$ and typing assumption contexts $\F$, then the expression typing slices of these forms a bounded lattice.
 
-When 
+\begin{proposition}[Expression Context Typing Slices form Bounded Lattices]
+For any expression context $\C$ and typing assumption context $\F$, the set of expression context typing slices $\Cs^{\f}$ of $\C^{\F}$ forms a bounded lattice with bottom element, the purely structural context and the function to the empty typing assumptions, and top element $e^{\Gamma}$.
+\end{proposition}
 
 \subsection{Type-Indexed Slices}\label{sec:TypeIndexedSlices}
 \textbf{Do type-indexed expressions slices actually need contexts on the sub-slices? Are these every not claculable from the rule they are being used in}
