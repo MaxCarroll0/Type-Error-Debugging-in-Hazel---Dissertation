@@ -256,147 +256,114 @@ For type-indexed slices $\S$ and $\S'$:
 
 \subsection{Criterion 1: Synthesis Slices}
 \label{sec:SynthesisSlices}
-For \textit{synthesis type slices} we consider an expression synthesising a type $\tau$ under some context $\Gamma$:
-\[\synthesis{e}{\tau}\]
-And consider the slices in $P_e^{\Gamma}$ and attempt to find the minimum slice $\rho = [\varsigma\mid \gamma]$ constraining that $\rho$ also synthesises the same type $\tau$ under the restricted context $\gamma$:
-\[\synthesis[\gamma]{\varsigma}{\tau}\]
-Where minimality requires that no other (strictly) less precise slice satisfies the criterion. That is: for any slice $\rho' = [\varsigma'\mid \gamma']$, if $\synthesis[\gamma']{\varsigma'}{\tau}$ and $\rho' \sqsubseteq \rho$, then $\rho' = \rho$.
 
-\textbf{GIVE CONCRETE EXAMPLE HERE, use highlighting}
+The first slicing method aims to concisely explain why an expression \textit{synthesises} a type. It omits all  sub-terms which analyse against a type retrieved from synthesising some other part of the program. For example, the following term synthesises a $\code{Bool} \to \code{Bool}$ type, and the variable $x : \code{Int}$ and argument are irrelevant:
 
-I conjecture that, under the Hazel type system, there exists a unique minimum slice for each $\synthesis{e}{\tau}$:\footnote{Would follow from uniqueness of typing derivations in Hazel.}
-\begin{conjecture}[Uniqueness]\label{conj:SynthesisSliceUniqueness}
-If $\rho$ and $\rho'$ are \textit{minimum synthesis slices} for $\synthesis{e}{\tau}$, then $\rho = \rho'$.
-\end{conjecture}
+\[\hlcmaths[yellow!30]{(\lambda} x: \code{Int}\hlcmaths[yellow!30]{.\ \lambda y : \code{Bool}.\ y)(}1\hlcmaths[yellow!30]{)}\]
 
-These slices can be found by omitting portions of the program which are \textit{type checked}. If, $\analysis{e}{\tau}$, then by use of the subsumption rule we also have that $\analysis{\gap}{\tau}$:
-\[\inference[Subsumption]{\synthesis{\gap}{\dyn} & \tau \sim \dyn}{\analysis{e}{\tau}}\] 
-As the dynamic type is consistent with any type: $\dyn \sim \tau$.
+\begin{definition}[Synthesis Slices]
+For a synthesising expression, $synthesis{e}{\tau}$. A synthesis slice is an expression typing slice $\varsigma^{\gamma}$ of $e^\Gamma$ which also synthesises $\tau$, that is, $\synthesis[\type{\gamma}]{\type{\varsigma}}{\tau}$.
+\end{definition}
+\begin{proposition}[Minimum Synthesis Slices]
+A minimum synthesis slice of $e^\Gamma$ is a synthesis slice $\rho$ such that any other synthesis slices $\rho'$ are at least as specific, $\rho \sqsubseteq \rho'$. This minimum always uniquely exists.
+\end{proposition}
 
-Then, to find the \textit{minimum synthesis slice}, we can mimic the Hazel type synthesis rules (see \cref{fig:typing}), replacing uses of type analysis with gaps. Creating a judgement $\synthesisslice{e}{\tau}{\rho}$ meaning: \textit{$e$ that synthesises type $\tau$ under context $\Gamma$ produces minimum synthesis slice $\rho$}.
+These slices can be defined via a typing judgement $\synthesisslice{e}{\tau}{\S}$, meaning $\S$ is the type-indexed synthesis slice of $e^\Gamma$ synthesising $\tau$. The non-indexed version can be retrieved by $\overline{\S}$. This judgement mimics the Hazel typing rules, while omitting portions of the program which are \textit{type analysed} from the slice.  
 
-To demonstrate, the expression slice of a variable $x$ can only be either $x$, requiring the use of $x : \tau$ from the context:
-\[
-\inference[SVar]{x : \tau \in \Gamma & \tau \neq \dyn}{\synthesisslice{x}{\tau}{[x\mid x:\tau]}}\]
-But if $x : \dyn$, then the (empty) slice $[\gap, \emptyset]$ also synthesises $\dyn$, so instead use this. 
-
-For functions, we can recursively find the slice of the function body (which synthesises it's type in the original rules, hence having a minimum synthesis slice) and place inside a function. 
-If the assumption $x : \tau_1$ was \textit{required} in synthesising that type, then this name must be present in the expression slice and the context slice no longer requires this assumption to type check the sliced function:
-\[\inference[\tiny SFun]{\synthesisslice[\Gamma,x:\tau_1]{e}{\tau_2}{[\varsigma \mid \gamma, x : \tau_1]} }{\synthesisslice{\lambda x:\tau_1.\ e}{\tau_1 \to \tau_2}{[\lambda x : \tau_1.\ \varsigma \mid \gamma]}}\]
-Otherwise, if $\gamma$ does not use variable $x$ then this binding may be omitted:
-\[\inference[\tiny SFunConst]{\synthesisslice[\Gamma,x:\tau_1]{e}{\tau_2}{[\varsigma \mid \gamma]} & x \not \in \mathrm{dom}(\gamma)}{\synthesisslice{\lambda x:\tau_1.\ e}{\tau_1 \to \tau_2}{[\lambda \gap : \tau_1.\ \varsigma \mid \gamma]}}\]
-
-For function applications we can simply omit the argument, while the slice for the function can be obtained as it synthesises it's type.
-\[\inference[\tiny SApp]{\synthesisslice{e_1}{\tau_1}{[\varsigma_1 \mid \gamma_1]}}{\synthesisslice{e_1(e_2)}{\tau}{[\varsigma_1(\gap) \mid \gamma_1]}}\]
-The remaining rules are in \cref{fig:SynthesisSlices}.
-
-It is \textit{expected} \textbf{(Proof TODO)} that these rules do indeed always produce a slice for any expression which synthesises a type, and that this slice is minimal:
+For example, when encountering application, the type of the function is synthesised purely by the function itself, so the argument can be omitted:
+\[\inference{\synthesisslice{e_1}{\tau_1}{\S_1} & \tau_1 \funmatch \tau_2 \to \tau & \S_1 \funmatch \S_2 \to \S & \analysis{e_2}{\tau_2}}{\synthesisslice{e_1(e_2)}{\tau}{\S}}\]
+Where function matching $\funmatch$ is extended to slices by eagerly applying the contexts paired with the slice sub-parts if applicable:
+\[\Cs \funmatch \Cs \to \Cs\]
+\[\Cs_1 * \S_1 \to \Cs_2 * \S_2 \funmatch \Cs_1 \circ \S_1 \to \Cs_2 \circ \S_2\]
+This approach correctly calculates the synthesis slices.
 \begin{conjecture}[Correctness]
 \label{conj:SynthesisSliceCorrectness}
 If $\synthesis{e}{\tau}$ then:
 \begin{itemize}
-\item $\synthesisslice{e}{\tau}{\rho}$ where $\rho = [\varsigma \mid \gamma]$ with $\synthesis[\gamma]{\varsigma}{\tau}$.
-\item For any $\rho' = [\varsigma' \mid \gamma'] \sqsubseteq [e\mid \Gamma]$ such that $\synthesis[\gamma']{\varsigma'}{\tau}$ then $\rho \sqsubseteq \rho'$.
+\item $\synthesisslice{e}{\tau}{\rho}$ where $\rho = \varsigma^\gamma$ with $\synthesis[\gamma]{\varsigma}{\tau}$.
+\item For any $\rho' = \varsigma'^{\gamma'} \sqsubseteq e^\Gamma$ such that $\synthesis[\gamma']{\varsigma'}{\tau}$ then $\rho \sqsubseteq \rho'$.
 \end{itemize}
 \end{conjecture}
-
-\subsubsection{Extension to Type-Indexed Slices}
-This mechanism can be trivially extended to type-indexed slices, where types being synthesised can be replaced by slices directly, i.e. \textit{slice synthesis}. See the appendix \textbf{ref AND FIX}.
-
-The only interesting case is the fact that slices for argument types to functions can now be accessed, so must be represented:
 
 \subsection{Criterion 2: Analysis Slices}\label{sec:AnalysisSlices}
 A similar idea can be devised for analysis slices. Essentially, we do the opposite of \textit{criterion 1} and omit sub-terms where \textit{synthesis} was used. The objective is to show \textit{why} a term is required to be checking against a type.
 
-The useful notion to represent these are \textit{context slices}. It is the terms immediately \textit{around} the sub-term where the type checking is enforced:
-
-For example, when checking this annotated term:
+The way to represent these are \textit{context slices}. It is the terms immediately \textit{around} the sub-term where the type checking is enforced. For example, when checking this annotated term:
 \[(\lambda x. \hole^u) : \code{Bool} \to \code{Int}\]
-The \textit{inner hole term} $\hole^u$ (underlined from now on) is required to be consistent with \code{Int} due to the annotation. The context slice will then be:
+The \textit{inner hole term} $\hole^u$ (underlined) is required to be consistent with \code{Int} due to the annotation. Therefore, the hole's analysis slice will be:
 \[\hlcmaths[yellow!30]{(\lambda} x\hlcmaths[yellow!30]{.} \underline{\hole^u} \hlcmaths[yellow!30]{) : } \code{Bool} \hlcmaths[yellow!30]{\to \code{Int}}\]
 Intuitively, this means that the \textit{contextual} reason for $\hole^u$ to be required to be an \code{Int} is: that it is within a function which the annotation enforced to check against $\code{Bool} \to \code{Int}$, of which only the return type ($\code{Int}$) is relevant.
 
-In other words, if the slice was type synthesised, then the hole term would still be \textit{required} to check against \code{Int}.
+In other words, if the context slice was type synthesised, then the marked term would still be \textit{required} to check against \code{Int}. However, the overall synthesised type may differ.\footnote{The previous example would synthesis $\dyn \to \code{Int}$ as opposed to $\code{Bool} \to \code{Int}$.}
 
-For this criterion we consider only the smallest context that resulted in a term being type checked, for example in the following term:
+
+\subsubsection{Checking Context}
+For this, we only want to consider the smallest context scope\foornote{The \textit{size} of the context around the marked term.} that enforced the type checking. For example, the below term has 3 annotations, but only the inner one enforces the \code{Int} type on the integer 1:
 \[\underline{1} \hlcmaths[yellow!30]{: \code{Int}} : \dyn : \code{Bool}\]
-The context that enforced 1 to be checked against an \code{Int} was \textit{only} the inner annotation. We refer to this as the \textit{checking context}. The term when inside it's checking context will always synthesis a type.\footnote{If it analysed against a type, then this would have it's own checking context. We merge these contexts.}
+I refer to this minimum context scope as the \textit{checking context}, and checking contexts will always synthesise a type. Another way for types to be enforced is via application. The integer argument's type is enforced by the annotation on the function:
+\[\hlcmaths[yellow!30]{(\lambda} x \hlcmaths[yellow!30]{: \code{Int}.}\ \hole^u\hlcmaths[yellow!30]{)(}\underline{1}\hlcmaths[yellow!30]{)}\]
 
-\textbf{These definitions below are verbose and it might be better to just leave it intuitive for this, with definition deferred to appendix.}
 
-To represent this, we use a notion of a types \textit{flowing} from other types inside a derivation, i.e. if a type is decomposed, then it's parts \textit{flow} from the complete type. This can be formalised by creating a \textit{type flow} rules \textbf{(Ref to appendix)}.\footnote{This type flow is closely related to mode correctness.} Under this flow, every checked type $\tau'$ in a derivation has an \textit{origin} synthesis rule producing \textit{first} type which $\tau'$ flows from.
-
-\textbf{Maybe give example?}
-
-Then, the \textit{checking context} we want to consider is that of the conclusion of the rule containing the source of the type:
 \begin{definition}[Checking Context]
 \label{def:CheckingContext}
-For a derivation $\synthesis{e}{\tau}$ containing a sub-derivation $\analysis[\Gamma'']{e''}{\tau''}$ and where the \textit{origin} of $\tau''$ is another sub-derivation $\synthesis[\Gamma']{e'}{\tau'}$. Then either:
+For term $e$ checking against $\tau$: $\analysis[\Gamma]{e}{\tau}$. A checking context for $e$ is an expression context $\C$ and typing assumption context $\F$ such that: 
 \begin{itemize}
-\item $e''$ is a sub-term of $e'$: the checking context of $e''$ is $\C$ such that $e' = \C\{e''\}$.
-\item Otherwise, $\synthesis[\Gamma'']{e''}{\tau''}$ must be a premise in another rule whose conclusion is a synthesis $\synthesis[\Gamma''']{e'''}{\tau'''}$ where $e'$ is a sub-term of $e'''$. The checking context is $\C$ such that $e''' = \C\{e''\}$
+\item $\synthesis[\F(\Gamma)]{\C\{e\}}{\tau'}$ for some $\tau'$.
+\item The above derivation has a sub-derivation $\analysis[\Gamma]{e}{\tau}$.
 \end{itemize}
 \end{definition}
-It is clear that this must then be the smallest context containing derivations of both the \textit{checked expression} and it's \textit{origin}. This checking context can be defined more intuitively using rules (\textbf{see appendix}) and proven to coincide with the definition above.
+\begin{definition}[Minimally Scoped Checking Context]
+For a derivation $\analysis[\Gamma]{e}{\tau}$, it's minimally scoped expression checking context is a checking context of $e$ such that no sub-context is also a checking context.
+\end{definition}
 
-An \textit{analysis slice} is a slice of a checked term's \textit{checking context}:
-\begin{definition}[Analysis Slice]\label{def:analysisslice}
-For a derivation $\synthesis{e}{\tau}$, containing a sub-derivation $\analysis[\Gamma']{e'}{\tau'}$ with checking context $\C$. Then we have that $\synthesis[\Gamma]{\C\{e'\}}{\tau''}$. 
+All possible minimally scoped checking contexts can be constructed syntactically via rules. This coincides with the definition above, but is more amenable to performing proofs on. Given in the appendix \textbf{ref}.
 
-An \textit{analysis slice} of $e'$ is a program context slice $\Cs^f$ such that:
+If $e'$ is a sub-term in a synthesising expression $e$, there will be a unique minimally scoped checking context $\C$ which matches the structure of the original term and typing assumption context $\F$ mapping the context used to type $e'$ to the context used to synthesise $e'$ in it's checking context. 
+\begin{proposition}[Checking Context of a Sub-term in a Derivation]
+If derivation $\synthesis{e}{\tau}$ contains a analysis sub-derivation $\analysis[\Gamma']{e'}{\tau'}$ for sub-term $e'$. Then there is a unique minimally scoped context $\C$ for $e'$ and typing assumption context $\F$ for $\Gamma'$ such that:
 \begin{itemize}
-\item $\Cs$ is a slice of $\C$, that is, $\Cs \sqsubseteq \C$.
-\item $f$ is a slice of $\Gamma' \mapsto \Gamma$. \textbf{Formalise this better...}
-\item $\Cs\{e\}$ synthesises a type consistent\footnote{$e'$ within the sliced context might now synthesise a \textit{less precise} type.} with $\tau''$ under typing context $f(\Gamma')$ and still contains the sub-derivation checking $e'$ against $\tau'$ in checking context $\Cs$:
-\[\synthesis[f(\Gamma')]{\Cs\{e'\}}{\tau'''}, \quad \tau''' \sim \tau'', \quad \analysis[\Gamma']{e'}{\tau'}\]
+\item $\C\{e'\}$ is a sub-term of $e$, or is $e$ itself.
+\item Derivation $\synthesis{e}{\tau}$ contains a sub-derivation for $\synthesis[\F(\Gamma')]{\C\{e'\}}{\tau''}$, or is the derivation itself: $\tau'' = \tau, \C\{e'\} = e,$ and $\F(\gamma') = \Gamma$.
+\end{itemize}
+\end{proposition}
+
+This checking context of a sub-term in a derivation can be calculated during type checking of the term. These checking contexts are what is actually useful for explaining type analysis in a \textit{specific} program.
+
+But, more generally, analysis slices are then a slice of any \textit{minimally scoped checking context}.
+
+\begin{definition}[Analysis Slice]\label{def:analysisslice}
+For a term $e$ analysing against $\tau$: $\analysis{e}{\tau}$, and a checking context $\C^\F$ for $e$. An analysis slice is a slice, $\Cs^\f$, of $\C^\F$ which is also a checking context for $e$. That is:
+\begin{itemize}
+\item $\synthesis[\f(\Gamma)]{\Cs\{e\}}{\tau'}$ for some $\tau'$.
+\item The above derivation has a sub-derivation for $\analysis{e}{\tau}$. 
 \end{itemize}
 \end{definition}
 
 The \textit{minimum analysis slice} is just the minimum under the precision ordering $\sqsubseteq$. And it must be unique:
 
-\begin{conjecture}[Uniqueness]\label{conj:AnalysisSliceUniqueness}
-If $\rho$ and $\rho'$ are \textit{minimum analysis slices} for sub-terms $e'$ of $e$ where $\analysis{e}{\tau}$, then $\rho = \rho'$.
+\begin{conjecture}[Minimum Analysis Slices]\label{conj:AnalysisSliceUniqueness}
+The minimum analysis slice analysing $e$ in a checking context $\C^\F$ is an analysis slice $\p$ such that for any other any other analysis slice $\p'$ is at least as specific, $\p \sqsubseteq \p'$. This minimum always uniquely exists.
 \end{conjecture}
 
-This can again be represented by a judgement read as, \textit{$e$ which type checks against $\tau$ in checking context $\C$ has analysis slice $\p$}:
+This can again be represented by a judgement read as, \textit{$e$ which type checks against $\tau$ in checking context $\C$ has (type-indexed) analysis slice $\S$}:\footnote{Again, non-indexed version retrieved by $\overline{\S}$.}
 \[\analysisslice{\C}{e}{\tau}{\p}\]
 
-There are two situations which enforce \textit{checking contexts}, annotations:
+There are two situations which enforce \textit{checking contexts}, of which application is most interesting, calculating the minimum indexed synthesis slice of the context and retrieving just the sub-slice relevant to typing the \textit{argument}:\footnote{Note that $e_1$ synthesises $\tau_2$ exactly here. Contribution slices consider situations involving subsumption which may synthesise different but consistent types.}
 
-\[\inference{\analysis{e}{\tau}}{\analysisslice{\cmark : \tau}{e}{\tau}{\cmark : \tau}}\]
-And applications, for which we need a slice of the application for the \textit{argument} type of the function, which has previously been devised for \textit{type-indexed synthesis slices} (\textbf{ref}):
-\[\inference{\synthesissliceindexed{e_1}{\p\{\Cs_1^{f_1}\{i_1 \mid \varsigma_1^{\gamma_1}\} \to s_2 \mid \rho\}} & \analysis{e_2}{\type{i_1}}}{\analysisslice{e_1(\cmark)}{e_2}{\type{i_1}}{(\Cs_1\{\varsigma_1\})(\cmark)^{f_1}}}\]
-That is, if $e_1$ synthesises some type $\tau_1 \to \tau_2$ (i.e. $\type{i_1} \to \type{s_2}$), then the slice for $\tau_1$ in the context as a slice $e_1$ is $\Cs_1\{\varsigma_1\}$.
-
-Finally, type analysis rules pass the context down (i.e. sub-terms have the same checking context) and also records that the context now needs to remove the $x:\tau_1$ assumption:
-\[\inference{\analysisslice{\C}{\lambda x.\ e}{\tau_1 \to \tau_2}{\p}}{\analysisslice[\Gamma, x:\tau_1]{\C \circ (\lambda x.\ \cmark)}{e}{\tau_2}{\mathrm{ret}(\p)}\circ(\lambda x.\ \cmark)^{(-)\backslash x:\tau_1}}\]
-\textbf{Todo, case for if x is not needed...}
-
-
-Where $\mathrm{ret}(\p)$ takes the part of the slice that was required in synthesising $\tau_2$, defined in \textbf{appendix}. This direct definition is quite complex; checking against \textit{type-indexed slices} representing the synthesis of $\tau_1 \to \tau_2$ is \textit{much easier}.
+\[\inference{\synthesisslice{e_1}{\tau_1}{\S_1} & \tau_1 \funmatch \tau_2 \to \tau & \S_1 \funmatch \S_2 \to \S & \analysis{e_2}{\tau_2}}{\analysisslice{\C}{e_2}{\tau_2}{(\Cs^\f \mapsto \Cs(\cmark)^\f) \circ S_1}}\]
+Where $(\Cs^\f \mapsto \Cs(\cmark)^\f)$ maps the outer expression slices to context slices matching the input checking context. \textbf{(add this `two-hole-context' to the type-indexed slice section, maybe make type-indexed expression slices explicit.} 
 
 This definition does indeed find the minimum analysis slice:
 \begin{conjecture}[Correctness]\label{conj:AnalysisSliceCorrectness}
-If $\synthesis{e}{\tau}$ with sub-derivation $\analysis{e'}{\tau'}$ in checking context $\C$ then we also have that $\analysisslice{\C}{e'}{\tau'}{\p}$ and:
-\begin{itemize}
-\item $p$ is an analysis slice for $e'$.
-\item For any $\p' = [\Cs' \mid \gamma'] \sqsubseteq [\C\mid \Gamma]$ such that $\p'$ is an analysis slice of $e'$ then $\p \sqsubseteq \p'$.
-\end{itemize}
+If $\C$ is a checking context for $e$ and $\analysis{e}{\tau}$. Then $\analysisslice{\C}{e}{\tau}{\S}$ and $\S$ is the minimum analysis slice of $e$.
 \end{conjecture}
-
-\subsubsection{Extension to Type-Indexed Slices}
-As mentioned previously, using \textit{type-indexed synthesis slices} calculated via \textit{criterion 1} as input makes analysis slices much easier to calculate. 
-
-Additionally, the rules in this form end up being more closely tied to the Hazel typing rules and hence easier to formalise.
-
-\textbf{See appendix}
 
 \subsection{Criterion 3: Contribution Slices}
 \label{sec:ContributionSlices}
-This criterion aims to highlight all regions of code which \textit{contribute} to the given type (either synthesised or analysed). Where \textit{contribute} means that if the sub-term changed it's type, then the overall term would\footnote{No matter which type it was changed to specifically.} also, or would become ill-typed. Importantly, we also consider \textit{contexts} for expression which are analysed, again considering any component terms which having their type changed would result in an error when trying to analyse against the type. For example in the following term:
+This criterion aims to highlight all regions of code which \textit{contribute} to the given type (either synthesised or analysed). Where \textit{contribute} means that there exists a type that if the sub-term changed it's type to, then the overall term would also change type, or would become ill-typed. Importantly, we also consider \textit{contexts} for expression which are analysed, again considering any component terms which having their type changed would result in an error when trying to analyse against the type. For example in the following term:
 
-\[(\lambda f: \code{Int} \to \dyn.\ f(1))(\lambda x : \code{Int}.\ x)\]
-The terms which \textit{contribute} to the \textit{second}\footnote{Underlined below from now on.} lambda term checking successfully against $\code{Int} \to \dyn$ is everything \textit{except} the $x$ term, while context slice is just the annotation (and required structural constructs). Highlighting related to synthesis will be a darker shade:
+\[(\lambda f: \code{Int} \to \dyn.\ f(1))\underline{(\lambda x : \code{Int}.\ x)}\]
+The terms which \textit{contribute} to the \textit{underlined} lambda term checking successfully against $\code{Int} \to \dyn$ is everything \textit{except} the $x$ term, while context slice is just the annotation (and required structural constructs). Highlighting related to synthesis will be a darker shade:
 \[\hlcmaths[yellow!30]{(\lambda} f\hlcmaths[yellow!30]{: \code{Int} \to \dyn}.\ f(1)\hlcmaths[yellow!30]{)}\underline{\hlcmaths[yellow!70]{(\lambda} x \hlcmaths[yellow!70]{: \code{Int}.}\ x\hlcmaths[yellow!70]{)}}\]
 
 Notice that, in any typing derivation the only sub-terms which \textit{can} have their type changed without causing the rule to no longer apply are those which use type \textit{consistency}.\footnote{Note that this logic does \textit{not} extend to globally inferred languages.} The only such rule is \textit{subsumption}. Further, the only time a term could be changed to \textit{any} type and still remain valid is when it is checked for consistency with the dynamic type $\dyn$.
@@ -414,16 +381,23 @@ A \textit{contribution slice} of $e'$ is an \textit{analysis slice} for $e'$ in 
 \end{itemize}
 A contribution slice for a sub-term $e''$ involved in sub-derivation $\synthesis[\Gamma'']{e''}{\tau''}$ where $e'' \neq e'$ is an expression typing slice $\varsigma''^{\gamma''}$ which also synthesises $\tau''$ under $\gamma''$, that $\synthesis[\gamma'']{\varsigma''}{\tau''}$. Further, any sub-term of $e''$ which has a contribution slice of the above variety, is replaced inside $\varsigma$ by that corresponding expression typing slice.
 \end{definition} 
-This is most naturally calculated using \textit{type-indexed slices} exactly replicating the Hazel typing rules:
+The synthetic parts of these slices can be calculated in exactly the same way as synthesis slices, except now also considering the \textit{subsumption} rule. The analytic parts are regular analysis slices.
 
-\textbf{Think more about type indexed context slices. Think how to reconstruct }
+The subsumption rule synthesises a type for some term, then checks consistency with the checked type. This is where the dynamic portions can be omitted, to give a contribution slice for the checked term. Representing contribution slices with the judgement $\contributionslice{e}{\tau}{\S}$ and $\contributionanalysisslice{\C}{e}{\tau}{\S_e}{\S_c}$, where $\S_e$ is the expression slice part and $\S_c$ is the contextual part:
+
+\[\inference{\contributionslice{e}{\tau}{\S_s} & \tau \sim \tau' & \analysisslice{\C}{e}{\tau'}{\S_c}}{\contributionanalysisslice{\C}{e}{\tau'}{\mathrm{static}(\S_c, \S_s)}{\S_c}}\]
+Where static is takes omits the \textit{right} (synthetic) slice parts where \textit{left} (analytic) slice is a leaf but the right is not. As the types are consistent, these leaves will be the unknown type. This means that portions of the synthetic part of the slice which match against $\dyn$ will be omitted: \textbf{SHOW A DIAGRAM}
+\[\mathrm{static}(\p, \p') = \p'\]
+\[\mathrm{static}(\p, \_ \to \_) = \gap^\emptyset\]
+\[\mathrm{static}(\Cs_1 * \S_1 \to Cs_2 * \S_2,\ \Cs_1' * \S_1' \to Cs_2' * \S_2') = \Cs_1 * \mathrm{static}(\S_1, \S_1') \to \Cs_2' * \mathrm{static}(\S_2, \S_2')\]
+
 \newcommand{\s}{\mathdcal{s}}
 \begin{figure}[h]
 \[\inference[\tiny SConst]{}{\synthesissliceindexed{c}{b\mid c}} \quad
 \inference[\tiny SVar]{x : \tau \in \Gamma}{\synthesissliceindexed{x}{\mathrm{map}{(x^{\{x:\tau\}}, \tau)}}}\]
 \[ 
 \inference[\tiny SFun]{s_1 = (\gap : \cmark)\circ \mathrm{annot}(\tau_1) &\synthesissliceindexed[\Gamma,x:\tau_1]{e}{s_2}\\ s_2 = i_2 \mid \varsigma^\gamma & x \match{\gamma} p}{\synthesissliceindexed{\lambda x:\tau_1.\ e}{(\lambda \cmark.\ \gap) \circ s_1 \to (\lambda p : \tau_1.\ \cmark) \circ s_2 \mid (\lambda p : \tau_1.\ \varsigma)^{\gamma\backslash x:\tau_1}}}\]
-\textbf{TODO: fix SFun annotations for the argument slice, they need to remove unused requirements?}
+\textbf{TODO: UPDATE THIS FIGURE, move to appendix!!}
 \[\inference[\tiny SApp]{\synthesissliceindexed{e_1}{s_1} & s_1 \funmatch s_2 \to s \\ \analysissliceindexed{e_2}{s_2(\cmark)}{s_2'}}{\synthesissliceindexed{e_1(e_2)}{\text{app}(s_2')}}\]
  
 \[\inference[\tiny SEHole]{}{\synthesissliceindexed{\hole^u}{\dyn \mid \hole^u}} \quad \inference[\tiny SNEHole]{\synthesissliceindexed{e}{\p\{i \mid \varsigma^\gamma\}}}{\synthesissliceindexed{\hole[e]^u}{\dyn \mid {\hole[\varsigma]^u}^\gamma}}\]
@@ -436,38 +410,25 @@ This is most naturally calculated using \textit{type-indexed slices} exactly rep
 \label{fig:ContributionSliceRules}
 \end{figure} 
 
-Where $\mathrm{map}(\rho, \tau)$ creates a type-indexed slice of type $\tau$ with the slice context $\cmark$ and expression typing slice $\rho$ tagged on all components of $\tau$. Annot is as defined in criterion 1 extended to type-indexed slices. $x \match\gamma = p$ matches $p$ with $x$ if $x \in \text{dom}(\gamma)$, otherwise returns $\gap$. $\funmatch$ is extended to slices as follows:
-\[\p\{s_1 \to s_2 \mid \rho\} \funmatch \p\circ s_1 \to \p \circ s_2\]
-\[\p\{\dyn \mid \rho\} \funmatch \p\{\dyn \mid \rho\} \to \p\{\dyn \mid \rho\}\]
-static replaces a (sub)slice term if it is in the position of a $\dyn$ on the input. Reconstructing the term is just taking the join down one level \textbf{(PROVE This)}. 
-
-\subsection{Join Types}\label{sec:JoinTypesTheory}
-The Hazel core calculus is very primitive, only consisting of \textit{base types}, \textit{annotations}, and \textit{functions}. Extensions to gradual types \cite{GradualJoins}, and Hazel \cite{MarkedLocalisation}\footnote{Here as the \textit{meet} of the opposite of my \textit{precision} order.}: \textit{if} expressions, \textit{pattern matching}, \textit{sum types} etc. all require\footnote{Or are easiest formulated with.} \textit{join types}. 
-
-A join of two types $\tau_1 \sqcup \tau_2$ (if one exists) is the least precise (most general) type that more precise than both $\tau_1, \tau_2$: that $\tau_1 \sqsubseteq \tau_1 \sqcup \tau_2$ and $\tau_1 \sqsubseteq \tau_1 \sqcup \tau_2$. Therefore, the join is therefore is consistent with both $\tau_1, \tau_2$. Type consistency can be reformulated in terms of joins: $\tau_1, \tau_2$ are consistent \textit{if and only if} they have a join. This is the \textit{order-theoretic} \textbf{(cite)} join with respect to the precision partial order on types. 
-For example, the type of an \textit{if statement} would be the join of the types of it's branches.
-
-These add an additional way to generate a \textit{new type} other than by synthesis or from annotations. 
-
-Hence, type flow needs to be extended to allow these. Equally, slices themselves can be joined if they have common contexts (though there is a decision whether to include both branches of a join).
 
 \subsection{Type-Indexed Slicing Context}
 \label{sec:TypeSliceContext}
-It seems natural to extend the typing context to a type-indexed slicing context. Then, when accessing typing assumptions via variable references, the source information about the derivation for this type is revealed. But, the problem is, there is no context propagated, these slices are slices of the orignal term; propagating all this would be a big pain.
+It seems natural to extend the typing context to become a type-indexed slicing context. Then, when accessing typing assumptions via variable references, the slice information which derived this type can be revealed. But, as no context is propagated, the slices would have no .
 
 \section{Cast Slicing Theory}\label{sec:CastSlicingTheory}
+\textbf{This section is not written yet, but will be very short... The only addition is cast dependence, which is literally just a partial order on casts through dynamics.}
 
-Fairly trivial, just treat slices as types and decompose accordingly. The whole reason of indexing by type was to allow this.
+Fairly trivial, just treat tag types in casts with their slices and decompose accordingly.
 
 The idea of it being a minimal expression typing slice producing the same cast doesn't really work here due to dynamics. Explore the maths of this. Either way, it is a useful construct in practice. Exploring this in more detail, looking at \textit{dynamic program slicing} could be a good future direction.
 
-\textbf{Mention and compare with blame tracking}
+\textbf{Mention and compare with blame tracking?}
 
 \subsection{Indexing Slices by Types}
 
 
 \subsection{Elaboration}
-All casts inserted come from type checking, so can be sliced
+All casts inserted come from type checking, so can be sliced.
 
 \subsection{Dynamics}
 Ground type casts will be added, but their addition is purely technical and we can treat their reasoning to just be extracting the relevant portion of the original non-ground type.
@@ -504,9 +465,6 @@ Every term (and sub-term) is annotated with an \textit{identifier} (ID, \code{Id
 I detail here \textit{how} and \textit{why} I implement type slices for Hazel.
 
 \subsubsection{Expression slices as ASTs}
-\textbf{Actually the below might be inaccurate, check the structure of the typing system to see if we would ever need to re traverse an AST?}
-
-\textbf{Either way, there is opportunity to speak about persistence with how type slices are combined and decomposed and how they overlap. etc.}
 
 Directly storing expression slices directly as ASTs is both \textit{space and time inefficient}. The AST type is a persistent data structures \cite[ch. 2]{PurelyFunctionalDataStructures}, meaning that any update to the tree will retain both the old and updated tree. All nodes on the path to the updated sub-tree must be copied; for example, \cref{fig:PersistentTrees} shows how a node G (in blue) can be sliced off from the tree while the old tree (in black) and the new tree (in red) both persist and share some unmodified nodes structurally. Expression slices do exactly this slicing operation extensively, so would require significant copying.
 \begin{figure}[h]
@@ -514,8 +472,6 @@ Directly storing expression slices directly as ASTs is both \textit{space and ti
 \caption{Persistent Tree}
 \label{fig:PersistentTrees}
 \end{figure}
-
-\textbf{Maybe talk about a destructive version (always retain the original tree but from the perspective of various cursors}
 
 There are ways to partially avoid this, for example the \textit{Zipper} data structure represents trees by from the perspective of a \textit{cursor} node rather than the \textit{root}. The part of the tree above the cursor is stored as an \textit{upside-down}. This allows the cursor to be 
 
@@ -532,7 +488,12 @@ However, we still have to copy nodes when shifting the cursor; during type-check
 \label{fig:PersistentZipper}
 \end{figure}
 
-However, the biggest issue is that expressions slices have \textit{multiple} gaps, so cannot be represented by a \textit{one}-hole context. Further, the slices vary in their number of holes, so generalising one-hole contexts to two-hole contexts etc. is not an option as each would require it's own distinct type. There are extensions to zippers allowing multiple holes which would work, \textit{multi-zippers} \cite{MultiZipper} for example, but has large constant overhead and would be very complicated to implement for such an extensive AST.
+
+\textbf{NOTE: Actually the below might be inaccurate, I think I'm confusing myself with persistence. I think I could actually space-efficiently construct contextual and synthetic slices.}
+
+\textbf{Either way, there is opportunity to speak about persistence with how type slices are combined and decomposed and how they overlap. etc. ?}
+
+\textbf{The benefits of unstructured slices being more flexible apply either way. Plus, I don't actually need the slice structure for highlighting terms. Plus ids take up less space by a constant factor anyway.}
 
 \subsubsection{Unstructured Code Slices}
 With this in mind, given that the structure of expression slices does not actually matter for highlighting\footnote{Only matters for type checking slices, which always succeeds by design.}, I represent slices indirectly by these IDs in an \textit{unstructured} list, referred to now as a \textit{code slice} (\code{code_slice} type).
@@ -772,11 +733,8 @@ Type inconsistency error checking can be extended to type slices via using type 
 \textbf{Sum types are the hardest to work with, describe general design and difficulties in all the previous parts.}
 
 \subsection{User Interface}
-Click on analysis or synthesis slices from context inspector
-
+Type slice of selected expression is shown.
 Show figures.
-
-\textbf{Implement UI from cursor inspector. Implement disabling of slicing.}
 
 \section{Cast Slicing Implementation}\label{sec:CastSlicingImplementation}
 To implement cast slicing, I replace casts between \textit{types} by casts between \textit{type slices}. The required type-indexed nature of type slices is already implemented, allowing these casts the be decomposed.
@@ -848,7 +806,7 @@ Difficulties in ensuring id tags for slices are not subtly aliased during elabor
 \label{sec:EVMode}
 This section describes in detail the evaluator abstraction present in hazel, which allows ...
 
-Very complex!!! The reader could skip this section, it is purely technical.
+\textbf{Note: Very complex!!! I probably need to ask whoever made it what the terminology means/to give a simple explanation. The reader could skip this section, it is purely technical. In fact, given word count might be removed entirely, even though it is interesting technically.}
 
 \section{Indeterminate Evaluation}\label{sec:IndetEval}
 Dynamic type errors may only occur when an expression is given \textit{specific} inputs. However, a dynamic error is accompanied by an evaluation trace, which is often a \textit{useful debugging aid} \cite{TraceVisualisation}. When debugging static type errors, traces leading to a corresponding dynamic error are normally \textit{unavailable}.\footnote{As an ill-typed program will not run.} This section concerns the building blocks leading up to a search procedure that finds inputs which lead to dynamic errors \textit{automatically}.
@@ -1243,7 +1201,7 @@ in f(x)
 A static type error will place a term inside a cast error during elaboration. The id of this error can be tracked, and if it is the one at fault, associated with the static error. Additionally, the type slice enforcing the cast is tracked via cast slicing, and may be displayed as usual.
 
 \subsection{Searching Methods}\label{sec:SearchMethods}
-\textbf{Does interleaved DFS actually perform DFS? Reimplement both DFS and Interleaved DFS? Do I even need fair choice and conjunction?}
+\textbf{Note: Should remove fair choice and conjunction, in favour of it just being an interleaved search method (see interleaved DFS below)}
 
 I implement \textit{four} different search methods, implementing the non-determinism signature specified in \cref{sec:ResolvingNondeterminism}.
 
@@ -1279,7 +1237,7 @@ Additionally, another law for non-determinism \code{fail >>= f = fail}, complete
 
 As mapping and choice are associative, we get that conjunction is also. Additionally, it satisfies all the remaining monad and non-determinism laws. 
 
-However, as \code{f} is mapped to the entire bag \code{b}, it is difficult to maintain laziness in OCaml. We need partial applications for f... \textbf{TODO - explain how to do this in OCaml?!?!}
+However, as \code{f} is mapped to the entire bag \code{b}, it is difficult to maintain laziness in OCaml. We need partial applications for f... \textbf{TODO - can't actually work out how to do this in OCaml?!?!}
 
 \subsubsection{Iterative Deepening Depth First Search}
 While breadth first search is fair, avoiding non-termination (for finite branching factor), it has \textit{exponential} space complexity in the depth of the level being explored \cite{NorvigAI}. When binding a function \code{f}, it gets lazily and \textit{partially} instantiated at node of each level, tracking these partial instantiations is what causes the exponential complexity.
