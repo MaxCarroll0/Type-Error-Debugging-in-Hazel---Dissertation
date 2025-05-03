@@ -434,6 +434,7 @@ All casts inserted come from type checking, so can be sliced.
 Ground type casts will be added, but their addition is purely technical and we can treat their reasoning to just be extracting the relevant portion of the original non-ground type.
 
 \subsection{Cast Dependence}
+\label{sec:CastDependence}
 This in combination with the indexed slices could have some nice mathematical properties.
 
 Though, these would need to retrieve information about parts of slices that were lost when decomposing slices. i.e. when a slice $\tau_1 \to \tau_2$ extracts the argument type $\tau_2$, the slicing criteria lose track of the original lambda binding. A way to reinsert these bindings such that we get a minimal term which \textit{Evaluates to the same cast} e.g. But this will have lots of technicalities with correctly tracking the restricted contexts $\gamma'$ for closures (i.e. functions returning functions which have been applied once). \textbf{TALK ABOUT THIS IN THE FURTHER DIRECTIONS SECTION.}
@@ -496,6 +497,7 @@ However, we still have to copy nodes when shifting the cursor; during type-check
 \textbf{The benefits of unstructured slices being more flexible apply either way. Plus, I don't actually need the slice structure for highlighting terms. Plus ids take up less space by a constant factor anyway.}
 
 \subsubsection{Unstructured Code Slices}
+\label{sec:UnstructuredSlices}
 With this in mind, given that the structure of expression slices does not actually matter for highlighting\footnote{Only matters for type checking slices, which always succeeds by design.}, I represent slices indirectly by these IDs in an \textit{unstructured} list, referred to now as a \textit{code slice} (\code{code_slice} type).
 
  Additionally, this has the side effect of allowing more \textit{granular} control over slices, as they now need not conform with the structure of expressions which is taken advantage of to reduce slice size, \textbf{(ref to section discussing this + evaluation)}.
