@@ -67,8 +67,8 @@ The program corpus contains \textbf{698} programs of which \textbf{203} were app
 \begin{figure}
 \centering
 \begin{tabular}{c|ccccc}
-& \textbf{Count} & \multicolumn{2}{c}{\textbf{Prog. Size}}& \multicolumn{2}{c}{\textbf{Trace Length}}
-&  && Avg. & Std. dev. & Avg. & Std. dev.\\
+& \textbf{Count} & \multicolumn{2}{c}{\textbf{Prog. Size}}& \multicolumn{2}{c}{\textbf{Trace Length}}\\
+&  & Avg. & Std. dev. & Avg. & Std. dev.\\
 \hline
 \textbf{Unannotated} &404 &117 &81 &9&9\\
 \textbf{Annotated} &294 &117 &76 &9&9\\
@@ -155,9 +155,9 @@ Additionally, for errors, there will be multiple inconsistent slices involved. \
   \caption{Effectiveness: Type Slices}
 \label{fig:TypeSlicingEffectiveness}
 \end{figure}
-Casts have a pair of slices, \textit{from} a type and \textit{to} a type, both of which are smaller on average (\cref{fig:CastSlicingEffectiveness}) than type slices. This is because casts are split between ground types, i.e. to a `dynamic function' type, resulting parts of the type information being spread out over a number of casts; therefore, casts are can more precisely point to which part of an expressions type caused them.
+Casts have a pair of slices, \textit{`from'} a type and \textit{`to'} a type, both of which are smaller on average (\cref{fig:CastSlicingEffectiveness}) than type slices. This is because casts are split between ground types, i.e. to a `dynamic function' type, resulting parts of the type information being spread out over a number of casts; therefore, casts are can more precisely point to which part of an expressions type caused them.
 
-Unnanotated code has larger \textit{from} slices as it relies more on synthesis for typing code, and vice versa for annotated code.
+Unnanotated code has larger \textit{`from'} slices as it relies more on synthesis for typing code, and vice versa for annotated code.
 
 
 
@@ -166,7 +166,7 @@ Unnanotated code has larger \textit{from} slices as it relies more on synthesis 
   \begin{tabular}{lc|cc|cc}
   \multicolumn{2}{c}{\textbf{Averages}} & \multicolumn{4}{c}{\textbf{Subdivisions}}\\
   & & \multicolumn{2}{c|}{\textbf{Ok}} & \multicolumn{2}{c}{\textbf{Errors}}\\ 
-   & unit & to & from & to & from &
+   & unit & to & from & to & from\\
    \hline
    \textbf{Cast Slice} & size &  5.5 & 1.2 & 5.9 & 1.5 \\
    Std. dev. &  				 &  8.1 & 3.7 & 7.1 & 2.0\\
@@ -298,17 +298,18 @@ However, some portions of the type may be consistent, not causing to the error. 
 \label{fig:ErrorSlice}
 \end{figure}
 
-Additionally, when the inconsistent parts are compound types, they must differ at their \textit{outermost} constructor (i.e. a \code{List} vs an \code{Int}). This can be considered the \textit{primary} cause of the error, inconsistencies deeper within the type were not the ones causing the error. These minimised slices (\cref{fig:MinimisedSlice}) were significantly smaller than naively combining the full slices (by 3x, see \fig{SlicingEffectiveness}); there would be an even larger ratio for more complex programs.\footnote{The corpus has few \textit{partially} inconsistent errors.}
+Additionally, when the inconsistent parts are compound types, they must differ at their \textit{outermost} constructor (i.e. a \code{List} vs an \code{Int}). This can be considered the \textit{primary} cause of the error, inconsistencies deeper within the type were not the ones causing the error. These minimised slices (\cref{fig:MinimisedSlice}) were significantly smaller than naively combining the full slices (by 3x, see \cref{fig:SlicingEffectiveness}); there would be an even larger ratio for more complex programs.\footnote{The corpus has few \textit{partially} inconsistent errors.}
 
 
 \begin{figure}[h]
-\begin{subfigure}{0.45\textwidth}
+\centering
+\begin{subfigure}{0.3\textwidth}
 \centering
 
 \includegraphics[width=1\textwidth]{Media/Figures/partially_inconsistent_compound}
 \caption{Minimised Error Slice: Inner \code{Int} slice within list is omitted}
-\end{subfigure}$\qquad$
-\begin{subfigure}{0.45\textwidth}
+\end{subfigure}$\qquad\qquad$
+\begin{subfigure}{0.3\textwidth}
 \centering
 
 \includegraphics[width=1\textwidth]{Media/Figures/partially_inconsistent_compound_ordinary}
@@ -320,7 +321,7 @@ Additionally, when the inconsistent parts are compound types, they must differ a
 \end{figure}
 
 \subsection{Structure Editing}\label{sec:StructureEditing}
-Hazel uses a structure editor with an update calculus \cite{HazelStructureCalculus}. Statics are recalculated upon edits and even \textit{cursor movements}. \Cref{fig:SlicingPerformance}. While type checking with slices is still very fast, it is not so suitable for such a rapid use case.
+Hazel uses a structure editor with an update calculus \cite{HazelStructureCalculus}. Statics are recalculated upon edits and even \textit{cursor movements}. While type checking with slices is still very fast, it is not so suitable for such a rapid use case in larger programs.
 
 Parsing and structural edit actions are made efficient\footnote{Constant time.} by use of a zipper data structure \cite{HuetZipper, OneHoleContext}. It might be possible to extend this zipper idea into the abstract syntax tree and it's statics (typing information), allowing local changes (and type changes) to propagate in the AST zipper. However, some local changes can propagate type changes \textit{non-locally} (e.g. inserting a new binding) which would require extensive recalculation of the typed AST. These non-local updates would be relatively rare. This is very complex and would require an entire rewrite of the Hazel statics, but would be beneficial for Hazel in general, not just type slicing.
   
@@ -330,20 +331,28 @@ Parsing and structural edit actions are made efficient\footnote{Constant time.} 
 However, static errors caused by synthesised branches being inconsistent, do not actually directly cause cast errors. Such errors will only be detected if both branches are used within a static context during the same evaluation path. The search procedure might find such cases if they exist, but cannot associate it back to the static error. Elaborating these terms does adds casts: on each branch to the dynamic type; these could be associated together with the error and tracked accordingly. 
   
 \subsection{Categorising Programs Lacking Type Error Witnesses}
-The 45 programs which timed out under the BDFS search procedure were manually inspected and classified as either:
+47 programs which timed out under the BDFS search procedure were manually inspected and classified as either:
 \begin{itemize}
 \item Witness Exists: BDFS failed to find an existing witness.
 \item Dead Code: The error was in unreachable code by any type consistent instantiations. These then subclassified into:
 \begin{itemize}
-\item Pattern Cast Failure: An error was within a pattern matching branch, making the branch unreachable. These cast failures would be found by an extended pattern directed instantiation algorithm (\cref{sec:ExtendedPatternMatching}).\footnote{Where inconsistent patterns would be attempted, and subsequently reduced to concrete cast failures in expressions.}
-\item Wildcards: Trivially dead code bound to no variable, i.e. a 
+\item Pattern Cast Failure: An error was within a pattern matching branch. This additionally makes the branch unreachable. These cast failures would be found by an extended pattern directed instantiation algorithm (\cref{sec:ExtendedPatternMatching}).\footnote{Where inconsistent patterns would be attempted, and subsequently reduced to concrete cast failures in expressions.}
+\item Unbound Constructor: A pattern matching branch matching an unbound constructor. These unbound errors are also detectable with extended pattern directed instantiation.
+\item Wildcards: Error within trivially dead code bound to the inaccessible wildcard pattern: \code{let _ = ... in ...}.
 \item Non-Trivial: Dead code which is less easily detectable. There was only one example which was due to infinite recursion for all inputs.
 \end{itemize}
 \item Hazel Bugs: Evaluation errors encountered stemming from \textit{unboxing bugs} in the main branch of Hazel. These were excluded from the statistics.
 \end{itemize}
-Three (paraphrased) examples given in \cref{fig:FailureExamples}, with the full classification in \texttt{failure-classification.txt}. 
+\Cref{fig:FailureDistribution} shows this distribution and three (paraphrased) examples are given in \cref{fig:FailureExamples}. The full classification is in \texttt{failure-classification.txt}.
 
 \begin{figure}[h]
+\centering
+\includegraphics[width=1\textwidth]{Media/Figures/Failures}
+\caption{Distribution of Failed Program Classes}
+\label{fig:FailureDistribution}
+\end{figure}
+
+\begin{figure}
 \centering
 \begin{subfigure}{1\textwidth}
 \includegraphics[width=1\textwidth]{Media/Figures/witness_exists}
@@ -369,69 +378,69 @@ Product arity inconsistency is present in inaccessible code bound to the wildcar
 
 \label{sec:SearchCategories}
 \subsubsection{Non-Termination, Unfairness, and Search Order}
-DFS is fast, but has significant insurmountable issues with non-termination, resulting in it having worse coverage than BDFS (\cref{fig:PieChart}). Any time evaluation goes into an infinite loop, no more instantiations can be explored. Bounded DFS, BFS, and interleaved DFS, were implemented in response to this. With BDFS performing best due to preference of evaluation over instantiation (and it's lesser memory footprint \cref{fig:SearchPerformance}).
+DFS is fast, but has significant insurmountable issues with non-termination, resulting in it having worse coverage than BDFS (\cref{fig:PieChart}). Any time evaluation goes into an infinite loop, no more instantiations can be explored. Similarly, DFS will never backtrack to try previous instantiations, for example instantiating a pair of integers \code{(}\dyn\code{, }\dyn\code{)} would only try \code{(0,}\dyn\code{)}, \code{(0, 0)}, \code{(0, 1)}, \code{(0, -1)}, \code{(0, 2)} etc. but never \code{(1, 0)} for example (\cref{fig:DFS}). This was a common issue, occurring in 10\% of the search corpus. Bounded DFS, BFS, and interleaved DFS, were implemented in response to this. With BDFS performing best due to preference of evaluation over instantiation (and it's lesser memory footprint: \cref{fig:SearchPerformance}).
 
-BFS and IDFS would do significantly better if the search algorithm was tweaked to less frequently wrap deeper in the search tree, effectively reducing the \textit{cost} of evaluation. For example, it could wrap evaluation in one extra search depth only once every 10 steps, allowing 10 steps of evaluation to be explored for every instantiation. This is a delicate balancing act.
-\subsubsection{Repeated Instantiations}
-Sometimes, a hole can get repeatedly refined to increasingly specific types without ever actually causing a cast error, see \cref{fig:InfiniteInstantiations}. This situation would be caught statically, but cannot actually directly lead to a cast error.\footnote{So is not classified as having a witness under these semantics.} 
-
-\begin{figure}[h]
+\begin{figure}[H]
 \centering
-See the `safe' list example from Seidel.
-\caption{Instantiations of Increasingly Specific Types Loop}
-\label{fig:InfiniteInstantiations}
+\includegraphics[width=1.25\textwidth, trim={15cm 10cm 10cm 10cm},clip]{Media/Figures/DFS}
+\caption{Non-exhaustive Instantiations in DFS}
+\label{fig:DFS}
 \end{figure}
+BFS and IDFS would do significantly better if the search algorithm was tweaked to less frequently wrap evaluation steps deeper in the search tree, effectively reducing the \textit{cost} of evaluation. For example, it could wrap evaluation in one extra search depth only once every 10 steps, allowing 10 steps of evaluation to be explored for every instantiation. This is a delicate balancing act.
 
-\subsubsection{Dead Code}
-Dead code may contain or be involved in static type errors, but is unreachable dynamically, such static errors have no dynamic witness. Dead code detection \cite{DeadCodeDetection} could alert the user of this.
+\subsubsection{Dead Code \& Nested Errors}
 
-Pattern matching instantiation helps
+Dead code caused most time outs for the search procedure using BDFS. Errors within dead code cannot have a witness as they are not dynamically reachable. Therefore, dead code analysis will reduce timeouts.
 
-\subsubsection{Dynamic Match Statements}
-Current instantiation removes failed casts found here...
+Additionally, code can become dead due to errors. For example, 12 (32\%) of the dead code failed searches had a nested error within a branch which was unreachable due to an error\footnote{Unbound constructor or inconsistent expectations.} within the branch pattern. Even if we find witnesses for these branch errors, the nested errors will still be unreachable.
+
 
 \subsubsection{Dynamically Safe Code}
-Some code with static errors is inherently dynamically safe, the typical example being \code{if true then 0 else "str"}. These should have \textit{no} dynamic witness. 
+Some code with static errors is inherently safe dynamically, the typical example being:\\ \code{if true then 0 else "str"}. These have \textit{no} dynamic witness, and the search procedure can often prove this by running out of possible instantiations: BDFS proved no witness 12\% of the time. 
 
-Early versions of the search procedure would incorrectly detect cast failures that were inserted statically during elaboration, but weren't actually causing dynamic, leading to dynamically safe code being incorrectly asserted as an error. \Cref{sec:CastFailureDetection} detailed how cast errors were detected \textit{correctly}.
+However, in general, the procedure may repeatedly instantiate infinitely many witnesses in dynamically safe code, and thereby not terminating. This is fine as the no witness exists, but the user cannot be sure in this situation.
 
-\subsubsection{Cast Laziness}
-Currently only allow ground type inconsistency. Not a single example in the codebase had non-ground inconsistency!
+\subsubsection{Cast Laziness}\label{sec:EvalCastLaziness}
+Hazel treats casts lazily, only pushing casts on compound data to their elements upon usage. The instantiation procedure is therefore unable to instantiate parts of compound data until it is de-structured: for example, extracting the first element of a tuple. Further, Hazel does not detect cast errors between non-ground compound types (e.g. \code{[Int]} and \code{[String]}). Therefore, type inconsistencies between such types will not be found by the search procedure. These errors are less common, in the search corpus there were \textit{no} programs exhibiting this.
+
+Fixing this requires reworking the Hazel semantics to be based around eager casts. Dynamic type systems with this cast semantics have been explored \cite{EagerCasts} and applied also to gradual type systems \cite{GradualEagerCasts}.\footnote{These papers refer to eager casts as \textit{coercions}.} Alternatively, instantiation could be performed less lazily, using more sophisticated methods to determine a holes type (accumulating information over \textit{multiple} casts). This would significantly expand the search space, and still require some form of eager cast failure checking.
+
+The eager cast semantics would be able to detect more dynamic errors at an earlier point in execution. For example, \cref{fig:LazyCastError} shows an expression which evaluates to casts between inconsistent types, yet does not realise there is an error yet. The error is only found when extracting the second element.
+\begin{figure}[h]
+\centering
+\includegraphics[width=0.55\textwidth]{Media/Figures/cast_laziness_no_error}
+\caption{Inconsistent Lazy Casts: No Cast Failure}
+\label{fig:LazyCastError}
+\end{figure}
 
 \subsubsection{Combinatorial Explosion}
-Some programs have cast errors that are intricately dependent on specific instantiations. These casts only manifest within a branch which requires very specific inputs. When multiple holes are involved, this is an even bigger issue, as the search space increases exponentially in the number of holes.
+When multiple holes are involved when searching, the search space increases exponentially.
 
-The fact the a large proportion of programs which failed due to insufficient time or space had lower code coverage (\cref{fig:CodeCoverage}), suggests that this might be the reason behind a large proportion of the failures.
+Combinatorial explosion clearly has a particularly big affect on IDFS and BFS, who prioritise trying different instantiations over evaluating. The space usage then becomes a big bottleneck on speed, causing the witnesses (which have been instantiated by now) to not actually evaluate far enough to detect the error.
 
+Further, some errors will only occur for very specific inputs, for example only for \code{(23, 31)} and \code{(31, 23)} in \cref{fig:SpecificInstantiations}. Directing instantiation to maximise code coverage earlier would result in these errors to be found attempting fewer instantiations.
 \begin{figure}\centering
-Pair of single inputs leading to cast error
-\caption{Branch Requiring Specific Instantiations}
+\includegraphics[width=0.6\textwidth]{Media/Figures/very_specific_error}
+\caption{Witness Requiring Very Specific Instantiations}
 \label{fig:SpecificInstantiations}
 \end{figure}
 
-Combinatorial explosion clearly has a particularly big affect on IDFS and BFS, who prioritise trying different instantiations over evaluating. The space usage then becomes a big bottleneck on speed, causing the witnesses (which have been instantiated by now) to not actually evaluate far enough to detect the error. The balance between instantiating vs evaluation could be tweaked to improve the two.
-
 \subsection{Improving Code Coverage}
 \label{sec:EvalHoleInstantiation}
-Of the discussed classes of programs lacking a type error witness (\cref{sec:SearchCategories}), only one actually had concrete witnesses that were not found within the time limit. This was due to the solution being a small number of possible instantiations within a large search space. I pointed out that that the search procedure had lower code coverage in these situations, and the possible cast error is likely to be in portions of the code that were \textit{missed}.
+Of the discussed classes of programs lacking a type error witness (\cref{sec:SearchCategories}), only 3 actually had concrete witnesses that were not found within the time limit. These occurred as the instantiations generated did not happen to take the branches involving the error.
 
-These errors require rather specific, often interdependent, inputs to be missed by the current search procedure. Therefore, it is likely that programmers are \textit{also} more likely to not notice errors (in dynamic code), or not understand the errors (in static code).\footnote{After all, spotting the error might require understanding interdependent inputs.}
+These errors often require rather specific, interdependent, inputs to be missed by the current search procedure. Therefore, it is likely that programmers are \textit{also} more likely to not notice errors (in dynamic code), or not understand the errors (in static code).\footnote{After all, spotting the error might require understanding interdependent inputs.}
 
-Intelligently directing hole instantiations to better explore the code would help. Purely structural pattern-directed instantiation was discussed in \cref{sec:ExtendedPatternMatching}, but was not found to significantly increase code coverage nor reduce failed searches. This might be because the examples involving very specific inputs in the corpus happen to be mostly to do with \textit{if} statements, rather than \textit{match} statements.
+Intelligently directing hole instantiations to better cover the code would help here. Symbolic execution and program test generation is a well-researched area with numerous dedicated constraint solvers \cite{CITE MANY HERE} and translations to theories for SMT solvers \cite{CITE}.
 
-In order to extend this structural pattern-directed instantiation to worth also with base types (integers), requires more efficient ways to representing constraints. To extend this to include floats, inequalities, list lengths, etc. requires full-blown symbolic execution \cite{SymbolicExecutionSurvey}. 
+One form of this, purely structural pattern-directed instantiation, discussed in \cref{sec:ExtendedPatternMatching}, would have discovered 2 of the 3 missed witnesses by BDFS. In order to extend this structural pattern-directed instantiation to worth also with base types (integers), requires more efficient ways to representing constraints. To extend this to include floats, inequalities, list lengths, etc. requires full-blown symbolic execution \cite{SymbolicExecutionSurvey}. 
 
-Symbolic execution and program test generation is a well-researched area with numerous dedicated constraint solvers \cite{CITE MANY HERE} and translations to theories for SMT solvers \cite{CITE}. However, even without this, the search procedure still retains a high coverage, finding most errors.
-
-\begin{figure}\centering
-Proportions found using iterative deepening under the time limit. Also, code coverage comparison.
-\caption{Pattern-directed Hole Instantiation Using Iterative Deepening}
-\end{figure}
+However, even without this, the BDFS search procedure still retains a very high coverage over the search procedure (97\%) when excluding dead code.
 
 \section{Holistic Evaluation}
 \label{sec:HolisticEvaluation}
 
-This section considers a number of examples of ill-typed Hazel programs, \textit{holistically} and \textit{qualitatively} evaluating how a user might use the three features and the existing bidirectional type error error localisation \cite{HazelErrors} to debug the errors. 
+This section considers a number of examples of ill-typed Hazel programs, \textit{holistically} and \textit{qualitatively} evaluating how a user might use the three features and the existing bidirectional type error localisation \cite{MarkedLocalisation} to debug the errors. 
 
 
 \subsection{Type Error Localisation in Hazel}

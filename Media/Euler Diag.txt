@@ -1,0 +1,47 @@
+library(eulerr)
+
+data <- c("Dead Code"=40, 
+"Dead Code&Trivial"=39, 
+"Dead Code&Non-Trivial"=1, 
+"Dead Code&Trivial&Wildcards"=2, 
+"Dead Code&Trivial&Pattern Instantiation"=37, 
+"Dead Code&Trivial&Pattern Instantiation&Pattern Cast Failure"=31, 
+"Dead Code&Trivial&Pattern Instantiation&Unbound Constructor"=8, 
+"Dead Code&Trivial&Pattern Instantiation&Pattern Cast Failure&Unbound Constructor"=2,
+"Witness Exists"=3, 
+"Hazel Bugs"=4)
+
+fit <- euler(data)
+
+labels <- as.character(fit$original.values)
+names(labels) <- names(fit$original.values)
+
+# Suppress some labels
+labels["Dead Code"] <- ""
+labels["Dead Code&Trivial"] <- ""
+labels["Dead Code&Trivial"] <- ""
+labels["Dead Code&Trivial&Pattern Instantiation"] <- ""
+# Override to use exclusive counts
+labels["Dead Code&Trivial&Pattern Instantiation&Pattern Cast Failure"] <- "29"
+labels["Dead Code&Trivial&Pattern Instantiation&Unbound Constructor"] <- "6"
+
+# Colour scheme
+fills <- list(
+  fill = c(
+    "Dead Code" = "#ffe9ad",
+    "Trivial" = "#fada82",
+    "Non-Trivial" = "#a5ff8f",
+    "Wildcards" = "#8feeff",
+    "Pattern Instantiation" = "#f5c86e",
+    "Pattern Cast Failure" = "#dee053",
+    "Unbound Constructor" = "#e08953",
+    "Witness Exists" = "#ff2e35",
+    "Hazel Bugs" = "#8823ba"
+  ),
+  alpha = 0.8
+)
+
+
+
+# Plot
+plot(fit, fills=fills, quantities = list(labels = labels), legend=FALSE)

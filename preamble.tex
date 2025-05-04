@@ -1,6 +1,7 @@
 \usepackage{graphicx}
 \usepackage[utf8]{inputenc}
 \usepackage[backend=biber, style=numeric, sorting=ydnt]{biblatex}
+\usepackage[dvipsnames]{xcolor}
 \usepackage{amsmath}
 \usepackage{semantic}
 \usepackage{minted}
@@ -10,9 +11,11 @@
 \DeclareMathAlphabet{\mathdcal}{U}{dutchcal}{m}{n}
 \usepackage{amssymb}
 
+\usepackage[edges]{forest}
+
+\usetikzlibrary{calc, arrows}
 \usepackage[labelfont=bf]{caption}
 \usepackage[labelfont=bf]{subcaption}
-\usepackage[dvipsnames]{xcolor}
 \usepackage[normalem]{ulem}
 \makeatletter
 \def\uwave{\bgroup \markoverwith{\lower3.5\p@\hbox{\sixly \textcolor{red}{\char58}}}\ULon}
@@ -24,7 +27,6 @@
 \usetikzlibrary{shapes.geometric, positioning, chains, trees}
 \usepackage{pgfplots}
 \usepackage{svg}
-\usepackaet{wheelchart}
 \usepackage {siunitx}
 
 \newcommand{\hlc}[2][yellow]{{%

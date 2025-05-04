@@ -292,9 +292,10 @@ In this context, bind can be thought of as \textit{conjunction}: if we can map e
 
 See how distributivity represents this interpretation:  guessing over a combined choice is the same as guessing over each individual choice and then combining the results. \texttt{fail} being the left identity of \texttt{bind} states that you cannot make any guesses from the no choice (\texttt{fail}). 
 \begin{figure}[h]\centering
-\item Flip a coin
-\item If heads, flip again.
-\item If tails, 
+\begin{enumerate}
+\item Flip a coin.
+\item Roll a dice.
+\item Return \textit{both} results.
 \end{enumerate}
 \begin{minted}{reason}
 let coin = return(Heads) <||> return(Tails);

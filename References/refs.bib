@@ -1016,18 +1016,6 @@ numpages = {12}
   publisher={pearson}
 }
 
-@article{SymbolicExecutionSurvey,
-  author    = {Baldoni, Roberto and Coppa, Emilio and D'Elia, Daniele Cono and Demetrescu, Camil and Finocchi, Irene},
-  title     = {A Survey of Symbolic Execution Techniques},
-  journal   = {ACM Comput. Surv.},
-  volume    = {51},
-  number = {3},
-  articleno = {50},
-  publisher = {ACM},
-  address = {New York, NY, USA},
-  year = {2018}
-}
-
 @article{NeededNarrowing,
 author = {Antoy, Sergio and Echahed, Rachid and Hanus, Michael},
 title = {A needed narrowing strategy},
@@ -1237,4 +1225,55 @@ year = {2012},
 isbn = {0262017156},
 publisher = {The MIT Press},
 abstract = {In Software Abstractions Daniel Jackson introduces an approach to software design that draws on traditional formal methods but exploits automated tools to find flaws as early as possible. This approach--which Jackson calls "lightweight formal methods" or "agile modeling"--takes from formal specification the idea of a precise and expressive notation based on a tiny core of simple and robust concepts but replaces conventional analysis based on theorem proving with a fully automated analysis that gives designers immediate feedback. Jackson has developed Alloy, a language that captures the essence of software abstractions simply and succinctly, using a minimal toolkit of mathematical notions. This revised edition updates the text, examples, and appendixes to be fully compatible with the latest version of Alloy (Alloy 4). The designer can use automated analysis not only to correct errors but also to make models that are more precise and elegant. This approach, Jackson says, can rescue designers from "the tarpit of implementation technologies" and return them to thinking deeply about underlying concepts. Software Abstractions introduces the key elements: a logic, which provides the building blocks of the language; a language, which adds a small amount of syntax to the logic for structuring descriptions; and an analysis, a form of constraint solving that offers both simulation (generating sample states and executions) and checking (finding counterexamples to claimed properties).}
+}
+
+@article{EagerCasts,
+author = {Henglein, Fritz},
+title = {Dynamic typing: syntax and proof theory},
+year = {1994},
+issue_date = {June 1994},
+publisher = {Elsevier North-Holland, Inc.},
+address = {USA},
+volume = {22},
+number = {3},
+issn = {0167-6423},
+url = {https://doi.org/10.1016/0167-6423(94)00004-2},
+doi = {10.1016/0167-6423(94)00004-2},
+journal = {Sci. Comput. Program.},
+month = jun,
+pages = {197–230},
+numpages = {34}
+}
+
+@ARTICLE{GradualEagerCasts,
+  title     = "Space-efficient gradual typing",
+  author    = "Herman, David and Tomb, Aaron and Flanagan, Cormac",
+  journal   = "High.-order Symb. Comput.",
+  publisher = "Springer Science and Business Media LLC",
+  volume    =  23,
+  number    =  2,
+  pages     = "167--189",
+  month     =  jun,
+  year      =  2010,
+  language  = "en"
+}
+
+@article{SymbolicExecutionSurvey,
+author = {Baldoni, Roberto and Coppa, Emilio and D’elia, Daniele Cono and Demetrescu, Camil and Finocchi, Irene},
+title = {A Survey of Symbolic Execution Techniques},
+year = {2018},
+issue_date = {May 2019},
+publisher = {Association for Computing Machinery},
+address = {New York, NY, USA},
+volume = {51},
+number = {3},
+issn = {0360-0300},
+url = {https://doi.org/10.1145/3182657},
+doi = {10.1145/3182657},
+abstract = {Many security and software testing applications require checking whether certain properties of a program hold for any possible usage scenario. For instance, a tool for identifying software vulnerabilities may need to rule out the existence of any backdoor to bypass a program’s authentication. One approach would be to test the program using different, possibly random inputs. As the backdoor may only be hit for very specific program workloads, automated exploration of the space of possible inputs is of the essence. Symbolic execution provides an elegant solution to the problem, by systematically exploring many possible execution paths at the same time without necessarily requiring concrete inputs. Rather than taking on fully specified input values, the technique abstractly represents them as symbols, resorting to constraint solvers to construct actual instances that would cause property violations. Symbolic execution has been incubated in dozens of tools developed over the past four decades, leading to major practical breakthroughs in a number of prominent software reliability applications. The goal of this survey is to provide an overview of the main ideas, challenges, and solutions developed in the area, distilling them for a broad audience.},
+journal = {ACM Comput. Surv.},
+month = may,
+articleno = {50},
+numpages = {39},
+keywords = {static analysis, software testing, concolic execution, Symbolic execution}
 }

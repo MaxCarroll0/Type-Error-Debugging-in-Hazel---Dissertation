@@ -122,7 +122,7 @@ Next, some of an expression's type might be enforced by the surrounding \textit{
 \[\underline{(\lambda x. \hole^u )} \hlcmaths[yellow!30]{:  \code{Bool} \hlcmaths[yellow!30]{\to \code{Int}}}\]
 
 \subsubsection{Contexts \& Context Slices}
-\newcommand{\C}{\mathdcal{C}}
+\renewcommand{\C}{\mathdcal{C}}
 We represent these surrounding contexts by a \textit{term context} $\mathdcal{C}$. Which marks \textit{exactly one} sub-term as $\cmark$:
 \begin{definition}[Contexts Syntax]
 Pattern contexts -- mapping patterns to patterns:
@@ -166,7 +166,7 @@ For any context $\C$, the set of slices $\Cs$ of $\C$ form a bounded lattice wit
 \subsubsection{Typing Assumption Contexts \& Context Slices}
 The accompanying notion of a \textit{typing assumption slice} can be extended to \textit{functions on typing assumptions}. This function represents what typing assumptions need to be \textit{added}, or can be \textit{removed} when typing an expression $e$ and within it's context slice.
 
-\newcommand{\F}{\mathdcal{F}}
+\renewcommand{\F}{\mathdcal{F}}
 \newcommand{\f}{\mathdcal{f}}
 \begin{definition}[Typing Assumption Contexts \& Slices]
 A typing assumption context $\F$ is a function from typing assumption to typing assumptions. A typing assumption context slice $\f$ is a function from typing assumption slices to typing assumption slices.
@@ -229,7 +229,7 @@ A terminal context slice for a term typing slice $\rho$ is a context typing slic
 The main property that we want these indexed-slices to maintain is that a slice can be \textit{reconstructed} from their sub-parts. \textit{Joining} the sub-slices should produce the slice for the entire type. As not every slice can be joined, we can pair sub-slices with contexts which place the two sub-slices inside the same structure, making them join-able.
 
 \renewcommand{\S}{\mathdcal{S}}
-\newcommand{\s}{\mathdcal{s}}
+\renewcommand{\s}{\mathdcal{s}}
 \begin{definition}[Type-Indexed Context Typing Slices]
 Syntactically defined: 
 \[\S ::= \p \mid \p * \S \to \p * \S\] 
@@ -298,7 +298,7 @@ In other words, if the context slice was type synthesised, then the marked term 
 
 
 \subsubsection{Checking Context}
-For this, we only want to consider the smallest context scope\foornote{The \textit{size} of the context around the marked term.} that enforced the type checking. For example, the below term has 3 annotations, but only the inner one enforces the \code{Int} type on the integer 1:
+For this, we only want to consider the smallest context scope\footnote{The \textit{size} of the context around the marked term.} that enforced the type checking. For example, the below term has 3 annotations, but only the inner one enforces the \code{Int} type on the integer 1:
 \[\underline{1} \hlcmaths[yellow!30]{: \code{Int}} : \dyn : \code{Bool}\]
 I refer to this minimum context scope as the \textit{checking context}, and checking contexts will always synthesise a type. Another way for types to be enforced is via application. The integer argument's type is enforced by the annotation on the function:
 \[\hlcmaths[yellow!30]{(\lambda} x \hlcmaths[yellow!30]{: \code{Int}.}\ \hole^u\hlcmaths[yellow!30]{)(}\underline{1}\hlcmaths[yellow!30]{)}\]
@@ -391,7 +391,7 @@ Where static is takes omits the \textit{right} (synthetic) slice parts where \te
 \[\mathrm{static}(\p, \_ \to \_) = \gap^\emptyset\]
 \[\mathrm{static}(\Cs_1 * \S_1 \to Cs_2 * \S_2,\ \Cs_1' * \S_1' \to Cs_2' * \S_2') = \Cs_1 * \mathrm{static}(\S_1, \S_1') \to \Cs_2' * \mathrm{static}(\S_2, \S_2')\]
 
-\newcommand{\s}{\mathdcal{s}}
+\renewcommand{\s}{\mathdcal{s}}
 \begin{figure}[h]
 \[\inference[\tiny SConst]{}{\synthesissliceindexed{c}{b\mid c}} \quad
 \inference[\tiny SVar]{x : \tau \in \Gamma}{\synthesissliceindexed{x}{\mathrm{map}{(x^{\{x:\tau\}}, \tau)}}}\]
@@ -1094,9 +1094,7 @@ Most of the time, a hole is directly surrounded by a cast, whose type informatio
 \subsubsection{Cast Laziness}\label{sec:CastLaziness}
 However, it is \textit{not} always the case that a hole which needs to be instantiated is surrounded by a cast. For efficiency reasons, Hazel treats casts over compound data-types lazily, for example, casts around a tuple will only by pushed inside upon usage of a component of the tuple.
 
-Therefore, in order to actually instantiate these into values directly, casts must be pushed inside compound data \textit{eagerly}. \textbf{TODO IMPL}
-
-However, when detecting cast errors, it is possible to maintain lazy casts by extending Hazel's cast failure checking. \Cref{sec:SearchCastLaziness} discussed this in more detail.
+Therefore, in order to actually instantiate these into values directly, casts must be pushed inside compound data \textit{eagerly}. However, this is a significant change to the Hazel semantics, so was opted against. \Cref{sec:EvalCastLaziness} discussed the consequence of this choice. 
 
 
 \subsubsection{Pattern Matching}
@@ -1128,7 +1126,7 @@ An interesting extension was attempted to improve code coverage of the instantia
 
 Hence, we could try instantiating the match scrutinee with least specific versions which match the patterns on each branch, e.g. \code{?::?} for \code{x::xs}. i.e. 
 
-\begin{figure}
+\begin{figure}[H]
 \texttt{case ?::? | [] => [] | x::xs => xs}
 \caption{Branch-Directed Instantiation}
 \end{figure}
@@ -1191,12 +1189,8 @@ Therefore, we consider only the casts which are \textit{causing} a term to be in
 Only casts between \textit{ground} types are checked for consistency. Due to cast laziness (\cref{sec:CastLaziness}), some are cast between inconsistent types, but \textit{not} placed within a \textit{cast failure}.
 
 This can be fixed by performing eager cast transitions before checking for cast errors, or eagerly treating casts during indeterminate evaluation. However, it could be argued that this \textit{should not} constitute a cast error, after all, the part of the compound type with the error is yet to actually be \textit{used}.
-\begin{figure}
-let x = (1, "str") in 
-let f = (fun x : (Int, Int) -> x) 
-in f(x)
-\caption{Inconsistent Lazy Casts Failure}
-\end{figure}
+
+\paragraph{Dynamic Match Statements:} When matching dynamically on values with different types, the instantiations wrap the scrutinee in casts to each type. If any of these casts failed, they should not count as witnesses, as they were introduced entirely by the instantiation procedure. 
 
 \subsection{Explaining Cast Errors}
 \label{sec:StaticCastError}
