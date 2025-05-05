@@ -32,19 +32,20 @@ This would provide an \textit{intuitive} concrete explanation for static type er
 \textbf{Solution:} I implement a \textbf{type error witness search procedure}, which discovers inputs (witnesses) to expressions which cause a \textit{dynamic type error}. This is based on research by Seidel et al. \cite{SearchProc} which devised a similar procedure for a subset of OCaml.
 \end{enumerate}
 
-Hazel \cite{Hazel} is a functional locally inferred and gradually typed research language allowing the writing of \textit{incomplete programs} under active development at the University of Michigan. Being gradually typed, allowing both static and dynamic code to coexist, this project successfully demonstrates the utility of these three features in improving understanding of \textit{both} static and dynamic errors. Both, to a \textit{greater extent} than in any existing languages, with the explanations being \textit{useful} in debugging type errors, and is expected to reduce debugging times and aid in students understanding type systems.\footnote{Proving this would require a user study.}
+Hazel \cite{Hazel} is a functional locally inferred and gradually typed research language allowing the writing of \textit{incomplete programs} under active development at the University of Michigan. Being gradually typed, allowing both static and dynamic code to coexist, this project successfully demonstrates the utility of these three features in improving understanding of \textit{both} static and dynamic errors. Both, to a \textit{greater extent} than in any existing languages, with the explanations being \textit{useful} in debugging type errors, and expected to aid in building understanding of bidirectional type systems.
 
-\paragraph{Example:} \textit{A basic well-formatted \textbf{graphical} walk-through for how a static type error could be diagnosed using the three features. Take simplest example from the evaluation.}
+\paragraph{Example:} \Cref{fig:ErrorExample} shows an attempt at writing a int list concatenation function. But list cons (\code{::}) is used instead of list concatenation (\code{@}). Type slicing will automatically highlight the code that caused \code{x} to synthesise the \code{[Int]} type and the code that enforces the requirement that \code{x} is an \code{Int}. If the error is still not clear, the search procedure can be used to generate inputs which evaluate to cast errors, for example \code{concat([[], []])}, giving a concrete evaluation trace to an error. Finally, cast slicing will allow the cast errors to be selected, highlighting source code that enforced the cast, in general being a more concise slice than statically found by type slicing and which is also being. The results of this example among others are explored in the evaluation (\cref{sec:EvalExamples}).
 
-\begin{figure}
-
+\begin{figure}[h]
+\centering
+\includegraphics[width=0.7\textwidth]{Media/Figures/concat_error}
 \caption{A Static Type Error}
 \label{fig:ErrorExample}
 \end{figure}
 
 \section{Related Work}
 \label{sec:RelatedWork}
-There has been extensive research into attempting to understand \textit{what} is needed \cite{DebugNeeds}, \textit{how} developers fix bugs \cite{HowFixBugs}, and a plethora of compiler \textit{improvements} and \textit{tools} \textbf{add citations here, primarily functional language tools}. This project builds upon this body of research in new ways focusing on the Hazel language, which is itself a research project being taken in various directions (\textbf{cite the directions}) but generally as a \textit{teaching language} (\textbf{cite the explainthis paper}) for students. 
+There has been extensive research into the field of programming languages and debugging, attempting to understand \textit{what} is needed \cite{DebugNeeds}, \textit{how} developers fix bugs \cite{HowFixBugs}, and a plethora of compiler \textit{improvements} and \textit{tools} \textbf{add citations here, primarily functional language tools}. This project builds upon this body of research in new ways focusing on the Hazel language, which is itself a research project being taken in various directions (\textbf{cite the directions}) but generally as a \textit{teaching language} (\textbf{cite the explainthis paper}) for students. 
 
 To my knowledge the ideas of \textit{type slicing} and \textit{cast slicing} are novel. However, they do output \textit{program slices} which were originally explored by Weiser \cite{ProgSlice}, though my definition of program slices matches more with functional program slices \cite{FunctionalProgExplain}.  The properties I explore are more similar to \textit{dynamic program slicing} \cite{DynProgSlice} but with type characteristics rather than evaluation characteristics, in a sense similar \textit{type error slicing} \cite{ErrSlice}.
 

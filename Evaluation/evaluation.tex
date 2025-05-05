@@ -43,7 +43,7 @@ Various hypotheses for properties of the results are expected. The evidence and 
 
 \paragraph{Search method space requirements: } The space requirements for DFS and Bounded DFS are expected to be lower than that of BFS and interleaved DFS.
 
-\paragraph{Contribution slices are large: } Contribution slices highlight all static regions of a program. This likely shows \textit{too much} information to the user at once. The other slicing methods (synthesis, analysis, ad-hoc) are expected to produce significantly \textit{smaller} slices. 
+\paragraph{Type Slices are larger than Cast Slices: } Casts are de-constructed during elaboration and evaluation, so cast slices are expected to be smaller than the original type slices, and therefore more directly explain why errors occur. 
 
 \paragraph{The Small Scope Hypothesis: }
 \label{sec:SmallScopeHypothesis} This hypothesis \cite{SmallScopeHypothesisOrigination} states that a high proportion of errors can be found by generating only \textit{small} inputs. Evidence that this hypothesis holds has been provided for Java data-structures \cite{SmallScopeHypothesis} and answer-set programs \cite{SmallScopeHypothesisAnswerSet}. Does it also hold for finding dynamic type errors from small \textit{hole instantiations}?
@@ -260,13 +260,13 @@ The type slicing theory (\cref{sec:TypeSlicingTheory}) required that highlighted
 \begin{subfigure}{0.45\textwidth}
 \centering
 
-\includegraphics[width=1\textwidth]{Media/Figures/Unused_let}
+\includegraphics[width=0.85\textwidth]{Media/Figures/Unused_let}
 \caption{Ad-hoc Slice: Let expression omitted}
 \end{subfigure}$\qquad$
 \begin{subfigure}{0.45\textwidth}
 \centering
 
-\includegraphics[width=1\textwidth]{Media/Figures/Unused_let_ordinary}
+\includegraphics[width=0.85\textwidth]{Media/Figures/Unused_let_ordinary}
 \caption{Ordinary Slice}
 \end{subfigure}
 
@@ -326,9 +326,10 @@ Hazel uses a structure editor with an update calculus \cite{HazelStructureCalcul
 Parsing and structural edit actions are made efficient\footnote{Constant time.} by use of a zipper data structure \cite{HuetZipper, OneHoleContext}. It might be possible to extend this zipper idea into the abstract syntax tree and it's statics (typing information), allowing local changes (and type changes) to propagate in the AST zipper. However, some local changes can propagate type changes \textit{non-locally} (e.g. inserting a new binding) which would require extensive recalculation of the typed AST. These non-local updates would be relatively rare. This is very complex and would require an entire rewrite of the Hazel statics, but would be beneficial for Hazel in general, not just type slicing.
   
 \subsection{Static-Dynamic Error Correspondence}
-\Cref{sec:StaticCastError} and \ref{sec:CastDependence} show how a static error that elaborates a cast failure, can be associated with a dynamic error whose cast error is dependent on this failed cast. This works well for most static type errors, which occur from inconsistent analysis and synthesis types.
+\lable{sec:ErrorCorrespondence}
+\Cref{sec:StaticCastError} and \ref{sec:CastDependence} show that a static error that elaborates a cast failure, which can be associated with a dynamic error whose cast error is dependent on this original failed cast. This works well for \textit{inconsistent expectations} static type errors.
 
-However, static errors caused by synthesised branches being inconsistent, do not actually directly cause cast errors. Such errors will only be detected if both branches are used within a static context during the same evaluation path. The search procedure might find such cases if they exist, but cannot associate it back to the static error. Elaborating these terms does adds casts: on each branch to the dynamic type; these could be associated together with the error and tracked accordingly. 
+However, \textit{inconsistent branches} errors, static errors caused by synthesised branches being inconsistent, do not directly cause cast errors. Such errors will only be detected if both branches are used within a static context during the same evaluation run. The search procedure might find such cases if they exist, but cannot so easily associate it back to the static error. However, elaborating these terms does insert casts: on each branch to the dynamic type; these could be associated together with the error and tracked accordingly. 
   
 \subsection{Categorising Programs Lacking Type Error Witnesses}
 47 programs which timed out under the BDFS search procedure were manually inspected and classified as either:
@@ -392,20 +393,20 @@ BFS and IDFS would do significantly better if the search algorithm was tweaked t
 
 Dead code caused most time outs for the search procedure using BDFS. Errors within dead code cannot have a witness as they are not dynamically reachable. Therefore, dead code analysis will reduce timeouts.
 
-Additionally, code can become dead due to errors. For example, 12 (32\%) of the dead code failed searches had a nested error within a branch which was unreachable due to an error\footnote{Unbound constructor or inconsistent expectations.} within the branch pattern. Even if we find witnesses for these branch errors, the nested errors will still be unreachable.
+Additionally, code can become dead due to errors. For example, 12 (32\%) of the dead code failed searches also had a nested error within a branch which was unreachable due to an error\footnote{Unbound constructor or inconsistent expectations.} within the branch pattern. Even if we find witnesses for these branch errors, the nested errors will still be unreachable.
 
 
 \subsubsection{Dynamically Safe Code}
 Some code with static errors is inherently safe dynamically, the typical example being:\\ \code{if true then 0 else "str"}. These have \textit{no} dynamic witness, and the search procedure can often prove this by running out of possible instantiations: BDFS proved no witness 12\% of the time. 
 
-However, in general, the procedure may repeatedly instantiate infinitely many witnesses in dynamically safe code, and thereby not terminating. This is fine as the no witness exists, but the user cannot be sure in this situation.
+However, in general, the procedure may repeatedly instantiate infinitely many witnesses in dynamically safe code, and thereby not terminating. Therefore, search procedure timing out does not necessarily mean that a witness has not been found or that a witness does not exist.
 
 \subsubsection{Cast Laziness}\label{sec:EvalCastLaziness}
 Hazel treats casts lazily, only pushing casts on compound data to their elements upon usage. The instantiation procedure is therefore unable to instantiate parts of compound data until it is de-structured: for example, extracting the first element of a tuple. Further, Hazel does not detect cast errors between non-ground compound types (e.g. \code{[Int]} and \code{[String]}). Therefore, type inconsistencies between such types will not be found by the search procedure. These errors are less common, in the search corpus there were \textit{no} programs exhibiting this.
 
 Fixing this requires reworking the Hazel semantics to be based around eager casts. Dynamic type systems with this cast semantics have been explored \cite{EagerCasts} and applied also to gradual type systems \cite{GradualEagerCasts}.\footnote{These papers refer to eager casts as \textit{coercions}.} Alternatively, instantiation could be performed less lazily, using more sophisticated methods to determine a holes type (accumulating information over \textit{multiple} casts). This would significantly expand the search space, and still require some form of eager cast failure checking.
 
-The eager cast semantics would be able to detect more dynamic errors at an earlier point in execution. For example, \cref{fig:LazyCastError} shows an expression which evaluates to casts between inconsistent types, yet does not realise there is an error yet. The error is only found when extracting the second element.
+The eager cast semantics would be able to detect more dynamic errors at an earlier point in execution. For example, \cref{fig:LazyCastError} shows an expression which evaluates to casts between inconsistent types, yet is not caught as a dynamic error yet. The error is only found when extracting the second element.
 \begin{figure}[h]
 \centering
 \includegraphics[width=0.55\textwidth]{Media/Figures/cast_laziness_no_error}
@@ -443,113 +444,143 @@ However, even without this, the BDFS search procedure still retains a very high 
 This section considers a number of examples of ill-typed Hazel programs, \textit{holistically} and \textit{qualitatively} evaluating how a user might use the three features and the existing bidirectional type error localisation \cite{MarkedLocalisation} to debug the errors. 
 
 
-\subsection{Type Error Localisation in Hazel}
-\textbf{Ref to each example here...}
+\subsection{Interaction with Existing Hazel Type Error Localisation}
+Hazel has three types of errors which can be addressed to varying extent by this project:\footnote{Other errors not addressed being being: syntax errors, unbound names, duplicate \& malformed labels, redundant pattern matches etc.} \textit{inconsistent expectations} (where a term's analytic and synthetic types are inconsistent), \textit{inconsistent branches }(where branches are synthetic and inconsistent, this also applies to values in a list literal), and \textit{inexhaustive match} warnings. 
 
-Hazel has three types of errors which can be addressed by this project:\footnote{Others being syntax errors, unbound names, duplicate labels, deferrals, or redundant pattern matches.} \textit{inconsistent expectations} (where a term's analytic and synthetic types are inconsistent), \textit{inconsistent branches }(where branches are synthetic and inconsistent, this also applies to values in a list literal), and \textit{inexhaustive match} warnings. 
+\Cref{sec:ErrorCorrespondence} showed how dynamic witnesses can be associated to both classes of inconsistency errors, with inconsistent branch errors being more difficult to detect in general. Generating examples for inexhaustive match statements was not a core aim of this project, but indeterminate evaluation can do this automatically (see the \texttt{inexhaustive-matches} branch \textbf{TODO}). Faster, static generation of counter-examples to match statements is already a (mostly)\footnote{Data abstraction can cause issues: for example Views \cite{Views} and Active Patterns {\cite{ActivePatterns}}. Hazel is implementing modules, but yet to consider pattern matching on abstract data.} solved problem in static languages \cite{PatternMatchingWarnings}, and is under development for Hazel.\footnote{Indeterminate evaluation is very inefficient compared to pattern matrices. These matrices would also be useful in directing hole instantiation (\cref{sec:EvalHoleInstantiation}).}
 
-The witness search procedure can easily associate \textit{inconsistent expectation} errors with a witness: a dynamic cast error and trace. Inconsistent branches will be detected by the procedure, but are not automatically associated to the static error. Explaining inexhaustive match statements was not a core aim of this project, but the indeterminate evaluation can be adapted for this anyway (see the \texttt{inexhaustive-matches} branch \textbf{TODO}). Static generation of counter-examples to match statement exhaustivity is already a solved problem \textbf{(CITE)}, and is under development for Hazel.\footnote{Indeterminate evaluation is very inefficient in comparison. This counter-examples logic is useful for directing hole instantiation (\cref{sec:EvalHoleInstantiation}).}
+The situations where a programmer does not understand why an error occurs generally arise due to a \textit{misunderstanding} about the types of the code. In which case, existing error localisation is not so useful as the location of an error is determined while making \textit{differing assumptions} about the types than the programmer. Type slicing, along with the context inspector (which shows the type, term, and describes the error of a selected expression: \cref{fig:ContextInspector}), can help the programmer understand which assumptions the type system is making and \textit{why} it is. 
 
-Bidirectional type error localisation is generally very good \cite{BidirectionalTyping}. Type slicing can provide an explanation of where type expectations in the error were sourced. However, there are still cases where the error highlighted is not the actual location of the error.\footnote{Also, Hazel has plans to introduce global inference in the future, where correct localisation becomes even more difficult.} These often arise due to \textit{misunderstanding} of the programmer about the actual types of the code. Fundamentally, there is \textit{no} way for a type system to always correctly localise such errors. Use of the Hazel context inspector and type slices can help clear these misunderstandings.
-
-Additionally, some errors might require changes to \textit{multiple} parts of the code \cite{StudentTypeErrorFixes}. Unlike most languages, Hazel \textit{does} allow \textit{multiple} errors to be detected \textit{completely} \cite{HazelErrors}. However, these errors are typically \textit{not associated} together.\footnote{Except for \textit{inconsistent branches} errors.} Type slicing can give a more complete view of regions that might contain the multiple parts pertaining to the \textit{actual} error.
-
-Finally, there may be errors in \textit{dynamic regions} of the code. These are not found statically. The search procedure tests dynamic code for such type errors automatically. Indeterminate evaluation could also, in future, be used to perform property testing of code, in the sense of SmallCheck \cite{SmallCheck}. Adding annotations to find type errors is time-consuming, often a large number of, concrete, annotations are required to make the code static enough to detect errors. For example, \cref{fig:HalfAnnotated} shows a partially annotated program, which \textit{still} doesn't provide enough type information to detect the error statically.
-
-\subsection{Examples}
-Merge these examples into the paragraphs above?? Want an example for each. All the examples can apply to dynamic errors.
-
-\begin{figure}[h]
-Error in the @ operator. Due to annotation, search procedure can help give reasoning.
-\begin{lstlisting}
-let map : (Int -> Int) -> [Int] -> [Int] = fun f -> fun l -> case l 
-  | [] => []
-  | x::xs => f(x) @ map(f)(xs)
-end in  
-\end{lstlisting}
-\caption{Inconsistent Expectations Example}
-\end{figure}
-
-\begin{figure}[h]
-Error in the @ operator. But arises as inconsistent branches. Use type slicing to work out types of branches. \textbf{use search procedure to find location of the actual error! via a cast slice!}
-\begin{lstlisting}
-let map = fun f -> fun l -> case l 
-  | [] => []
-  | x::xs => f(x) @ map(f)(xs)
-end in  
-\end{lstlisting}
-\caption{Inconsistent Branches Example}
-\end{figure}
-
-\begin{figure}
-More difficult, non-local example where it's harder to work out the types of the branches immediately:
-\begin{lstlisting}
-let f = fun x -> x + 1 in
-let g = fun x -> x ++ "a" in 
-let broken = fun x -> if x then f(x) else g(x)
-\end{lstlisting}
-\caption{Inconsistent Branches Example 2}
-\end{figure}
-
-\begin{figure}
-\textbf{COMPLEX ERROR}
-Trying to use the curried fold function with uncurried add function.
-\begin{lstlisting}
-let fold : ((Int, Int) -> Int) -> Int -> [  ] -> Int = fun f -> fun init -> fun l -> 
-  case l 
-    | [] => init 
-	| x::xs => f(x, fold(f)(init)(xs)) 
-  end 
-in
-let add = fun x -> fun y -> x + y in
-let sum = fold(add)(0) in
-sum([1,2,3])
-\end{lstlisting}
-\caption{Confused Currying Example}
-\label{fig:TastyCurry}
-\end{figure}
-
-
-\begin{figure}
-\begin{subfigure}{.5\textwidth}
-\centering
-Type error is NOT spotted
-\begin{lstlisting}
-let map : (? -> ?) -> [?] -> [?] = fun f -> fun l -> case l 
-  | [] => []
-  | x::xs => f(x) @ map(f)(xs) 
-end in   
-\end{lstlisting}
-\caption{Program}
-\end{subfigure}
-
-\begin{subfigure}{.5\textwidth}\centering
-\begin{lstlisting}
-let map : (? -> ?) -> [?] -> [?] = fun f -> fun l -> case l 
-  | [] => []
-  | x::xs => f(x) @ map(f)(xs) 
-end in   
-\end{lstlisting}
-\caption{Static Regions (Contibution Slice)}
-\end{subfigure}
-\caption{Partially Annotated Program}
-\label{fig:HalfAnnotated}
-\end{figure}
-
-\subsection{Usability Improvements}\label{sec:UIImprovements}
-As designing an intuitive user interface was not a core goal, the actual use of the features can be quite awkward or unintuitive. Below, I propose various improvements, for which the architecture, of both Hazel and the newly implemented features, is sufficiently abstract and flexible to easily support:\footnote{Some of which were detailed in the Implementation chapter.}
-
-\begin{figure}\centering
-Screenshot the Hazel context inspector, including a case with an error, and with analysing and synthesising types.
-\caption{The Hazel Context Inspector}
+\begin{figure}[h]\centering
+\includegraphics[width=0.7\textwidth]{Media/Figures/context_inspector}
+\caption{Selected Static Error described by Hazel Context Inspector}
 \label{fig:ContextInspector}
 \end{figure}
 
+On the other hand, when the programmer and system agree on the types of a program, bidirectional typing generally localises the error(s) correctly and intuitively \cite{BidirectionalTypes, MarkedLocalisation}. However, Hazel has explored introducing global inference, where errors involve wider interaction between multiple regions of code, making error localisation (even when the type checker and user agree on the types) more difficult \cite{StudentTypeErrorFixes}. Further, deviations between the systems and the programmer mental model become more common with fewer annotations. Dynamic witnesses can help here \cite{SearchProc}, and forms of slicing supporting global inference is an interesting further direction.\footnote{Global constraint-based inference would require some form of additional constraint slicing. Similar ideas have been explored in error slicing \cite{ErrSlice, HaackErrSlice}.}
+
+Finally, there may be errors in \textit{dynamic regions} of the code. These are not found statically. The search procedure can test dynamic code for such type errors automatically. Indeterminate evaluation could also, in future, be used to perform more general property testing of code, in the sense of SmallCheck \cite{SmallCheck}. Adding annotations to find type errors in dynamic code is time-consuming, large numbers of annotations are required to make the code static enough to detect errors. In this case, it can make sense to use the search procedure to find errors more quickly. For example, \cref{fig:HalfAnnotated} shows a relatively annotated map functionwhich still does not provide enough type information to detect the error statically, that concatenation (\code{@}) operator is mistakenly used instead of cons (\code{::}).
+
+
+\begin{figure}[H]
+\centering
+\includegraphics[width=0.5\textwidth]{Media/Figures/partial_annotations}
+\caption{Partially Annotated Program misses Error}
+\label{fig:HalfAnnotated}
+\end{figure}
+
+\subsection{Examples}
+\label{sec:EvalExamples}
+Returning to the map example, when fully annotated a static error can located at \code{f(x)} which has type \code{Int} but expects \code{[Int]}. The error slice shows (in pink) why \code{Int} is synthesised (due to input \code{f} being annotated \code{Int -> Int} and applied) and (in blue) why a list\footnote{A full analysis slice would also include the full \code{[Int]} annotation. But the inconsistency arises from the list part.} is expected (being an argument of list concatenation). See \cref{fig:MapExample}.
+\begin{figure}[h]
+\centering
+\begin{subfigure}{0.49\textwidth}
+\centering
+\includegraphics[width=1\textwidth]{Media/Figures/map_example}
+\caption{Error}
+\end{subfigure}
+\begin{subfigure}{0.49\textwidth}
+\centering
+\includegraphics[width=1\textwidth]{Media/Figures/map_example_sliced}
+\caption{With Error Slice}
+\end{subfigure}
+\caption{Example: Type Slice of Inconsistent Expectations}
+\label{fig:MapExample}
+\end{figure}
+
+Similarly, error slicing works for inconsistent branches: \cref{fig:InconsistentBranchesExample} demonstrates a somewhat more complex inconsistency involving non-local bindings. With minimal error slices highlighting only the bindings, application, and the addition \code{+} and string concatenation \code{++} operators.
+
+\begin{figure}[h]
+\centering
+\begin{subfigure}{0.49\textwidth}
+\centering
+\includegraphics[width=1\textwidth]{Media/Figures/inconsistent_branches_example}
+\caption{Error}
+\end{subfigure}
+\begin{subfigure}{0.49\textwidth}
+\centering
+\includegraphics[width=1\textwidth]{Media/Figures/inconsistent_branches_example_sliced}
+\caption{With Error Slice}
+\end{subfigure}
+\caption{Example: Type Slice of Inconsistent Branches}
+\label{fig:InconsistentBranchesExample}
+\end{figure}
+
+However, not every static type error slice is concise or obvious, especially if the user is still misunderstanding the types of operators involved. I demonstrate this by returning to the example from the introduction (\cref{fig:ConcatError}) where the user is mistaking list cons \code{::} for list concatenation \code{@}. The type slice here does highlight the \code{::} and annotation as enforcing \code{x} to be an \code{Int}, but the user would not understand why if they still think expect \code{::} to perform concatenation. Additionally, there is considerable noise\footnote{A large synthesis slice part explaining why \code{x} is a list} distracting from this. In comparison, the type witnesses demonstrate concretely how the program goes wrong: that the lists are not being concatenated. The user can cycle through increasingly larger witnesses\footnote{Looking at larger witnesses can be useful to spot pattern with what is happening overall, i.e. that the lists are being consed, not concatenated.} (the 2nd fully determinate witness given in the figure). Finally, the cast slice to \code{Int} concisely retrieves relevant part of the original type slice.
+\begin{figure}[H]
+\centering
+\begin{subfigure}{0.49\textwidth}
+\centering
+\includegraphics[width=1\textwidth]{Media/Figures/concat_error}
+\caption{Error: Mistaken Cons for Concat}
+\end{subfigure}
+\begin{subfigure}{0.49\textwidth}
+\centering
+\includegraphics[width=1\textwidth]{Media/Figures/concat_error_type_slice}
+\caption{Verbose Type Slice}
+\end{subfigure}
+\begin{subfigure}{0.49\textwidth}
+\centering
+\includegraphics[width=1\textwidth]{Media/Figures/concat_error_cast_slice}
+\caption{A Witness \code{([[], []])} leading to concise Cast Slice}
+\end{subfigure}
+\begin{subfigure}{0.49\textwidth}
+\centering
+\includegraphics[width=1\textwidth]{Media/Figures/concat_error_trace}
+\caption{Last 3 steps in witness trace: Shows \code{::} being List Cons}
+\end{subfigure}
+\caption{Example: Witnesses and Cast Slice more Understandable than Type Slice}
+\label{fig:ConcatError}
+\end{figure}
+Another, more subtle, example of this is confusing curried and non-curried functions: \cref{fig:TastyCurry} implements a \code{fold} function taking curried functions, but tries to apply an uncurried \code{add} function to sum int lists. This example shows how a single error can result in \textit{multiple} cast errors, each having a more concise slice explaining them. See how the type slice had two inconsistencies (in both the argument and return type of add), which were then separated into two different cast errors: \code{add} expected it's argument to be a tuple, \code{fold} expected the result of \code{add} to be a function.
+
+\begin{figure}[h]
+\begin{subfigure}{0.49\textwidth}
+\includegraphics[width=1\textwidth]{Media/Figures/curries}
+\caption{Confused uncurried for curried \code{add}}
+\end{subfigure}
+\begin{subfigure}{0.49\textwidth}
+\includegraphics[width=1\textwidth]{Media/Figures/curries_type_slice}
+\caption{Somewhat Verbose Type Slice}
+\end{subfigure}
+\begin{subfigure}{0.49\textwidth}
+\includegraphics[width=1\textwidth]{Media/Figures/curries_expects_tuple}
+\caption{Witness (\code{[0]}) expects input to \code{add} to be a tuple}
+\end{subfigure}
+\begin{subfigure}{0.49\textwidth}
+\includegraphics[width=1\textwidth]{Media/Figures/curries_expects_function}
+\caption{Witness (\code{[0]}) expects output of \code{add(0)} to be a function}
+\end{subfigure}
+\caption{Example: Subtle Currying Error}
+\label{fig:TastyCurry}
+\end{figure}
+
+Finally, when code is dynamic, errors might not be statically found, and type slices have less information to work with. \Cref{fig:DynamicExample} considers finding a simple error in a dynamic function. Cast slicing still works even without type annotations, allowing errors to blame regions of the source code.
+\begin{figure}[h]
+\centering
+\begin{subfigure}{0.45\textwidth}
+\includegraphics[width=1\textwidth]{Media/Figures/dynamic_code_error}
+\caption{Error}
+\end{subfigure}
+\begin{subfigure}{0.45\textwidth}
+\includegraphics[width=1\textwidth]{Media/Figures/dynamic_code_error_cast_slice}
+\caption{Automated witness found with cast slice blaming \code{+} operator}
+\end{subfigure}
+\caption{Example: Searching for Error in Dynamic Code}
+\label{fig:DynamicExample}
+\end{figure}
+
+
+\subsection{Usability Improvements}\label{sec:UIImprovements}
+As designing an intuitive user interface was not a core goal, therefore actual use of the features can be quite awkward or unintuitive. Below, I propose various improvements, for which the architecture, of both Hazel and the newly implemented features, is sufficiently abstract and flexible to easily support:\footnote{Some of which were detailed in the Implementation chapter.}
+
+
 \begin{itemize}
-\item Displaying type slices only \textit{upon request} using the Hazel \textit{context inspector}, which displays the \textit{analysing} and \textit{synthesising} types of the selected expression, see \cref{fig:ContextInspector}. This can also improve live-editing performance (see \cref{sec:StructureEditing}).
-\item A UI allowing the user to deconstruct type slices to query, for example: if a term has a function type, they could select the \textit{return type} and get only the part of the slice relevant to that.
+\item Displaying type slices only \textit{upon request} using the Hazel context inspector, which displays the \textit{analysing} and \textit{synthesising} types of the selected expression, see \cref{fig:ContextInspector}.
+\item Allowing the user to deconstruct type slices to query, for example: if a term has a function type, they could select the \textit{return type} and get only the part of the slice relevant to that, or select the function arrow to get the part that makes it a \textit{function} (ignoring the argument and return slice parts). The UI for this could again be via clicking on the type within the context inspector.
+
+This interactive version could really help a user to understand how parts of code come together to produce their types. This is a powerful feature made possible by type-indexed slices.
 \item Graphs visualising cast dependence (\cref{sec:CastDependence}). Showing the \textit{execution} context that leads to a cast error; these would be more concise summaries than full evaluation traces.
-\item Graphs visualising the search procedure's execution traces and instantiations.
+\item UI for visualising the search procedure's execution traces and instantiations. Currently, the search procedure only gives the final result containing cast error. This can be integrated with Hazel's existing trace visualiser. Further, compression of traces to make them more readable, e.g. skipping over irrelevant\footntoe{Irrelevant to the error.} function calls.
 \item Key bindings to more quickly cycle through indeterminate evaluation instantiation paths.
-\item Integration with the Hazel stepper,\footnote{The inbuilt trace visualiser, which also allows arbitrary evaluation order.} which could also allow (optionally) user-directed hole instantiations. The Hazel stepper could also be improved to allow other standard techniques like stepping over functions calls.
 \end{itemize}
