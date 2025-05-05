@@ -9,10 +9,7 @@ Additionally, a \textit{type error witness search procedure}  improve the explan
 
 
 \section{Further Directions}
-This section presents some \textit{extensions} to improve the features as justified by the evaluation (\cref{sec:CriticalAnalysis} \& \ref{sec:HolisticEvaluation}). Also, further interesting \textit{applications} of the features are considered.
-
-\subsection{Extension to Full Hazel Language}
-Some of the Hazel language was not covered, or was partially covered. Type functions (System-F style polymorphism) was only partially supported. Type functions have especially difficult typing rules, which may lead to more subtle errors, where this project would be \textit{particularly useful}. 
+This section presents some \textit{extensions} to improve the features as justified by the evaluation (\cref{sec:CriticalAnalysis} \& \ref{sec:HolisticEvaluation}). Also, further interesting {applications} of the features are considered. 
 
 \subsection{UI Improvements, User Studies}
 The current UI is relatively simple. \Cref{sec:UIImprovements} suggested various improvements to the usability of all three features. 
@@ -27,9 +24,7 @@ Cast slicing purely propagated type slice information throughout evaluation, and
 
 \subsection{Proofs}
 
-Giving proofs of the type slicing theory was an unmet \textit{extension} goal. However, \textit{much thought}\footnote{The largest time-investment of the entire project.} was given to ensuring that the theory is still sensible, and correct, as is demonstrated by the reasoning provided in the implementation (\cref{sec:TypeSlicingTheory}).
-
-Additionally, proofs and formal semantics for cast slicing and the search procedure would be useful to formalise what exactly cast slices, and witness actually \textit{are}.
+Giving proofs of the search procedure and slicing theories was an unmet \textit{extension} goal. However, \textit{much thought}\footnote{The largest time-investment of the entire project.} was given to ensuring that the theory is still sensible, and correct.
 
 \subsection{Property Testing}
 Indeterminate evaluation allows for exhaustive generation of inputs to functions, by applying a hole to the function. The searching logic is sufficiently abstract to allow arbitrary property testing of resulting values, indeterminate expressions, and even intermediate expressions.
@@ -42,23 +37,21 @@ Testing of intermediate expressions is \textit{not possible}\footnote{Without re
 
 \subsection{Non-determinism, Connections to Logic Programming, and Program Synthesis}
 \label{sec:LogicProgramming}
-\textbf{Discuss this...}
-
 Allowing holes to evaluate non-deterministically could be harnessed directly to write non-deterministic algorithms themselves in Hazel. The results to search for could be defined in Hazel code, and injected into the indeterminate evaluation algorithm.
 
 This way of treating holes is reminiscent of \textit{free logic variables} in logic programming, of which functional logic programming languages \cite{FunctionalLogicProgramming} like \textit{Curry} \cite{CurryLang}. Adding unification \cite{UnificationSurvey} to turn these into full-blown logic variables would allow full logic programming in Hazel. A needed-narrowing evaluation strategy \cite{NeededNarrowing} would be an interesting, and more efficient, way to handle and extend indeterminate evaluation in this situation.
 
-Logic programming has historically been used for \textit{general-purpose program synthesis} \cite{LogicProgramSynthesis}. An incomplete Hazel program could then be used as a specification for it's incomplete parts, where executing the program would synthesise the incomplete parts. However, this approach has been found to be inefficient due to the need to solve \textit{every} possible program, and prone to underspecified problems, among other drawbacks \cite{LogicProgramSynthesisDrawbacks}. 
+Logic programming has historically been used for \textit{general-purpose program synthesis}. An incomplete Hazel program could be used as a specification for it's incomplete parts, where executing the program would synthesise these. However, this approach has been found to be inefficient due to the need to solve \textit{every} possible program, and prone to underspecified problems, among other drawbacks \cite{LogicProgramSynthesisDrawbacks}. Most naturally written Hazel programs would be underspecified.
 
-More modern approaches to program synthesis often use logic programming as specification, but use more specialised and scalable methods making use of machine learning to synthesise the programs \cite{NeuralGuidedLogicProgramSynthesis, ProgramSynthesisSketching}. Therefore, an incomplete Hazel (logic) program sketch could be used as a specification to synthesise the incomplete portions automatically, using more modern methods.
+More modern approaches to program synthesis often use logic programming as specification, but use more specialised and scalable methods making use of machine learning to synthesise the programs \cite{NeuralGuidedLogicProgramSynthesis, ProgramSynthesisSketching}. Therefore, an incomplete Hazel (logic) program sketch could still be used as a partial specification, but using more modern methods.
 
 \subsection{Symbolic Execution}
-The search procedure was not always able to find witnesses, this was suspected to be due to low code coverage (\cref{sec:ImprovingCodeCoverage}). Improving code coverage for testing has been extensively researched, often via symbolic execution \cite{SymbolicExecutionSurvey}. Often, constraints along execution paths are modelled via \textit{satisfiability modulo theories} (SMTs) \cite{SMTs}, for which there exist many efficient solvers \cite{SMTSolver}.
+The search procedure was not always able to find witnesses, with some branches containing the errors never being searched. This problem has been extensively researched for automated test generation and program verification, often using symbolic execution \cite{SymbolicExecutionSurvey}. Constraints along execution paths can be modelled via \textit{satisfiability modulo theories} (SMTs) \cite{SMTs}, for which there exist many efficient solvers \cite{SMTSolver}.
 
-The evaluation of holes can already be consider a form of \textit{symbolic execution}. However, for indeterminate evaluation, the only constraints considered are the type of the hole. \Cref{sec:ExtendedPatternMatching} considered constraining instantiation based on structures of pattern within match statements. Full symbolic execution would also consider more complex constraints on the \textit{values} of base types.
+The evaluation of holes can already be consider a form of simple {symbolic execution}. However, for indeterminate evaluation, the only constraints considered are the type of the hole. \Cref{sec:ExtendedPatternMatching} considered constraining instantiation based on structures of pattern within match statements. Full symbolic execution would also consider more complex constraints on the \textit{values} of base types.
 
 \subsubsection{Polymorphism}
-The set of possible types is infinite. Generating witnesses for polymorphic values is therefore a much expanded state-space. Symbolic theories and solvers for polymorphic operations, would help in this situation \cite{PolymorphicSMTs}.
+The set of possible types is infinite. Generating witnesses for polymorphic values is therefore a much expanded state-space. Symbolic theories and solvers for polymorphic operations, would help in this situation.
 
 \subsection{Let Polymorphism \& Global Inference}
 Errors in the presence of global inference are often more subtle (\cite{SubtleOCamlErrors}), as there are fewer annotations which concretely assert the types for expressions. In this situation, type slicing, cast slicing, and the witness search procedure would be particularly useful.
