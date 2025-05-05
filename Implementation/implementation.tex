@@ -1,9 +1,10 @@
 \chapter{Implementation}\label{chap:Implementation}
 This project was conducted in \textit{two} major phases:
+\begin{enumerate}
+\item I constructed a core mathematical theory for \textit{type slicing} and \textit{cast slicing} formalising what these ideas actually were and considered the changes to the system presented by Seidel et al. for the \textit{type error witnesses search procedure} to work in Hazel.  
 
-First, I constructed a core mathematical theory for \textit{type slicing} and \textit{cast slicing} formalising what these ideas actually were and considered the changes to the system presented by Seidel et al. for the \textit{type error witnesses search procedure} to work in Hazel.  
-
-Then, I implemented the theories, making it suitable for implementation and extending it to the majority of the Hazel language. Further, suitable deviations from the theory were made upon critical evaluation and are detailed throughout.
+\item I implemented the theories, making it suitable for implementation and extending it to the majority of the Hazel language. Further, suitable deviations from the theory, made upon critical evaluation, are detailed throughout.
+\end{enumerate}
 
 \section{Type Slicing Theory}\label{sec:TypeSlicingTheory}
 
@@ -830,15 +831,9 @@ As always, a UI is implemented in \cref{sec:UIIndetEval}.
 
 \subsection{Resolving Non-determinism}
 \label{sec:ResolvingNondeterminism}
-To model infinite non-determinism I decide to use a \textit{monadic} high-level representation, and represent infinite solutions with sequences from Jane Street's \code{Base.Sequence}. I choose this due to it's \textit{uniform}\footnote{Many other types use the monadic return/bind interface. Lists and Options for example.} and familiar workings for other developers in the codebase. 
+To model infinite non-determinism I create a monadic and tree-based high-level representation. With the tree model allowing for varying low level search traversals.
 
-This sections describes an abstract DSL which abstracts the notion of non-determinism and the concrete search ordering. It's \textit{module type} of combinators is \code{Nondeterminism.Search}. \Cref{sec:SearchMethods} discusses the actual implementations of this interface, giving three different searching procedures.
-
-\subsubsection{Alternatives}
-\Cref{sec:Nondeterminism} considered multiple ways to represent non-determinism. The other options were:
-\paragraph{Direct implementation:} This would not allow for easily abstracting the search order and would obfuscate the workings of the indeterminate evaluation and instantiation algorithms. 
-\paragraph{Effect handlers:} Multiple continuation effect handlers were not supported by JSOO\footnote{An important dependency of Hazel.} \textbf{(cite)}, \paragraph{Continuations:} Directly writing continuations is difficult and generally unfamiliar to OCaml developers \textbf{(cite)}.
-\paragraph{Optimised DSL}: Introducing a formal DSL including optimisations, such as the proposed Tagless-Final DSL \cite{TaglessFinalDSL, NondetDSL}, is very complex.
+This sections describes an abstract DSL for this. It's \textit{module type} of combinators is \code{Nondeterminism.Search}. \Cref{sec:SearchMethods} discusses the actual implementations of this interface, giving three different searching procedures.
 
 \subsubsection{Monadic Non-determinism}
 To recap, in a monadic model of non-determinism we have three operations on monads \code{m('a)}:

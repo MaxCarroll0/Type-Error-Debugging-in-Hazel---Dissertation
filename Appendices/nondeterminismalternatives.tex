@@ -1,0 +1,19 @@
+\chapter{On Representing Non-Determinism}
+\label{sec:NonDeterminismAppendix}
+
+\subsubsection{High Level Representation}
+Other high level representations, besides monads, include:
+
+\paragraph{Logic Programming DSL:} Languages like Prolog \cite{Prolog} and Curry \cite{CurryLang} express non-determinism by directly implementing \textit{choice} via non-deterministic evaluation. Prolog searches via backtracking, while Curry abstracts the search procedure.
+
+There are ways to embed this within OCaml. Inspired by Curry, Kiselyov \cite{NondetDSL} created a tagless final style \cite{TaglessFinalDSL} domain specific language within OCaml. This approach fully abstracts the search procedure from the non-deterministic algorithm constructs.
+\paragraph{Delimited Continuations:} Delimited continuations \cite{DelimitedControl, ShiftReset} are a control flow construct that captures a portion of the program's execution context (up to a certain delimiter) as a first-class value, which can be resumed later (in OCaml, a function). This enables writing non-deterministic code by duplicating the continuations and running them on each possibility in a choice.
+
+\paragraph{Effect Handlers:} Effect handlers allow the description of effects and factors out the handling of those effects. Non-determinism can be represented by an effect consisting of the choice and fail operators \cite{EffectsExamples, HandlersInAction}, while handlers can flexibly define the search procedure and accounting logic, e.g. storing solutions in a list. As with delimited continuations, to try multiple solutions, the {continuations} must be cloned.
+
+
+\subsubsection{Reasoning Against}
+\paragraph{Direct implementation:} This would not allow for easily abstracting the search order and would obfuscate the workings of the indeterminate evaluation and instantiation algorithms. Some sort of high level representation is also massively beneficial for readability and understanding.
+\paragraph{Effect handlers:} Multiple continuation effect handlers were not supported by Javascript of OCaml (JSOO).\footnote{An important dependency of Hazel.} 
+\paragraph{Continuations:} Directly writing continuations is difficult and generally more unfamiliar to OCaml developers as opposed to monadic representations.
+\paragraph{Optimised DSL}: Introducing a formal DSL including optimisations, such as the proposed Tagless-Final DSL \cite{TaglessFinalDSL, NondetDSL}, is very complex. However, this would allow more flexibility in writing non-deterministic evaluation, with some optimisations made automatically by the DSL.
