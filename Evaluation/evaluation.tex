@@ -326,8 +326,8 @@ Hazel uses a structure editor with an update calculus \cite{HazelStructureCalcul
 Parsing and structural edit actions are made efficient\footnote{Constant time.} by use of a zipper data structure \cite{HuetZipper, OneHoleContext}. It might be possible to extend this zipper idea into the abstract syntax tree and it's statics (typing information), allowing local changes (and type changes) to propagate in the AST zipper. However, some local changes can propagate type changes \textit{non-locally} (e.g. inserting a new binding) which would require extensive recalculation of the typed AST. These non-local updates would be relatively rare. This is very complex and would require an entire rewrite of the Hazel statics, but would be beneficial for Hazel in general, not just type slicing.
   
 \subsection{Static-Dynamic Error Correspondence}
-\lable{sec:ErrorCorrespondence}
-\Cref{sec:StaticCastError} and \ref{sec:CastDependence} show that a static error that elaborates a cast failure, which can be associated with a dynamic error whose cast error is dependent on this original failed cast. This works well for \textit{inconsistent expectations} static type errors.
+\label{sec:ErrorCorrespondence}
+\Cref{sec:StaticCastError} noted that a static error will elaborates a cast failure, which can be associated with a dynamic error whose cast error is dependent on (decomposed from) this original failed cast. This works well for \textit{inconsistent expectations} static type errors.
 
 However, \textit{inconsistent branches} errors, static errors caused by synthesised branches being inconsistent, do not directly cause cast errors. Such errors will only be detected if both branches are used within a static context during the same evaluation run. The search procedure might find such cases if they exist, but cannot so easily associate it back to the static error. However, elaborating these terms does insert casts: on each branch to the dynamic type; these could be associated together with the error and tracked accordingly. 
   
@@ -580,7 +580,7 @@ As designing an intuitive user interface was not a core goal, therefore actual u
 \item Allowing the user to deconstruct type slices to query, for example: if a term has a function type, they could select the \textit{return type} and get only the part of the slice relevant to that, or select the function arrow to get the part that makes it a \textit{function} (ignoring the argument and return slice parts). The UI for this could again be via clicking on the type within the context inspector.
 
 This interactive version could really help a user to understand how parts of code come together to produce their types. This is a powerful feature made possible by type-indexed slices.
-\item Graphs visualising cast dependence (\cref{sec:CastDependence}). Showing the \textit{execution} context that leads to a cast error; these would be more concise summaries than full evaluation traces.
+\item Graphs visualising dependence of casts. Showing the \textit{execution} context that leads to a cast error; these would be more concise summaries than full evaluation traces.
 \item UI for visualising the search procedure's execution traces and instantiations. Currently, the search procedure only gives the final result containing cast error. This can be integrated with Hazel's existing trace visualiser. Further, compression of traces to make them more readable, e.g. skipping over irrelevant\footntoe{Irrelevant to the error.} function calls.
 \item Key bindings to more quickly cycle through indeterminate evaluation instantiation paths.
 \end{itemize}

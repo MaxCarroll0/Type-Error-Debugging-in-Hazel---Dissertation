@@ -1,0 +1,45 @@
+\chapter{Examples of Slicing Logic in Statics}
+\label{sec:slicingstaticsexamples}
+\subsubsection{Self}
+Every expression construct which can be synthesised has a corresponding function in \code{Self.re} to construct the slice from it's sub-derivations. Hence, the synthesis slicing behaviour for each type of expression can be easily configured uniformly via editing these functions.
+
+For example, the slice of a pattern matching statement, given slices of all it's branches (\code{tys}) is the join of it's branches wrapped in an incremental slice consisting of the ids of the match statement itself. Otherwise if the branches are inconsistent it returns a failure tagging the branch slices with ids of the branches:
+\begin{figure}[h]
+\begin{minted}[fontsize=\footnotesize]{reason}
+let of_match =
+    (ids: list(Id.t), ctx: Ctx.t, tys: list(TypSlice.t), 
+    c_ids: list(Id.t)): t =>
+  switch (
+    TypSlice.join_all(
+      ~empty=`Typ(Unknown(Internal)) |> TypSlice.fresh,
+      ctx,
+      tys,
+    )
+  ) {
+  | None => NoJoin(Id, add_source(c_ids, tys))
+  | Some(ty) => Just(ty |> TypSlice.(wrap_incr(slice_of_ids(ids))))
+  };
+\end{minted}
+\caption{Match Statement \code{Self.t}}
+\end{figure}
+
+This stage also included factoring out some expectation-independent code from the type checking function which had been missed by others.
+
+\subsubsection{Mode}
+Each construct which could deconstruct an analysing type has a corresponding function in \code{Mode.re} which outputs the mode(s) to check the inner expressions. The inner analysis slices are tagged with a \textit{global}\footnote{Being part of the analysis slice, relevant to all sub-slices.} slice tag describing \textit{why} the slice was deconstructed. As mentioned before \textbf{(ref)}, deconstructing types retains the contextual (global) parts of the analysis slice.
+
+For example, we can deconstruct a list slice with a list matching function \code{matched_list}. Using this, the mode to check a term inside a \textit{list literal} is the matched inner list slice wrapped (globally) in the ids of list literal itself (\code{ids}) which enforced this matching. We use this mode to check each element in the list literal.
+\begin{figure}
+\begin{minted}[fontsize=\footnotesize]{reason}
+let of_list = (ids: list(Id.t), ctx: Ctx.t, mode: t): t =>
+  switch (mode) {
+  | Syn
+  | SynFun
+  | SynTypFun => Syn
+  | Ana(ty) =>
+    Ana(TypSlice.(matched_list(ctx, ty) 
+    |> wrap_global(slice_of_ids(ids))))
+  };
+\end{minted}
+\caption{List Literal \code{Mode.t}}
+\end{figure}
