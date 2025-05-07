@@ -25,7 +25,7 @@
 
 \usepackage{soul}
 \usepackage{tikz}
-\usetikzlibrary{shapes.geometric, positioning, chains, trees}
+\usetikzlibrary{shapes.geometric, positioning, chains, trees, arrows.meta, calc}
 \usepackage{pgfplots}
 \usepackage{svg}
 \usepackage {siunitx}
@@ -102,6 +102,8 @@
 \usepackage{cleveref}
 \usepackage{fvextra} \DefineVerbatimEnvironment{Highlighting}{Verbatim}{breaklines,commandchars=\\\{\}} 
 
+\usepackage[linguistics]{forest}
+
 \newtheorem{conjecture}{Conjecture}
 \newtheorem{definition}{Definition}
 \newtheorem{proposition}{Proposition}
@@ -116,6 +118,7 @@
 %TC:envir minted [ignore] displaymath
 %TC:envir lstlisting [ignore] displaymath
 %TC:envir code [ignore] displaymath
+%TC:envir figure [ignore] displaymath
 
 \immediate\write18{texcount -inc -sum=1,0,0,0,0,0,0 -0 \jobname.tex > wordcount.aux }
 \newcommand{\wordcount}{\input{wordcount.aux}}

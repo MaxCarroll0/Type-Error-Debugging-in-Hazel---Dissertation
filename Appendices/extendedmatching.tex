@@ -1,0 +1,15 @@
+\chapter{Extended Pattern Matching Instantiation}
+\label{sec:extendedmatching}
+This appendix contains notes on instantiating holes in a match expression according also to the structure of the patterns in a match expression.
+
+To implement this, the scrutinee needs to be matched against a pattern \textit{and} instantiated at the same time. Crucially, instead of just giving up during indeterminate matches, the indeterminate part can be instantiated until it matches.
+
+However, this is not always enough to actually \textit{allow} destructuring using that branch in a match statement. The possibility that \textit{more specific} patterns could be present above the current branch means the resulting instantiation might still be result in an indeterminate match. For example, the following would be an indeterminate match:
+
+\begin{figure}[H]
+\texttt{case ?::? | [] => [] | x::y::[] => [] | x::xs => xs}
+
+\caption{More Specific Matches}
+\end{figure}
+
+To account for this, we can take ideas from pattern matrix techniques for producing exhaustivity warnings, \cite{PatternMatchingWarnings}. That is, we could generate a set of patterns which explicitly do not match any of the previous branches, then intersect those patterns with the current branch, and instantiate according to this intersection.

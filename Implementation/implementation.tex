@@ -495,7 +495,7 @@ However, as Hazel only checks consistency between casts between \textit{ground t
 As we already store type slices incrementally, the part of the slice which corresponds \textit{only} to the outer type constructor is the outer slice tag.
 
 \begin{figure}
-\[\tau_1 \to \tau_2 \match[\text{ground}] \dyn \to \dyn\]
+\[\tau_1 \to \tau_2 \match{\text{ground}} \dyn \to \dyn\]
 \caption{Ground Matching List}
 \label{fig:GroundFunction}
 \end{figure}
@@ -554,15 +554,13 @@ Type slices within casts can be selected from the evaluation result and displaye
 \caption{Cast Slicing Examples}
 \end{figure}
 \section{Indeterminate Evaluation}\label{sec:IndetEval}
-Dynamic type errors may only occur when an expression is given \textit{specific} inputs. However, a dynamic error is accompanied by an evaluation trace, which is often a \textit{useful debugging aid} \cite{TraceVisualisation}. When debugging static type errors, traces leading to a corresponding dynamic error are normally \textit{unavailable}.\footnote{As an ill-typed program will not run.} This section concerns the building blocks leading up to a search procedure that finds inputs which lead to dynamic errors \textit{automatically}.
+Dynamic errors include evaluation traces, aiding debugging \cite{TraceVisualisation}. Static type errors lack such traces, as ill-typed programs do not run. Seidel et al. [29] offer an OCaml algorithm using lazy, non-deterministic narrowing of holes to least specific values based on context (e.g., instantiating a hole in + as an integer). 
 
-Seidel et al. \cite{SearchProc} provides an algorithm for this in OCaml and provides evidence for the usefulness of traces via a \textit{user study}. This algorithm \textit{lazily} narrows hole terms non-deterministically to a \textit{least specific} value based on it's expected type in the context it was used. For example, if a hole is used within the \code{(+)} operator, it is non-deterministically instantiated to an integer. \textbf{(give better example with lists)}
-
-In Hazel, we already have a notion of hole terms and can already run program with static errors, with runtime type information being maintained by runtime casts. This section introduces \textit{indeterminate evaluation} as a natural analogue to Seidel's idea: to \textit{lazily} narrow holes during evaluation to \textit{least specific} values by exploiting the runtime type information available within Hazel's runtime casts. My implementation extends Seidel's to consider more classes of expressions\footnote{Notably, sum types.} and differs mechanically in many ways due to language differences and fundamental design differences.\footnote{Differences, and Hazel-specific challenges are noted throughout. \textbf{(ENSURE THIS!)}} Notably, indeterminate evaluation is a \textit{generic} evaluation method, not specifically relating only to searching for cast errors, which is covered in \cref{sec:SearchProcedure}.
+This section creates a framework for non-deterministic evaluation of indeterminate expressions by lazily performing hole substitutions using type information from dynamic casts. Unlike Seidel, this supports more language features (all of Hazel), any number of inputs (holes), and exhaustive generation of these inputs. Further, it is a general evaluation method, not limited to cast error searches. Specifics relating to cast errors, are covered in \cref{sec:SearchProcedure}.
 
 This section covers the following, answering each question:
 \begin{enumerate}
-\item[\ref{sec:ResolvingNondeterminism}] How should we resolve the non-determinism in instantiating holes \textit{fairly}? How can the search order be abstracted? Unlike Seidel's approach, my implementation is \textit{fair}: exhaustively considering all possibilities\footnote{For countable types.}, and allows search methods that avoid non-termination\footnote{For example, if one particular instantiation leads to an infinite loop in code.}.
+\item[\ref{sec:ResolvingNondeterminism}] How should we resolve the non-determinism in instantiating holes \textit{fairly}? How can the search order be abstracted? Unlike Seidel's approach, my implementation is \textit{fair}: exhaustively considering all possibilities, and allows search methods that avoid (unnecessary) non-termination.
 \item[\ref{sec:IndetEvalAlgorithm}] Describes an algorithm for indeterminate evaluation. Is every possibility explored fairly?
 \item[\ref{sec:ThreadingState}] How can \textit{per-solution} state be maintained irrespective of evaluation order?
 \item[\ref{sec:HoleInstantiation}] Discusses hole instantiation and substitution. What does lazy instantiation actually entail, when exactly should a hole be instantiated? Which hole\footnote{There may be multiple.} should be instantiated in order to continue evaluation to make progress? How should holes be substituted with their narrowed values; the same hole may exist in multiple locations within the expression?
@@ -573,119 +571,131 @@ As always, a UI is implemented in \cref{sec:UIIndetEval}.
 
 \subsection{Resolving Non-determinism}
 \label{sec:ResolvingNondeterminism}
-To model infinite non-determinism I create a monadic and tree-based high-level representation. With the tree model allowing for varying low level search traversals.
-
-This sections describes an abstract DSL for this. It's \textit{module type} of combinators is \code{Nondeterminism.Search}. \Cref{sec:SearchMethods} discusses the actual implementations of this interface, giving three different searching procedures.
+To model infinite non-determinism I create a monadic DSL with an explicitly tree/forest-based representation. The forest model allows for varying low level search traversals. The module type of combinators is in \code{Nondeterminism.Search}; it's underlying parametric type is \code{t('a)} with \code{'a} being the type of the solutions. \Cref{sec:SearchMethods} discusses the actual implementations of this interface, giving four searching procedures.
 
 \subsubsection{Monadic Non-determinism}
-To recap, in a monadic model of non-determinism we have three operations on monads \code{m('a)}:
-\begin{itemize} 
-\item \code{return : 'a => m('a)}, injects a single solution into it's non-deterministic monadic representation.
-\item \code{bind : m('a) => ('a => m('b)) => m('b)}, corresponding to a conjunction of choice. Given possibilities from \code{m('a)}, each leading to more possibilities in \code{m('b)}: \code{bind} conjoins all the non-deterministic possibilities from \code{m('b)}.
-\item \code{fail : 'a => m('a)}, representing no solution, no choices are possible.
-\item \code{choice : m('a) => m('a) => m('a)}, a disjunction of choice: either solutions are possible. Represented infix by \texttt{<||>}.
-\end{itemize}
-These satisfy the before mentioned laws (\cref{sec:Nondeterminism}). And we can define a host of other useful constructs from these:
+\cref{sec:Nondeterminism} described a high level monadic framework for nondeterminism. I extend this with some extra functions:
+
 \begin{itemize}
-\item \code{map : m('a) => ('a => 'b) => m('b)}. Represented infix by \code{>>|}. Where \code{m >>| f = m >>= (x => return(f(x))}. Mapping represents performing a transformation on all possible solutions.
-\item \code{join : m(m('a)) => m('a)}, where \code{join(m) = m >>= (x => x)}. (\textbf{todo, give intuition for join)}.
-\item \code{once : m('a) => option('a)}, extracts any one solution, if one exists. This can be used to efficiently model \textit{don't care} non-determinism, where if one possibility fails, then we know all others fail also.
-\item \code{run : m('a) => Sequence.t('a)} produces a lazy list of all solutions.
-\item \code{guard : bool => m(unit)}, represents success, defined by \code{code(false) = fail} and \code{code(true) = return(())}. When chaining binds, if any guard bind fails, then the whole computation fails.
-\item \code{ifte : m('a) => ('a => m('b)) => m('b)}. This corresponds to Mercury's interpretation of an if-then-else construct \cite{Mercury}. Where \code{ifte(c)(thn)(els)} executes the \code{els} only if the conditional \code{c} fails initially. Otherwise it binds the results of the in the \code{thn} branch. Importantly, if the conditional fails on backtracking, the \code{els} branch is \textit{not} computed. Hence, it is put to good use for explaining failure of the conditional.
+\item Standard \code{map} and \code{join} functions. Mapping transforms all possible solutions, but does not change if a candidate \textit{is} a solution.
+\item \code{once : t('a) => option('a)}, extracts any one solution, if one exists. This can be used to efficiently model \textit{don't care} non-determinism, where if one possibility fails, then we know all others fail also.
+\item \code{run : t('a) => Sequence.t('a)} produces a lazy list (Jane Street's \code{Base.Sequence}) of all solutions.
+\item \code{guard : bool => t(unit)}, represents success. When chaining binds, if any guard binding fails, then the whole computation fails.
+\item \code{ifte : m('a) => ('a => m('b)) => m('b)}. This corresponds to Mercury's interpretation of an if-then-else construct \cite{Mercury}. It is put to good use for computations which explain the failure of the conditional.
 \end{itemize}
 
-\subsubsection{Abstracting Search Order: Tree Model}
-Typical stream-based models of non-determinism \cite{ListOfSuccess} only admit the possibility of depth-first search (DFS). Streams provide no way of remembering choice points and backtracking before finishing a computation. 
+\subsubsection{Abstracting Search Order: Forest Model}
+Typical stream-based models of non-determinism \cite{ListOfSuccess} only admit the possibility of depth-first search (DFS). Stream concatenation provides no way of remembering choice points and backtracking before finishing a computation. 
+
+Instead, monadic non-determinism can be represented by forests \cite{Bunches}. A forest is a list of trees, and can be defined as a monad. Choice, similarly to streams, is performed by concatenating forests. Finally, in order to build tree structure, a \code{wrap} combinator can wrap a forest as a tree whose root leads branches to each tree in the original forest, see \cref{fig:Wrap}.
 
 \begin{figure}[h]
-Stream model here, see \cite{BFSCombinators}?
-Use arrows to indicate DFS.
-\caption{Streams require Depth-First Search}
+\centering
+\begin{subfigure}{0.45\textwidth}
+\centering
+\[\left[\ 1\quad ; \quad 2 \quad ; \quad 3\ \right]\]
+\caption{\code{let x = return(1) <||>} \code{return(2)} \code{         <||> return(3)}}
+\end{subfigure}
+\begin{subfigure}{0.45\textwidth}
+\centering
+\[\left[\vcenter{\hbox{\begin{forest}
+[$\cdot$ [4] [5]]
+\end{forest}}}\right]\]
+\caption{\code{let y = wrap(return(4) <||> return(5))}}
+\end{subfigure}
+\begin{subfigure}{0.45\textwidth}
+\centering
+\[\left[\vcenter{\hbox{\begin{forest}[$\cdot$ [1] [2] [3]]\end{forest}}} \quad ; \quad\vcenter{\hbox{\begin{forest}[$\cdot$ [4] [5]]\end{forest}}}\right]\]
+\caption{\code{let z = wrap(x) <||> y}}
+\end{subfigure}
+\begin{subfigure}{0.45\textwidth}
+\centering
+\[\left[\vcenter{\hbox{\begin{forest}[$\cdot$ [$\cdot$ [1] [2] [3]][$\cdot$ [4] [5]]]\end{forest}}}\right]\]
+\caption{\code{wrap(z)}}
+\end{subfigure}
+\caption{Forests Defined Using \code{wrap}}
+\label{fig:Wrap}
 \end{figure}
 
-Instead, a model of non-determinism using \textit{trees} allows for nested choices. These trees can be traversed in various orders, such as breadth-first search  (BFS)\cite{BFSCombinators}. 
+Therefore, I extend the DSL with a \code{wrap : t('a) => t('a)} combinator. Here, \code{wrap} is abstract, the underlying implementation does not actually need to use a forest data structure.\footnote{Therefore, DFS can still be efficiently implemented with regular streams.}
 
-\begin{figure}[h]
-Tree of choices, use arrows to indicate breadth first search.
-\caption{Tree of Choices with Breadth-First Search}
-\end{figure}
+These trees can be traversed in various orders, e.g. breadth-first search (BFS)\cite{BFSCombinators}, or bounded DFS. With this in mind, \code{run} now represents performing the search on the tree, returning the solutions in sequence.
 
-To retain the possibility of failure, forests (lists of trees) can be used, with the empty list being failure.
-
-\begin{figure}[h]
-Use same example as BFS above (pairs/choose function, i.e. instantiating tuples).
-\caption{Forest Defined Using \code{wrap}}
-\end{figure}
-
-A combinator, \code{wrap}, allows for the programmer to control directly what constitutes a \textit{fork} in the tree as suggested by Spivey \cite{Bunches}. Previous models would uniformly take each use of the choice operator as a fork, permitting less control. In essence, this allows for some notion of \textit{cost}\footnote{The depth of the node in the tree.} for each solution to be directly encoded in the algorithm.
-
-Implementations for DFS, BFS, and bounded DFS are given in \cref{sec:SearchMethods}. In each case, the stream of solutions produced by \code{run} will return in the corresponding search order.
-
-\subsubsection{Fairness in Infinite Choice \& Conjunction}
-Previously
-\paragraph{Fair Choice:} Consider the choice \code{m <||> n}, if \code{m} has infinite solutions. When using \textit{append} to represent choice for sequences \textbf{cite}, then \code{m <||> n = m}\footnote{\code{m} never ends to start appending \code{n}.}. No solutions of \code{n} will be encountered upon running through this choice. But append is a perfectly valid definition of choice as according to the specified laws.
-
-To ensure each possible solution is returned in finite time, it is useful to introduce fair choice. A fair choice computation will always return \textit{every} possible answer. For the append example above, any form of \textit{interleaving} can represent fair choice. \textbf{Cite fair choice, e.g. kiselyov?}
-
-\begin{figure}
-
-\caption{Unfair vs Fair Choice}
-\label{fig:FairChoice}
-\end{figure}
-
-Fair choice is denoted by \code{<|>}. Figure \cref{fig:FairChoice}, shows how two infinite choice trees for non-negative and negative integers respectively would be appended vs interleaved fairly.
-
-\paragraph{Fair Conjunction:} 
-Similarly, conjunction is not fair. For a computation \code{(m <||> n) >>= f}, if \code{m >>= f} is infinite, then only these might be returned. For example, binding sequences is typically defined via concatenating and mapping: \code{m >>= f = concat(m >>| f)}. 
-
-The use of unfair choice (\code{append}) leads to unfairness in bind. A fair conjunction would use fair choice instead.
-
-Fair conjunction is denoted by \code{>>-}. \Cref{fig:FairConjunction} demonstrates how \textit{pairs} of natural numbers can be generated fairly using \textit{fair conjunction}.
-
-\begin{figure}
-1 -> (1, 1), (1, 2), ...
-2 -> (2, 1), (2, 2), ...
-\caption{Unfair vs Fair Conjunction}
-\label{fig:FairConjunction}
-\end{figure}
-
-\ \\
-These fair combinators satisfies the original non-determinism and monad laws up to the ordering of results. \textbf{Spivey says \texttt{>>-} is not associative? Not sure I agree?}
+In essence, \code{wrap} allows encoding some notion of \textit{cost}\footnote{The depth of the node in the tree.} to solutions, which can then affect the search order.
 
 \subsubsection{Recursive Functions}
-As OCaml is strict, to allow for easier I define a shorthand lazy application function \code{apply(f, x)} defined by \code{return(x) >>= f}. This is equivalent to regular application up to laziness. Represented infix by \code{|>-}. This allows the writing of recursive functions directly resulting in infinite choices without OCaml's strictness leading to infinite recursion.
-
-\textbf{TODO: Do I need a fixed point operator? it seems hard to get this working for BFS!}
+As OCaml is strict, defining infinite choices via recursion can lead to non-termination during definition. I define a shorthand lazy application function \code{apply(f, x)} by \code{return(x) >>= f}, represented infix by \code{|>-}. Provided that bind lazily applies \code{f},\footnote{Which it usually does, consider streams as an example.} recursive functions can be written directly resulting in infinite choices without OCaml's strictness leading to infinite recursion.
 
 \subsection{A Non-Deterministic Evaluation Algorithm}
 \label{sec:IndetEvalAlgorithm}
-In Hazel, for any term $d$, we have four situations, for which indeterminate evaluation performs the following rules:
-\begin{itemize}
-\item $d$ is a final value.
+This section demonstrates how we can indeterminately evaluation to return all possible values. Demonstrated by \cref{fig:IndetEvalBlock} and with code extract \cref{fig:IndetEval}.
 
-Return the value as a possible result.
-\item $d$ is an indeterminate final term.
+\begin{figure}[h]
+\centering
+\begin{tikzpicture}[
+  node distance=1.8cm and 2.5cm,
+  every node/.style={font=\small},
+  startstop/.style={rectangle, rounded corners, draw, minimum width=3.5cm, minimum height=1cm, text centered, fill=blue!10},
+  process/.style={rectangle, draw, minimum width=3.5cm, minimum height=1cm, text centered, fill=orange!20},
+  decision/.style={diamond, draw, aspect=2, text centered, inner sep=1pt, fill=yellow!20},
+  arrow/.style={-Latex}
+]
 
-Some of these terms contain holes.\footnote{Not all, indeterminate terms also arise from static or dynamic errors.} Non-deterministically instantiate these holes lazily and \textit{fairly} try indeterminately evaluating each resulting term.
+% Nodes
+\node (start) [startstop] {Bind input to $d$};
 
+\node (classify) [process, below=of start] {\texttt{take\_step}(d)};
 
-\item $d$ is not final. Therefore a (deterministic) step is possible.
+\node (isValue) [decision, left=of classify] {Final value?};
+\node (isIndet) [decision, below=of classify] {Indeterminate?};
+\node (isStep) [decision, below right=of classify] {Can step?};
 
-Step to the new term $d'$. Indeterminately evaluate $d'$.
+\node (retVal) [startstop, below=of isValue] {Return $d$ as result};
 
-\item There was an \textit{evaluator exception}.
+\node (instantiate) [process, below=of isIndet] {\texttt{instantiate}(d)};
 
-Fail.
-\end{itemize}
+\node (inst1) [process, left= of instantiate] {Instantiation 1};
+\node (inst2) [process, below=of inst1] {Instantiation 2};
+\node (instN) [below=of inst2] {$\vdots$};
 
-Instantiation can be represented by a \textit{non-deterministic} function \code{instantiate}, discussed in detail in \cref{sec:HoleInstantiation}: \[\code{Instantiation.instantiate : Exp.t => m(Exp.t)}\footnote{Details \& types relating to state and environment threaded through evaluation are omitted here for clarity. Therefore, these signatures differ from the code.}\]
+\node (evalNext) [process, below=of isStep] {Step to $d'$};
 
-Classifying the term $d$, into values, indeterminate terms, and expressions with a possible step is done by a \textit{deterministic} function \code{take_step}, discussed in \cref{sec:OneStepEvaluator}: \[\code{OneStepEvaluator.take_step : Exp.t => TryStep.t}\] 
+\node (fail) [startstop, right=of classify] {Exception: \texttt{fail}};
 
-Recursively performing the search is wrapped up as a new level in the search tree. This means that the tree never has an unbounded branching factor, as would occur by not wrapping evaluation steps if the evaluation went into an infinite loop.
+% Arrows
+\draw [arrow] (start) -- (classify);
 
-To allow for multiple searching methods, the algorithm is placed within a \textit{functor} \textbf{(cite)}, which takes a searching method, \code{S : Search}, with the previously described signature (\cref{sec:ResolvingNondeterminism}). Using \code{S}, the algorithm is defined in \cref{fig:IndetEval}.
+\draw [arrow] (classify) -- (isValue);
+\draw [arrow] (classify) -- (isIndet);
+\draw [arrow] (classify) -- (isStep);
+\draw [arrow] (classify) -- (fail);
+
+\draw [arrow] (isValue) -- node[right] {Yes} (retVal);
+\draw [arrow] (isIndet) -- node[right] {Yes} (instantiate);
+\draw [arrow] (isStep) -- node[right] {Yes} (evalNext);
+
+% Recursive loop from evalNext to start
+\draw [arrow] (evalNext.south) |- ++(4,-1) |- (start.east);
+
+% Instantiate forks
+\draw [arrow] (instantiate.west) |- (inst1.east);
+\draw [arrow] (instantiate.south) |- (inst2.east);
+\draw [arrow] (instantiate.south) |- (instN.east);
+
+% Loop back from each instantiation to start
+\draw [arrow] (inst1.west) -- ++(-1,0) |- (start.west);
+\draw [arrow] (inst2.west) -- ++(-1,0) |- (start.west);
+\draw [arrow] (instN.west) -| ($(inst2.west)+(-1,0)$) |- (start.west);
+\end{tikzpicture}
+\caption{Block diagram of indeterminate evaluation to values}
+\label{fig:IndetEvalBlock}
+\end{figure}
+
+Instantiation is implemented by a \textit{non-deterministic} function \code{instantiate}, discussed in detail in \cref{sec:HoleInstantiation}: \[\code{Instantiation.instantiate : Exp.t => m(Exp.t)}\]
+
+Classifying a term $d$, into values, indeterminate terms, and expressions with a possible step is done by a (deterministic) function \code{take_step}, discussed in \cref{sec:OneStepEvaluator}: \[\code{OneStepEvaluator.take_step : Exp.t => TryStep.t}\] 
+
+To ensure that the search tree has finite branching factor, possibly infinite choices must be wrapped, e.g. evaluation steps. To allow for multiple searching methods, the algorithm is placed within a \textit{functor}, which takes a searching method, \code{S : Search}.
 
 \begin{figure}[h]
 \begin{minted}{reason}
@@ -699,8 +709,8 @@ module Make = (S: Search) => {
     switch (step) {
     | BoxedValue => return(d)
     | Indet => 
-      d |>- wrap(Instantiation.instantiate
-        >>- values);
+      d |>- Instantiation.instantiate
+        >>- values;
     | Step(d') => wrap(d' |>- values);
     | exception (EvaluatorError.Exception(_)) => fail
     };
@@ -712,10 +722,10 @@ module Make = (S: Search) => {
 \end{figure} 
 
 \subsection{Threading Evaluation State}
-In order to track statistics for use in the evaluation, state must be threaded through indeterminate evaluation. State tracked includes, on a \textit{per-solution} basis:\footnote{Hazel also uses the state to track other interesting features: \textit{Probes} and \textit{Tests}. These are complex, making use of mutability, but are outside the scope of this project. However, my code still maintains this state correctly \textbf{TODO}.}
+In order to track statistics for use in the evaluation, state must be threaded through indeterminate evaluation. State tracked includes, on a \textit{per-solution} basis:
 \begin{itemize}
-\item Trace length: number of steps performed to get to this solution.
-\item Number of instantiations performed to get to this solution.
+\item Trace length.
+\item Number of and size of instantiations performed.
 \end{itemize}
 
 So instead of threading only the solutions, \code{DHExp.t}, I also thread the state, \\\code{(DHExp.t, IndetEvaluatorState.t)}, updating according depending on the branch taken.
@@ -729,31 +739,39 @@ There are three key problems to solve in order to instantiate terms.
 \label{sec:ChooseHole}
 An indeterminate term may contain \textit{multiple} holes or even \textit{no} holes. Which hole needs to be instantiated in order to \textit{make progress}?
 
-A term is concluded to be indeterminate if some part of it is indeterminate, as according to the rules in \ref{sec:HazelFinalForms}. If those corresponding sub-parts were instead a value, then the whole term would be a value. Recursively applying this logic, there will be a collection of terms where indeterminateness \textit{originates}. These will either be holes or erroneous terms. If they are holes, then instantiating these may will either allow evaluation to continue or directly turn the overall term into a concrete value. \Cref{fig:IndetOrigination} demonstrates some examples of the possible situations.
+When attempting to evaluate the indeterminate term some transitions rules require a sub-term to be concrete (e.g. a function during application). We chose to instantiate the hole that blocks the \textit{first} blocked transition rule. If latter holes were instantiated, the term might \textit{still} be unevaluable due to this first hole.
 
-\begin{figure}
-One example with a cast error. One example with one holes. An example with multiple holes. An example where the holes don't matter.
-\caption{Where Does Indeterminateness Originate?}
-\label{fig:IndetOrigination}
-\end{figure}
-
-Hazel's transition semantics specifies these rules, and careful use of the evaluation abstraction allows propagating the terms where indeterminateness originate (those which output the rule \code{Indet} in \code{transition}). To simplify, I consider and instantiate only the \textit{first} hole where indeterminateness originates at a time. Should multiple need to be instantiated to progress, it will simply instantiate one hole, then fail to evaluate, then instantiate another, then try evaluate again, etc.
+This is implemented using Hazel's evaluator abstraction (\code{EV_MODE}), separating this logic from the transition semantics. Therefore, hole choice logic will automatically update to any future changes in the transition semantics.
 
 \subsubsection{Synthesising Terms for Types}
-Suppose we know which hole to instantiate and to which type (\cref{sec:TypesForHoles}). How do we refine these holes \textit{fairly} and lazily, to their \textit{least specific} value that allows evaluation to continue?
+Suppose we know which hole to instantiate and to which type (\cref{sec:TypesForHoles}). How do we refine these holes fairly and lazily, to the \textit{least specific} value that allows evaluation to continue?
 
-Some types are \textit{atomic} and must be instantiated to (possibly infinite set) of concrete types; again, we must be careful to ensure that the branching factor of the search tree remains finite:
-
-\paragraph{Booleans:} Simple binary choice: \code{return(true) <||> return(false)}.
-\paragraph{Integers:} Integers are countable, so can be enumerated, for example, by constructing the tree in \cref{fig:Integers}, which wraps each integer and it's negative in each level of the tree. Of course, OCaml integers are not arbitrary precision, so not every mathematical integer is represented here; in the future, Hazel might use arbitrary precision integers.
+Base types must be instantiated directly to their (possibly infinite set of) values, for example:
+\paragraph{Booleans:} \code{return(true) <||> return(false)}.
+\paragraph{Integers:} A recursive definition using lazy application \code{|>-}, see \cref{fig:Integers}:
 \begin{figure}[h]
 \begin{minted}{reason}
 let rec ints_from = n => return(n) <||> wrap(n + 1 |>- ints_from)
 let nats = ints_from(0)
 let negs = ints_from(1) >>| n => -n
-let ints = nats <|> wrap(negs) 
+let ints = nats <||> wrap(negs) 
 \end{minted}
-SHOW TREE HERE
+\begin{subfigure}{0.45\textwidth}
+\centering
+\[\left[\ n \quad ; \quad \vcenter{\hbox{\begin{forest}
+[$\cdot$ [$n+1$] [$\cdot$ [$n + 2$] [$\cdot$ [$n+3$] [...]]]]
+\end{forest}}}\right]\]
+\caption{\code{ints_from(n)}}
+\end{subfigure}
+\begin{subfigure}{0.45\textwidth}
+\centering
+\[\left[\ 0 \quad ; \quad \vcenter{\hbox{\begin{forest}
+[$\cdot$ [$1$] [$\cdot$ [$2$] [$\cdot$ [$3$] [...]]]]
+\end{forest}}} \quad ; \quad \vcenter{\hbox{\begin{forest}
+[$\cdot$ [$-1$] [$\cdot$ [$-2$] [$\cdot$ [$-3$] [...]]]]
+\end{forest}}}\right]\]
+\caption{\code{ints}}
+\end{subfigure}
 \caption{Enumerating Integers}
 \label{fig:Integers}
 \end{figure}
@@ -767,57 +785,44 @@ let rec strings = () => return("")
             (() |>- strings) >>- str => 
             chr ++ str)) 
 \end{minted}
-SHOW TREE HERE, also check impl
 \caption{Enumerating Strings}
 \label{fig:Strings}
 \end{figure}
+\
 
-\paragraph{Floats:} Every float can be represented by a (or multiple) rational number(s). Therefore, generating every rational number will then performing float division, will generate every float. Again, this does not actually generate every rational due to OCaml's fixed-precision integers, and hence will not generate every float. See \cref{sec:EvalHoleInstantiation} for further discussion.
- \\
- 
 Other types are \textit{inductive}, these can be represented indirectly by lazily instantiating only their \textit{outermost} constructor: 
  
-\paragraph{Lists:} Any list can be directly represented as either the empty list, $[\ ]$ or a cons $\dyn :: \dyn$. We do not need to generate every list directly.
+\paragraph{Lists:} A list is either the empty list, $[\ ]$ or a cons $\dyn_1 :: \dyn_2$. Note that, to retain the correct dynamic type information, $\dyn_2$ must be cast back to the list type. 
 \paragraph{Sum Types:} Enumerate each of the sum's constructors with their least specific value.
-\paragraph{Functions:} A function can be represented with it's least specific value by $\lambda \dyn.\ \dyn$. However, to allow functions to be used it is useful to instantiate the pattern to the wildcard pattern `\code{_}'. The function may then be applied to any value. This therefore only generates \textit{constant} functions, which is all that is required to find cast errors. But, extensions to program synthesis (\cref{sec:LogicProgramming}) would require more sophisticated function instantiation.
-
-\ \\
-
-One might state that atomic types could be represented inductively. For example, every string of prefix \texttt{s} could be represented by \codeE{s ++ |\dyn|}. However, Hazel does not currently treat these inductively; there is no way to destructure such a string, without first fully evaluating to a concrete value. The evaluation (\cref{sec:EvalHoleInstantiation}), discusses the implications of this in detail.
+\paragraph{Functions:} Constant functions have least specific values $\lambda \_.\ \dyn$. The function may then be applied to any value, and it's result synthesised after application. This can synthesise any return value, hence errors in the usage of the function will be detected. But, if the \textit{input} has an erroneous type but is uncaught as the function is dynamic, potential errors arising from this cannot be found.\footnote{This can occur in dynamic functions with inconsistent branches. But this is extremely rare, and can be fixed for most cases by generating the identity function where function hole's expected type allow.} Extensions to program synthesis (\cref{sec:LogicProgramming}) would require more sophisticated function instantiation.
 
 
 \subsubsection{Maintaining Correct Casts}
-Every hole instantiated must have originally been of the dynamic type. Therefore, that hole's context would have \textit{expected} it to be of the dynamic type. In order to maintain correct casts, from \textit{actual} type to \textit{expected} type, we must cast the every instantiation back to the dynamic type.
+Every hole has a dynamic type at runtime. Therefore, that hole's context \textit{expects} it to have the dynamic type. Therefore, we must cast every instantiation back to the dynamic type.
 
 \subsubsection{Substituting Holes}\label{sec:HoleSubstitutionImplementation}
-Hole's can be evaluated, and may also be duplicated, or be added to closures, before they are required to be instantiated. How can we consistently substitute these holes for their instantiations?
+Holes can be bound to variables in the execution environment, and may also be duplicated, before they are required to be instantiated, see \cref{fig:HoleDuplication}. Therefore, instantiations must be substituted for every occurrence of the same hole.
 
-\Cref{fig:HoleDuplication} shows how a hole $\dyn_1$ can duplicated during evaluation and also bound within an closure.
 \begin{figure}[h]
-Bbbb
+\centering
+\includegraphics[width=0.4\textwidth]{Media/Figures/duplicate_hole}
 \caption{Duplicated Holes}
 \label{fig:HoleDuplication}
 \end{figure}
 
-Hole substitution was described as part of the Hazel. Unexpectedly, the main Hazel branch did not yet implement it. Full implementation of \textit{metavariables} and \textit{delayed closures} is complex. Therefore, I instead use the existing term ids to represent metavariables, and ensure these ids are propagated correctly throughout statics, elaboration, and evaluation.\footnote{A huge portion of the code-base required checks.}
+Consistent hole substitution was described as part of the Hazel calculus \cref{sec:HoleSubstitution}. Unexpectedly, the main Hazel branch did not yet implement it. A full implementation of metavariables and delayed closures is complex. Therefore, as hole closures are not required for hole instantiation,\footnote{Currently, there is no need to instantiate to a variable reference.} I instead use the existing term ids to represent metavariables, and ensure these ids are maintained and propagated correctly throughout statics, elaboration, and evaluation.\footnote{A huge portion of the code-base required checks.}
 
-By matching these ids, we can substitute terms for holes consistently throughout the entire expressions. This \textit{included} substituting the holes eagerly inside closures, followed by evaluating the closure bindings to values, a required invariant. 
+We can substitute terms for every hole with the given ID throughout the entire expressions. Substitutions within closures \textit{include} eagerly evaluating the resulting binding to ensure the invariant that closures bind variables to values. 
 
 \subsection{One Step Evaluator}\label{sec:OneStepEvaluator}
-The step evaluator uses the evaluation abstraction to create an \textit{evaluation context} from a term. \textbf{REF} Decomposing it into an object containing:
+The step evaluator uses the evaluation abstraction to create an \textit{evaluation context} from a term, to return:
 \begin{itemize}
 \item An evaluation context, with a \textit{mark} inserted in place of the sub-term which is evaluated according to the transition rules.
 \item The environment under which the sub-term is evaluated.
 \item The kind of rule that was used (e.g. substitution, addition, etc.).
 \end{itemize}
 
-\begin{figure}
-An example step leading to a specific eval obj.
-\caption{\code{EvalObj.t} Example}
-\label{fig:EvalObjExample)}
-\end{figure}
-
-Maintaining this information allows the indeterminate evaluation method to treat different steps differently. For example a search procedure might wish to extract only the steps which were substitutions, in order to produce a compressed execution trace.
+This information allows indeterminate evaluation methods to treat different steps differently. For example one might wish to return only the substitution steps, to produce a compressed execution trace.
 
 \subsection{Determining the Types for Holes}
 \label{sec:TypesForHoles}
@@ -829,9 +834,9 @@ For efficiency, my implementation both determines \textit{which hole}, and it's 
 Most of the time, a hole is directly surrounded by a cast, whose type information can be used to perform an instantiation.
 
 \subsubsection{Cast Laziness}\label{sec:CastLaziness}
-However, it is \textit{not} always the case that a hole which needs to be instantiated is surrounded by a cast. For efficiency reasons, Hazel treats casts over compound data-types lazily, for example, casts around a tuple will only by pushed inside upon usage of a component of the tuple.
+However, this is \textit{not} always the case. For efficiency reasons, Hazel treats casts over compound data-types lazily, e.g. casts around tuples will only by pushed inside upon usage of a component of the tuple.
 
-Therefore, in order to actually instantiate these into values directly, casts must be pushed inside compound data \textit{eagerly}. However, this is a significant change to the Hazel semantics, so was opted against. \Cref{sec:EvalCastLaziness} discussed the consequence of this choice. 
+Treating casts eagerly is a significant change to the Hazel semantics, so was opted against. \Cref{sec:EvalCastLaziness} discusses the consequence of this choice. 
 
 
 \subsubsection{Pattern Matching}
@@ -857,43 +862,14 @@ Show how indeterminate matches cause a list to try increasing lengths by repeate
 \caption{Instantiating a Scrutinee}
 \end{figure}
 
-\subsubsection{Extended Match Expression Instantiation}
+\subsubsection{Extended Match Expression Instantiation (Pattern Instantiation)}
 \label{sec:ExtendedPatternMatching}
-An interesting extension was attempted to improve code coverage of the instantiations \textbf{ref branch}. Given patterns are known, it is possible to instantiate holes according to not only the types, but also the \textit{structure} of each pattern. This allows the instantiation to prioritise searching along each branch.
+An interesting extension was partially implemented which improves code coverage and additionally detects errors within patterns. 
 
-Hence, we could try instantiating the match scrutinee with least specific versions which match the patterns on each branch, e.g. \code{?::?} for \code{x::xs}. i.e. 
-
-\begin{figure}[H]
-\texttt{case ?::? | [] => [] | x::xs => xs}
-\caption{Branch-Directed Instantiation}
-\end{figure}
-
-To implement this, \textbf{(TODO)} the scrutinee needs to be matched against a pattern \textit{and} instantiated at the same time. Crucially, instead of just giving up during indeterminate matches, the indeterminate part can be instantiated until it matches.
-
-\begin{figure}[H]
-\caption{Combining Matching and Instantiation}
-\end{figure}
-
-However, this is not always enough to actually \textit{allow} destructuring using that branch in a match statement. The possibility that \textit{more specific} patterns could be present above the current branch means the resulting instantiation might still be result in an indeterminate match. For example, the following would be an indeterminate match:
-
-\begin{figure}[H]
-\texttt{case ?::? | [] => [] | x::y::[] => [] | x::xs => xs}
-
-\caption{More Specific Matches}
-\end{figure}
-
-To solve this, we can introduce least specific instantiations that do \textit{not} match a pattern. These will generally not be representable by only \textit{one} term. For example:
-\begin{figure}
-NOT x::xs is []
-NOT [?] is [] or ?::?::? 
-Not 1 is the integers excepting 1
-etc.
-\caption{Not Instantiations}
-\end{figure}
-
-The use of inequalities here can become inefficient, and representing cases like \textit{not 1} result in infinite search-spaces. Extending this to a full-blown SMT solver would be beneficial, see \cref{sec:SMTSolvers}.
+It instantiates holes in a match expression according also to the \textit{structure} of each pattern, allowing the instantiation to prioritise searching along each branch. We instantiate the scrutinee with the least specific versions which match the patterns on each branch, e.g. \code{?::?} for \code{x::xs}. However, sometimes this instantiation is not specific enough to explicitly not match with previous statements, hence getting stuck. Proposed solutions can be found in \cref{sec:extendedmatching}.
 
 \subsection{User Interface}\label{sec:UIIndetEval}
+The default evaluation method returns every possible indeterminate or concrete values. The possibilities can be cycled through via some arrows buttons.
 
 \section{Search Procedure}\label{sec:SearchProcedure}
 Now that an framework for indeterminate evaluation has been specified, the following problems can be addressed:
