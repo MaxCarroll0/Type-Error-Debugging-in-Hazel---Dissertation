@@ -841,26 +841,16 @@ Treating casts eagerly is a significant change to the Hazel semantics, so was op
 
 \subsubsection{Pattern Matching}
 \label{sec:PatternMatching}
-Does a hole even have only one possible type?
-
-The introduction of (dynamic) pattern matching actually allows terms to be matched against \textit{non-uniform} types if the scrutinee is dynamic. In \cref{fig:DynamicPatternMatching}, if \code{term} is an integer 0 then it returns 0, but if it's the string "one" then it returns 1. Hence instantiating \code{code} to either an int or string might allow progress.
+Does a hole even have only one possible type? The introduction of (dynamic) pattern matching actually allows terms to be matched against \textit{non-uniform} types if the scrutinee is dynamic. In \cref{fig:DynamicPatternMatching}, if \code{term} is an integer 0 then it returns 0, but if it's the string "one" then it returns 1. Hence instantiating \code{code} to either an int or string might allow progress.
 
 \begin{figure}[h]
-let term : ? =   in
-case term 
-  | x::xs => x
-  | 0 => 0
-| "one" => 1 end 
+\centering
+\includegraphics[width=0.3\textwidth]{Media/Figures/dynmatch}
+\caption{Dynamic/Type-case Match Statement}
 \label{fig:DynamicPatternMatching}
 \end{figure}
 
 Hazel implements this by placing casts on the \textit{branches}, rather than the scrutinee. Therefore, we can collect each of these possible types from the casts, and wrap them around the scrutinee, continuing evaluation accordingly.
-
-
-\begin{figure}
-Show how indeterminate matches cause a list to try increasing lengths by repeatedly instantiating it's tail...
-\caption{Instantiating a Scrutinee}
-\end{figure}
 
 \subsubsection{Extended Match Expression Instantiation (Pattern Instantiation)}
 \label{sec:ExtendedPatternMatching}
@@ -874,142 +864,170 @@ The default evaluation method returns every possible indeterminate or concrete v
 \section{Search Procedure}\label{sec:SearchProcedure}
 Now that an framework for indeterminate evaluation has been specified, the following problems can be addressed:
 \begin{itemize}
-\item[\ref{AbstractSearch}] How can indeterminate evaluation be abstracted into a generic search procedure?
-\item[\ref{CastFailureDetection}] What exactly are cast errors? How can they be detected? Which ones are actually \textit{relevant}, causing evaluation to get stuck?\footnote{Some cast errors are known, e.g. from static type checking, but don't actually relate to the evaluation path.}
-\item[\ref{SearchMethods}] How can different search methods be implemented: DFS, BFS, Iterative deepening DFS? 
+\item[\ref{sec:AbstractSearch}] How can indeterminate evaluation be abstracted into a generic search procedure?
+\item[\ref{sec:CastFailureDetection}] What exactly are cast errors? How can they be detected? Which ones are actually \textit{relevant}, causing evaluation to get stuck?\footnote{Some cast errors are known, e.g. from static type checking, but don't actually relate to the evaluation path.}
+\item[\ref{sec:SearchMethods}] How can different search methods be implemented: DFS, BFS, Bounded DFS, Interleaved DFS? 
 \end{itemize}
 
 \subsection{Abstract Indeterminate Evaluation}
 \label{sec:AbstractSearch}
-By making the search procedure take a higher-order \code{logic : Exp.t => TryStep.t => S.t('a)} function, which takes the an input expression $d$ and it's class (value, indet, step possible), and returns nondeterministic results of type \code{'a}.
-
-This allows defining search procedures returning other types, for example, the integer \textit{size} of values. Or those concerning specific types of expressions, for example only those with cast errors. 
-
-Additionally, an `expert' search abstract is given, which also allows the remaining search space to be defined. This allows, for example, customising the instantiation and evaluation methods.
+We reuse the previous framework (\cref{fig:IndetEvalBlock}), but abstract the the return logic to a higher-order \code{logic} function. This also allows returning other types, for example, the integer \textit{size} of values. Or return only specific classes of expressions, e.g. those with cast errors. An `expert' search abstraction is also provided which allows instantiation to be changed.
 
 \subsection{Detecting Relevant Cast Errors}
 \label{sec:CastFailureDetection}
 To search for cast errors, we must first define what one is. A reasonable definition is terms which contain \textit{cast failures}, in Hazel these are casts between \textit{inconsistent ground types}. However, this has some issues:
 
-\paragraph{Multiple Cast Failures:} Terms may have multiple cast failures, some of which discovered during static type checking and inserted via elaboration. The aim of this project was to allow give dynamic traces \textit{explaining} a static type error. Clearly these failure must be ignored.
-
-Additionally, the procedure has usage searching for errors in dynamic code. Situations which cause cast errors which don't actually stop evaluation should also be ignored. For example expressions which cannot be statically typed, but are safe, are within this class: \code{if true then "str" else 0}
-
-Therefore, we consider only the casts which are \textit{causing} a term to be indeterminate (therefore getting stuck), this is implemented similarly to choosing which hole to instantiate (\cref{sec:ChooseHole}).
+\paragraph{Multiple Cast Failures:} Terms may have multiple cast failures, some of which discovered during static type checking and inserted via elaboration. But these failures won't stop evaluation until necessary. Therefore, we should consider only the casts which are directly \textit{causing} a term to get stuck, this is implemented similarly to choosing which hole to instantiate (\cref{sec:ChooseHole}).
 
 \paragraph{Cast Laziness}
 \label{sec:SearchCastLaziness}
-Only casts between \textit{ground} types are checked for consistency. Due to cast laziness (\cref{sec:CastLaziness}), some are cast between inconsistent types, but \textit{not} placed within a \textit{cast failure}.
-
-This can be fixed by performing eager cast transitions before checking for cast errors, or eagerly treating casts during indeterminate evaluation. However, it could be argued that this \textit{should not} constitute a cast error, after all, the part of the compound type with the error is yet to actually be \textit{used}.
+Only casts between \textit{ground} types are checked for consistency. Due to cast laziness (\cref{sec:CastLaziness}), some compound terms will be cast between inconsistent types, but \textit{not} placed within a \textit{cast failure}. As before, this issue is ignored due to requiring large changes to Hazel semantics, the evaluation finds it to be a rare occurrence.
 
 \paragraph{Dynamic Match Statements:} When matching dynamically on values with different types, the instantiations wrap the scrutinee in casts to each type. If any of these casts failed, they should not count as witnesses, as they were introduced entirely by the instantiation procedure. 
 
-\subsection{Explaining Cast Errors}
+\subsection{Explaining Static Errors}
 \label{sec:StaticCastError}
-A static type error will place a term inside a cast error during elaboration. The id of this error can be tracked, and if it is the one at fault, associated with the static error. Additionally, the type slice enforcing the cast is tracked via cast slicing, and may be displayed as usual.
+A static type error will place a term inside a cast error during elaboration. If the resulting cast error is dependent on the statically inserted cast error, then the resulting cast slice and trace can be considered as an explanation for the static error.
 
 \subsection{Searching Methods}\label{sec:SearchMethods}
-\textbf{Note: Should remove fair choice and conjunction, in favour of it just being an interleaved search method (see interleaved DFS below)}
-
 I implement \textit{four} different search methods, implementing the non-determinism signature specified in \cref{sec:ResolvingNondeterminism}.
 
 \subsubsection{Depth First Search}
-As mentioned previously \textbf{(REF)}, modelling lazy sequences by streams is a typical method, and implementing choice and conjunction via appending leads to depth-first search. In which case, \code{wrap} is just the identity function.
-
-\begin{figure}
-Show how streams \& append represent depth first search
-\caption{Depth First Search as Streams}
-\end{figure}
+Modelling DFS by streams is a typical method: implementing choice and conjunction via appending leads to depth-first search. In which case, \code{wrap} is just the identity function, there is no tree structure internally.
 
 \subsubsection{Breadth First Search}
-Breadth first search needs to take specific account of the tree structure. Sequences of bags\footnote{Lists, but where ordering doesn't matter.} can be used to represent solutions at each \textit{level} of the tree \cite{BFSCombinators}. Therefore, forcing each element of the stream gives the solutions at successive depths, i.e. iterating through these bags returns the solutions in a breadth first order.
+Breadth first search represents forests by sequences of sequences \cite{BFSCombinators}, with the inner sequences being the concatenation of every node of that level in every tree in the forest. Then, \code{choice} concatenates each level. While \code{wrap} conses the empty list, that is, pushes down every level of solutions and inserts an empty level at the top.
 
-Failure is the empty sequence as before, return injects a solution into a tree giving the solution in the first level. 
-
-Choice can be represented lazily merging of each level of the tree. The merged tree would produce all solutions of the first level of each choice at the same time, as the new first level. This is associative as required, when ignoring the ordering of each level, as is done with bags. 
+The other monadic operators are complex, but \code{join : t(t('a)) => t('a)} can be shown visually. \Cref{fig:BFSJoin} demonstrates how to flatten trees of trees, then you can join a forest by folding this tree join over the trees in the forest.
 
 \begin{figure}[h]
-Merge trees, show that it maintains BFS.
-\caption{Breadth First Choice}
+\vcenter{\hbox{\begin{subfigure}{0.45\textwidth}
+\centering
+\begin{tikzpicture}[scale=0.8, transform shape,
+  main tree/.style={grow=right, sibling distance=3cm, level distance=3cm},
+  sub tree/.style={grow=right, sibling distance=1cm, level distance=1cm},
+  every node/.style={circle, draw, minimum size=6mm, inner sep=0pt},
+  main node/.style={draw=red, thick, fill=red},
+  sub node/.style={draw=blue, fill=blue},
+  invisible/.style={draw=blue, fill=none, text=none}
+  ]
+
+% Main tree in x–z plane
+\begin{scope}[canvas is xz plane at y=0, main tree]
+% Level 1 rectangle
+    \fill[cyan!40, fill opacity=0.5, rounded corners] (2.5,-2.8) rectangle (3.5,2.8);
+    % Level 2 rectangle
+    \fill[green!40, fill opacity=0.5,  rounded corners] (5.5,-4) rectangle (6.5,1);
+\node[main node] (root) {}
+  child {node[main node] (a) {}
+    child {node[main node] (a1) {}}
+    child {node[main node] (a2) {}}
+  }
+  child {node[main node] (b) {}
+  };
+\end{scope}
+
+% Subtrees with rectangles directly inside
+
+% Depth 3 subtrees
+\foreach \n in {root} {
+  \begin{scope}[shift={(\n)}, canvas is yz plane at x=0, sub tree]
+    % Level 1 rectangle
+    \fill[cyan!40, fill opacity=0.5, rounded corners] (0.4,-1.2) rectangle (1.5,1.2);
+    % Level 2 rectangle
+    \fill[green!40, fill opacity=0.5,  rounded corners] (1.5,-0.6) rectangle (2.6,1.6);
+    
+    \node[invisible] {}
+      child {node[sub node] {}}
+      child {node[sub node] {}
+        child {node[sub node] {}}
+        child {node[sub node] {}}
+      };
+  \end{scope}
+}
+
+% Depth 2 subtrees
+\foreach \n in {a, b} {
+  \begin{scope}[shift={(\n)}, canvas is yz plane at x=0, sub tree]
+    % Level 1 rectangle
+    \fill[green!40, fill opacity=0.5, rounded corners] (0.4,-1.2) rectangle (1.6,1.2);
+    
+    \node[invisible] {}
+      child {node[sub node] {}}
+      child {node[sub node] {}};
+  \end{scope}
+}
+
+\end{tikzpicture}
+\caption{Before Join}
+\end{subfigure}}}
+$\quad\mapsto\quad$
+\vcenter{\hbox{\begin{subfigure}{0.45\textwidth}
+\begin{tikzpicture}[scale=0.8, transform shape,
+  main tree/.style={grow=right, sibling distance=3cm, level distance=3cm},
+  level 2/.style={sibling distance=1cm},
+  sub tree/.style={grow=right, sibling distance=1cm, level distance=2cm},
+  every node/.style={circle, draw, minimum size=6mm, inner sep=0pt},
+  main node/.style={draw=red, thick, fill=red},
+  sub node/.style={draw=blue, fill=blue},
+  invisible/.style={draw=blue, fill=none, text=none}
+  ]
+
+% Main tree in x–z plane
+\begin{scope}[canvas is xz plane at y=0, main tree]
+% Level 1 rectangle
+    \fill[cyan!40, fill opacity=0.5, rounded corners] (2.5,-5.4) rectangle (3.5,5.4);
+    % Level 2 rectangle
+    \fill[green!40, fill opacity=0.5,  rounded corners] (5.5,-7) rectangle (6.5,6);
+\node[main node] (root) {}
+  child {node[main node] (a) {}
+    child {node[main node] (a1) {}}
+    child {node[sub node] (a3) {}}
+    child {node[main node] (a2) {}}
+    child {node[sub node] (a4) {}}
+  }
+  child {node[sub node] (c) {}
+  }
+  child {node[main node] (b) {}
+    child {node[sub node] (b1) {}}
+    child {node[sub node] (b2) {}}
+  }
+  child {node[sub node] (d) {}
+    child {node[sub node] (d1) {}}
+    child {node[sub node] (d2) {}}
+  };
+\end{scope}
+\end{tikzpicture}
+\caption{After Join}
+\end{subfigure}}}
+
+\caption{Tree Join}
+\label{fig:BFSJoin}
 \end{figure}
+The standard definition for \code{bind} \cite{Bunches} does not work easily in OCaml due to it's strictness. Defining joins directly ensured that bind acted lazily.
 
-Wrapping a tree pushes every solution one level down in the tree, corresponding to prepending with the empty list. Essentially, this adds one cost to every solution.
+\subsubsection{Bounded Depth First Search}
+BFS is fair, avoiding non-termination (for finite branching factor), but it has \textit{exponential} space complexity in the depth of the level being explored \cite{NorvigAI}.
 
-For a bag \code{b} of elements \code{x1}, \code{x1} $\dots$, \code{xn}. The tree which produces these solutions in the first level, $[b]$\footnote{Using list notation also for sequences}, is equivalent to \code{return(x1) <||> return(x2) <||> ... <||> return(xn)}.
+In comparison, DFS only requires space linear in the depth explored.
 
-A tree \code{b :: bs} is equivalent to \code{[b] <||> [] :: wrap(bs)}, and by the above, also equivalent to \code{return(x1) <||> ... <||> return(xn) <||> wrap(bs)}.
+The use of bounded DFS (BDFS), successive depth-bounded depth first searches, retains low space complexity of DFS while also avoiding non-termination. While upper parts of are repeatedly explored, this does not increase the already exponential time complexity of the search.\footnote{For branching factor greater than 1.} 
 
-Therefore, as conjunction distributes over choice, and return is a left unit of conjunction then:
-\[\code{b :: bs >>= f     =    f(x1) <||> ... <||> f(xn) <||> wrap(bs >>= f)}\]
-Additionally, another law for non-determinism \code{fail >>= f = fail}, completes a recursive definition for bind.
+We can use functions \code{Int => (Bool, [('a, int)])} to represent iterative deepening \cite{SearchAlgebra}. This calculates every solution found within an integer depth bound \code{d}, alongside it's remaining depth budget \code{r}. The boolean tag is false if the depth bound was never reached, in which case, no more solutions exist. The remaining depth budget allows only solutions on the fringe (zero budget) to be output upon each iteration, so the same solution will not appear twice.
 
-As mapping and choice are associative, we get that conjunction is also. Additionally, it satisfies all the remaining monad and non-determinism laws. 
-
-However, as \code{f} is mapped to the entire bag \code{b}, it is difficult to maintain laziness in OCaml. We need partial applications for f... \textbf{TODO - can't actually work out how to do this in OCaml?!?!}
-
-\subsubsection{Iterative Deepening Depth First Search}
-While breadth first search is fair, avoiding non-termination (for finite branching factor), it has \textit{exponential} space complexity in the depth of the level being explored \cite{NorvigAI}. When binding a function \code{f}, it gets lazily and \textit{partially} instantiated at node of each level, tracking these partial instantiations is what causes the exponential complexity.
-
-\begin{figure}
-
-\caption{Monadic BFS Requires Exponential Space}
-\end{figure}
-
-In comparison, depth first search only requires space linear in the depth explored, that is, the number of choices encountered before reaching a certain depth.
-
-The use of iterative deepening, successive depth-bounded depth first searches, retains low space complexity of DFS while also avoiding non-termination (due to the depth bound). However, upper parts of the search tree will be repeatedly explored, but this does not reduce the already exponential time complexity of the search for branching factor greater than 1. But, the deterministic evaluation part does have a branching factor of 1, so it may be the case that the recalculation has a significant impact\textbf{(Ref evaluation)}. 
-
-To represent iterative deepening \cite{SearchAlgebra}, we can use functions \code{int => list(('a, int))}, calculating every\footnote{Again, relying on finite branching factor.} solution found within an integer depth bound \code{d}, alongside it's remaining depth budget \code{r}. Tracking the remaining depth budget simplifies \code{bind} and allows only solutions on the fringe (zero budget) to be output upon each iteration, so the same solution will not appear twice.
-
-Then, \code{return} represents a single solution with unused depth budget, \code{return(x)  =  (d => [(x, d)])}. \code{fail} gives the empty list \code{fail  =  d => []}. Choice appends all solutions at any given depth bound \code{m <||> n  =  d => m(d) @ n(d)}. Binding, \code{m >>= f} takes solutions in \code{m} who have depth budget to use, and applies \code{f} and calculates all solutions from \code{f} using the remaining budget, concatenating these results to form a single list.
+Then, \code{return} represents a single solution with unused depth budget:\\
+\code{return(x)  =  (d => (false, [(x, d)]))}. \code{fail} gives the empty list \code{fail  =  d => []}. Choice appends all solutions at any given depth bound \code{m <||> n  =  d => m(d) @ n(d)}. Binding, \code{m >>= f} takes solutions in \code{m} who have depth budget to use, and applies \code{f} and calculates all solutions from \code{f} using the remaining budget, concatenating these results to form a single list.
 
 Then \code{wrap(m)} (the forest \code{m} wrapped up as a single tree) has solutions at depth incremented by 1, and none at depth 0: \code{wrap(m)(0) = []} and \code{wrap(m)(bound) = p(bound - 1)}.
 
-I implement this as a functor, with a custom bound incrementing function \code{inc : bound => bound} and initial bound \code{init : bound}. Then \code{run} will   search to depth \code{init}, produce all solutions, then search to depth \code{inc(init)} and produce all solutions with remaining depth budget \code{inc(init) - init}, other solution must have already been produced last iteration.
+I implement this as a functor which allows the how depth bound increases to be specified.
 
-\begin{figure}
-\begin{minted}{reason}
-((m >>= f) >>= g)(bound)
-= m(bound) 
-  |> map((x, rem_bound) => f(x, rem_bound))
-  |> concat
-  |> map((y, rem_bound2) => g(y, rem_bound2))
-  |> concat
-\end{minted}
-Vs.
-\begin{minted}{reason}
-(m >>= (x => f(x) >>= g))(bound)
-= m(bound)
-  |> map((x, rem_bound) => rem_bound |> (f(x) >>= g))
-  |> concat
-= m(bound)
-  |> map((x, rem_bound) => rem_bound |> (f(x) 
-  |> map((y, rem_bound2) => g(y, rem_bound2)) 
-  |> concat))
-  |> concat
-= m(bound)
-  |> map((x, rem_bound) => f(x, rem_bound) 
-  |> map((y, rem_bound2) => g(y, rem_bound2))
-  |> concat)
-  |> concat
-= m(bound)
-  |> map((x, rem_bound) => f(x, rem_bound)) 
-  |> concat
-  |> map((y, rem_bound2) => g(y, rem_bound2))
-  |> concat
-\end{minted}
-\caption{Associativity of Iterative DFS \code{bind}}
-\end{figure}
 
 \subsubsection{Interleaved Streams}
-\textbf{TODO: split code into a new option, remove fair operators, move fair conjunction and chocie section to here.}
-
-The use of streams, but with fair choice and conjunction via interleaved ordering ensures termination for every solution. This has the advantage of working even for trees with infinite branching factor. However, interleaving has a linear space complexity, leading to the undesirable exponential space complexity as with breadth-first search.
-
-\code{wrap} for this is the identity, same as DFS.
+The use of streams, but with fair choice and conjunction via interleaved ordering ensures termination for every solution. This has the advantage of working even for trees with infinite branching factor. However, interleaving has a linear space complexity, leading to the undesirable exponential space complexity as with breadth-first search. For this, \code{wrap} is the identity, as with DFS.
 
 \subsection{User Interface}
+The user can switch the search procedure on via a switch in the settings.
 
 \section{Repository Overview}
 \subsection{Branches}

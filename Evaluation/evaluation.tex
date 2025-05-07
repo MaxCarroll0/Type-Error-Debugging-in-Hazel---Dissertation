@@ -14,12 +14,12 @@ This project devised and implemented three features: \textit{type slicing, cast 
 \paragraph{Search Procedure:} Finds dynamic type errors (cast errors) automatically, linked back to source code by their execution trace and \textit{cast slice}. Therefore, a static type error can be associated automatically with a concrete dynamic type error \textit{witness} to better explain.
 
 \section{Methodology}\label{sec:EvaluationMethodology}
-I evaluate the features and their various implementations (where applicable) along \textit{four} axes. With quantitative measures were evaluated over a corpus of ill-typed and dynamically-typed Hazel programs (\cref{sec:EvaluationCorpus}):
+I evaluate the features and their various implementations (where applicable) along \textit{four} axes. With quantitative measures were evaluated over a corpus of ill-typed and dynamically-typed Hazel programs (\cref{sec:CorpusCollection}):
 
 \subsubsection{Quantitative Analysis}
 \paragraph{Performance: } \textit{Are the features performant enough for use in interactive debugging? Which implementations perform best?}
 
-The time and space usage of the search procedure implementations were micro-benchmarked for each ill-typed program in the corpus. Up to 100 runs were taken per program with estimated time, major and minor heap allocations were estimated using an ordinary linear regression (OLS) to $r^2 > 0.95$\footnote{TODO: get values} via the \textit{bechamel} library \cite{Bechamel}.
+The time and space usage of the search procedure implementations were micro-benchmarked for each ill-typed program in the corpus. Up to 100 runs were taken per program with estimated time, major and minor heap allocations were estimated using an ordinary linear regression (OLS) via the \textit{bechamel} library \cite{Bechamel}.
 
 \paragraph{Effectiveness: } \textit{Do the features effectively solve the problems? Are the results easily interpretable by a user?}
 
@@ -28,7 +28,7 @@ The \textit{coverage},  what proportion of programs admit a witness, for each se
 Additionally, the \textit{size} of witnesses, evaluation traces, type slices, and cast slices were measured. The intention being that a smaller size implies that there is less information for a user to parse, and hence easier to interpret.\footnote{Not necessarily \textit{always} true, but a reasonable assumption.}
 
 \subsubsection{Qualitative Analysis}
-\paragraph{Critical: } \textit{What \textit{classes} of programs are missed by the search procedure? What are the implications of the \textit{quantitative} results? What improvements were, or could be made in response to this?}
+\paragraph{Critical: } \textit{What \textit{classes} of programs are missed by the search procedure? What are the implications of the \textit{quantitative} results? What improvements were, or could be made in response to these?}
 
 This section provides \textit{critical} arguments on {usefulness} or {effectiveness}, which are \textit{evidenced} by quantitative data. Differing implementations and \textit{subsequent improvements}\footnote{Which were then implemented and analysed.} are compared. Additionally, further unimplemented improvements are proposed.
 
