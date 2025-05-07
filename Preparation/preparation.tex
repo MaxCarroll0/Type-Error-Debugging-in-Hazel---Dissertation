@@ -165,7 +165,7 @@ When substituting a matching hole $u$, we replace it with $d$ and apply substitu
 As Hazel is a \textit{pure language}\footnote{Having no side effects.} and as holes act as closures, then performing hole substitution is \textit{commutative} with respect to evaluation. That is, filling incomplete parts of a program \textit{before} evaluation gives the same result as filling \textit{after} evaluation then resuming evaluation.
 
 \subsection{The Hazel Implementation}\label{sec:HazelImplementation}
-The Hazel implementation \cite{HazelCode} is written primarily in ReasonML and OCaml with approximately 65,000 lines of code. It implements the Hazel core calculus along with many additional features. 
+The Hazel implementation \cite{HazelCode} is written primarily in ReasonML and OCaml with approximately 65,000 lines of code. It is under very active development, with much of the code being undocumented; this dissertation summarises the implementation as of April 2025. It implements the Hazel core calculus along with many additional features. 
 
 \subsubsection{Language Features}\label{sec:HazelAdditionalFeatures}
 The relevant additional language features not already discussed are:\footnote{Additionally, Hazel supports other features, which do not concern this project.}
