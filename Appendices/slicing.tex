@@ -1,4 +1,5 @@
 \chapter{Slicing Theory}
+\label{sec:SlicingTheory}
 \section{Expression Typing Slices}
 \subsection{Term Slices}
 \subsubsection{Syntax}
@@ -154,7 +155,6 @@ Type contexts -- mapping types to types:
 Expression contexts -- mapping patterns, types, or expression to expressions:\footnote{Note that $\C$ is also used for generic term contexts sometimes.}
 \[\C ::=  \cmark_{\text{exp}} \mid \lambda \mathdcal{P} : \tau.\ e \mid \lambda pt : \mathdcal{T}.\ e \mid \lambda pt : \tau.\ \C \mid \lambda \mathdcal{P}.\ e \mid \lambda pt.\ \C \mid \C(e) \mid e(\C) \mid e : \mathdcal{T} \mid \C : \tau\]
 \end{definition}
-The input to contexts is 
 \begin{definition}[Context Substitution]
 \[\inference{}{\cmark_{\text{pat}}\{pt\} = pt} \qquad \inference{}{\cmark_{\text{typ}}\{\tau\} = \tau} \inference{}{\cmark_{\text{exp}}\{e\} = e}\]
 \[\inference{\mathdcal{T}\{\tau_1\} = \tau_1'}{(\mathdcal{T} \to \tau_2)\{\tau_1\} = \tau_1' \to \tau_2} \qquad \inference{\mathdcal{T}\{\tau_2\} = \tau_2'}{(\tau_1 \to \mathdcal{T})\{\tau_2\} = \tau_1 \to \tau_2'}\]
@@ -165,7 +165,7 @@ The input to contexts is
 The input and output classes of contexts $\C$ will be notated $\C : \code{X} \to \code{Y}$ for $\code{Pat}$ (patterns), \code{Typ} (types), \code{Exp} (expressions).
 \end{definition}
 \begin{definition}[Context Composition]
-Defined analogously as context substitution, but substituting contexts, provided the input and output classes match. If $\C_1 : \code{X} \to \code{Y}$ and $\C_2 : \code{Y} \to \code{Z}$ then $\C_2\{C_1\} = \C_2 \circ \C_1 : \code{X} \to \code{Z}$. Equivalence of contexts can be defined syntactically and coincides exactly with an extensional definition.
+Defined analogously as context substitution, but substituting contexts syntactically, provided the input and output classes match. If $\C_1 : \code{X} \to \code{Y}$ and $\C_2 : \code{Y} \to \code{Z}$ then $\C_2\{C_1\} = \C_2 \circ \C_1 : \code{X} \to \code{Z}$. Equivalence of contexts can be defined syntactically and coincides exactly with an extensional definition.
 \end{definition}
 \begin{proposition}[Context composition is associative]
 For all $\C_1 : \code{X} \to \code{Y}$, $\C_2 : \code{Y} \to \code{Z}$, and $\C_3 : \code{Z} \to \code{W}$ then:
@@ -188,9 +188,9 @@ Context precision forms a partial order on context slices.
 \begin{proof}
 \textbf{Typesetting TODO}
 \end{proof}
-\begin{conjecture}[Context Filling Preserves Precision]
+\begin{proposition}[Context Filling Preserves Precision]
 For context slice $\Cs : \code{X} \to \code{Y}$ and term slice $\varsigma$ of class \code{X}. Then if we have slices $\varsigma' \sqsubseteq \varsigma$, $\Cs' \sqsubseteq \Cs$ then also $\Cs'\{\varsigma'\} \sqsubseteq \Cs\{\varsigma\}$.
-\end{conjecture}
+\end{proposition}
 
 \subsubsection{Lattice Structure}
 \begin{definition}[Context Slice Joins \& Meets]
@@ -224,9 +224,9 @@ Typing assumption context precision forms a partial order on typing assumption c
 \begin{proof}
 \textbf{Typesetting TODO}
 \end{proof}
-\begin{conjecture}[Function Application Preserves Precision]
+\begin{proposition}[Function Application Preserves Precision]
 For typing assumption slice $\gamma$ and typing assumption context slice $\f$. Then if we have slices $\gamma' \sqsubseteq \gamma$, $f' \sqsubseteq f$ then also $f'(\gamma') \sqsubseteq f(\gamma)$.
-\end{conjecture}
+\end{proposition}
 
 \subsubsection{Lattice Structure}
 \begin{definition}[Typing Assumption Context Slice Joins \& Meets] For typing assumption context slices $\f_1$ and $\f_2$ and any typing assumption slice $\gamma$:
@@ -329,6 +329,7 @@ If $\S$ is a valid type indexed context typing slice. For all expression typing 
 \begin{proof}
 \textbf{typsetting TODO}
 \end{proof}
+\label{def:Application}
 \begin{definition}[Application]
 For a function $f$ from expression typing slices $\rho$ to context typing slices. Application $\$$ converts type-indexed expression typing slices to type-indexed context typing slices:
 \[f\ \$\ \rho = f(\rho)\]
@@ -343,8 +344,9 @@ If $\S$ is a valid type indexed expression typing slice. For all functions $f$ f
 \end{proof}
 
 \section{Checking Contexts}
+\label{sec:CheckingContexts}
 \begin{definition}[Checking Context]
-\label{def:CheckingContext}
+\label{def:CheckingContextAppendix}
 For term $e$ checking against $\tau$: $\analysis[\Gamma]{e}{\tau}$. A checking context for $e$ is an expression context $\C$ and typing assumption context $\F$ such that: 
 \begin{itemize}
 \item $\C \neq \cmark$.
@@ -366,6 +368,7 @@ Verify that each rule is a checking context, this follows very directly from the
 \end{proof}
 
 \begin{proposition}[Checking Context of a Sub-term in a Derivation]
+\label{def:CheckingContextInProgram}
 If derivation $\synthesis{e}{\tau}$ contains a analysis sub-derivation $\analysis[\Gamma']{e'}{\tau'}$ for sub-term $e'$. Then there is a unique minimally scoped context $\C$ for $e'$ and typing assumption context $\F$ for $\Gamma'$ such that:
 \begin{itemize}
 \item $\C\{e'\}$ is a sub-term of $e$, or is $e$ itself.
@@ -377,6 +380,7 @@ Every minimally scoped checking context for $e'$ has a different structure. Henc
 \end{proof}
 
 \section{Criterion 1: Synthesis Slices}
+\label{sec:SynthesisSlicesJudgement}
 \begin{definition}[Synthesis Slices]
 For a synthesising expression, $synthesis{e}{\tau}$. A synthesis slice is an expression typing slice $\varsigma^{\gamma}$ of $e^\Gamma$ which also synthesises $\tau$, that is, $\synthesis[\type{\gamma}]{\type{\varsigma}}{\tau}$.
 \end{definition}
@@ -460,5 +464,5 @@ Where static is takes omits the \textit{right} (synthetic) slice parts where \te
 
 
 \section{Elaboration}
-
+\label{sec:CastSlicingElaboration}
 
