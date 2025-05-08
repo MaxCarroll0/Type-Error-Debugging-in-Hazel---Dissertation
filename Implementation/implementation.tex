@@ -405,6 +405,37 @@ For basic type slices, when the same type information is available from multiple
 \label{fig:TypeJoins}
 \end{figure}
 
+This gets complex, requiring tracking all the data relating to which branches should be highlighted, and accumulating the inconsistent parts of failed joins for use in minimised error slices (demonstrated in \cref{sec:ErrorSlices}). I make use of custom OCaml let bindings to retain clarity while automatically combining branches in successful joins and combining inconsistencies in failed joins. For example, see \cref{fig:ArrowJoin}, where comments describe the logic abstracted by the custom bindings; note that all join-able type combinations use this same parallel binding logic to combine branches and inconsistencies.
+
+\begin{figure}[h]
+\small
+\begin{minted}{reason}
+...
+| (Arrow(s1, s2), Arrow(s1', s2')) =>
+      let+ s1j = join'(s1, s1') // If successful: binds the join to s1j and
+                                // propagates the branch used joining s1, s1'
+                                // Else: Propagates inconsistencies in s1, s1'
+      and+ s2j = join'(s2, s2') // If both successful: binds the join to s2j and
+                                // merges previously used branches joining s1, s2' 
+                                // with those used joining s2 and s2'
+                                // Else: propagates inconsistency in s1, s2' (if any)
+                                // alongside new inconsistencies in s2, s2' (if any)
+      and! branches_used = ();  // If both successful: Binds combined branches
+                                // Else: propagates inconsistencies
+      ( // If nothing failed, Returns the successful join.
+        `SliceIncr((
+          Slice(Arrow(s1_join, s2_join)), // The successful join
+          choose_branch(branches_used, slice_incr1, slice_incr2),
+        )) // Wrap with only one slice: the left if both branches used
+        |> temp,
+        branches_used, // combined branches used
+      );
+...
+\end{minted}
+\caption{Joining function types}
+\label{fig:ArrowJoin}
+\end{figure}
+
 \subsection{Static Type Checking}\label{sec:TypeChecking}
 Hazel is \textit{bidirectionally typed}, where the \textit{mode} (synthesis, analysis) is specified by the \code{Mode.t} type. Type checking calculates a type information object \code{Info.t} for each term, stored efficiently in a map from ID keys. \code{Info.t} is demonstrated in \cref{fig:Info} with arrows representing dependencies (e.g. a term's type depends on it's mode, self, typing context, and status).
 \begin{figure}[h]
@@ -464,56 +495,25 @@ The type slices of the expression at the cursor (in red) are highlighted, see \c
 To implement cast slicing, replace casts between \textit{types} by casts between \textit{type slices}. Type slices are already type-indexed and retain all type information so can be used equivalently.
 
 \subsection{Elaboration}\label{sec:Elaboration}
-Cast insertion recursively traverses the unelaborated term, inserting casts to the term's statically determined type as stored in the \code{Info} data-structure and from the type as can be determined directly from the term. 
-
-For example, list literals recursively elaborate it's terms and join their slices, inserting a cast to this join.
-
-Ensuring that all the type slice information from the \code{Info} map is retained and/or reconstructed during elaboration was a meticulous and error-prone process.
+Cast insertion recursively traverses the unelaborated term, inserting casts to the term's statically determined type as stored in the \code{Info} data-structure. For example, a list literal recursively elaborate it's terms and joins their slices, casting to the join. Ensuring all the type slice information is retained and/or reconstructed during elaboration was a meticulous and error-prone process.
 
 \subsection{Cast Transitions}
 \Cref{sec:HazelDynamics} gave an intuitive overview of how casts are treated at runtime. Type-indexed slices allows cast slices to be decomposed in exactly the same way. 
 
-However, as Hazel only checks consistency between casts between \textit{ground types}, there are two rules where new\footnote{As opposed to being derived from decomposition.} casts are \textit{inserted} (ITGround, ITExpand). The new types are both created via a \textit{ground matching} relation which takes only the topmost compound constructor, for example ground functions \cref{fig:GroundFunction}. Relevant portions of the appendix are \cref{fig:groundtypes}, \cref{fig:instructions}, \cref{fig:groundmatch}.
+However, as Hazel only checks consistency between casts between \textit{ground types}, there are two rules where new\footnote{As opposed to being derived from decomposition.} casts are \textit{inserted} (ITGround, ITExpand). The new types are created via a \textit{ground matching} relation taking the topmost compound constructor of types, e.g. ground functions \cref{fig:GroundFunction}. Relevant portions of the appendix are \cref{fig:groundtypes}, \cref{fig:instructions}, \cref{fig:groundmatch}.
 
-As we already store type slices incrementally, the part of the slice which corresponds \textit{only} to the outer type constructor is the outer slice tag.
+As we store type slices incrementally, the part of the slice corresponding \textit{only} to the outer type constructor is the outer slice tag.
 
 \begin{figure}
 \[\tau_1 \to \tau_2 \match{\text{ground}} \dyn \to \dyn\]
-\caption{Ground Matching List}
+\caption{Ground Matching Functions}
 \label{fig:GroundFunction}
 \end{figure}
 
 \subsection{Unboxing}
-When a final form (\cref{sec:HazelFinalForms}) has a type, Hazel often needs to extract parts of the term according to the type during evaluation. But due to casts and holes, this is not trivial \cite{LivePatternMatching}.
+When we know a final form's (\cref{sec:HazelFinalForms}) type, we may need to extract parts of the term according to the type during evaluation. For example, extracting the elements of a tuple. But due to casts and holes, this is not trivial \cite{LivePatternMatching}.
 
-For example, if a term is a final form of type list, then it could be either:
-\begin{itemize}
-\item A list literal: \code{[1,2,3]}.
-\item A list with casts wrapped around it: \code{[1,2,3]}$\scast{\code{[Int]}}{\code{[}\dyn\code{]}}$.
-\item A list cons with indeterminate tail: \code{1::2::?}.
-\end{itemize}
-Additionally, when the input is not a list at all, it returns \code{DoesNotMatch}, used in pattern matching. 
-
-Unboxing makes use of GADTs to allow for varying output type depending on the type that the final form is being unboxed upon.
-
-\subsubsection{Hazel Unboxing Bug}
-While writing the search procedure I found an unboxing \textit{bug} which would always \textit{indeterminately match} a cons with indeterminate tail with \textit{any} list literal pattern (of \textit{any} length), even when it is known that it could never match. For example a list cons \code{1::2::?} represents lists with length $\geq 2$, but even when matching a list literal of length 0 or 1 it would indeterminately match rather than explicitly \textit{not} match. 
-
-Pattern matching checks if each pattern matches the scrutinee with the following behaviour, starting from the first branch:
-\begin{itemize}
-\item \textit{Branch matches?} Execute the branch.
-\item \textit{Branch does not match?} Try the next branch.
-\item \textit{Branch indeterminately matches?} Cannot assume the branch doesn't match so must stop evaluation here. The match statement is then indeterminate.
-\end{itemize}
-\Cref{fig:PatternMatchingBug} demonstrates a concrete example which would get stuck in Hazel, but does \textit{not} need to. I reported and fixed this, with my PR merged into the dev branch.
-
-\begin{figure}[H]
-\centering
-\includegraphics[width=0.25\textwidth]{Media/Figures/unboxing_bug}
-\caption{Pattern Matching Bug}
-\label{fig:PatternMatchingBug}
-\end{figure}
-
+Slicing does not concern unboxing, but indeterminate evaluation (\cref{sec:IndetEval}) unveiled bugs within which had to be fixed. I raised and fixed these, eventually being merged into the main branch. \Cref{sec:UnboxingBugs} details this, after covering the required context on the unboxing implementation.
 
 \subsection{User Interface \& Examples}
 Type slices within casts can be selected from the evaluation result and displayed. This require reworking some of the dependencies of Hazel's model-view-update architecture to make sure the cursor has access to the code editor cell when inside the evaluation result cell.
@@ -537,7 +537,7 @@ Type slices within casts can be selected from the evaluation result and displaye
 \caption{Cast Slicing Examples}
 \end{figure}
 \section{Indeterminate Evaluation}\label{sec:IndetEval}
-Dynamic errors include evaluation traces, aiding debugging \cite{TraceVisualisation}. Static type errors lack such traces, as ill-typed programs do not run. Seidel et al. [29] offer an OCaml algorithm using lazy, non-deterministic narrowing of holes to least specific values based on context (e.g., instantiating a hole in + as an integer). 
+Dynamic errors include evaluation traces, which can aid in debugging \cite{TraceVisualisation}, yet static type errors lack such traces. Seidel et al. \cite{SearchProc} offer an algorithm  to search for these traces for static errors in OCaml by lazily, non-deterministically narrowing input holes to least specific values based on their usage context. 
 
 This section creates a framework for non-deterministic evaluation of indeterminate expressions by lazily performing hole substitutions using type information from dynamic casts. Unlike Seidel, this supports more language features (all of Hazel), any number of inputs (holes), and exhaustive generation of these inputs. Further, it is a general evaluation method, not limited to cast error searches. Specifics relating to cast errors, are covered in \cref{sec:SearchProcedure}.
 
@@ -775,7 +775,7 @@ let rec strings = () => return("")
 
 Other types are \textit{inductive}, these can be represented indirectly by lazily instantiating only their \textit{outermost} constructor: 
  
-\paragraph{Lists:} A list is either the empty list, $[\ ]$ or a cons $\dyn_1 :: \dyn_2$. Note that, to retain the correct dynamic type information, $\dyn_2$ must be cast back to the list type. 
+\paragraph{Lists:} A list is either the empty list, $[\ ]$ or a cons $\dyn_1 :: \dyn_2$. To retain the correct dynamic type information, $\dyn_2$ must be cast back to the list type. 
 \paragraph{Sum Types:} Enumerate each of the sum's constructors with their least specific value.
 \paragraph{Functions:} Constant functions have least specific values $\lambda \_.\ \dyn$. The function may then be applied to any value, and it's result synthesised after application. This can synthesise any return value, hence errors in the usage of the function will be detected. But, if the \textit{input} has an erroneous type but is uncaught as the function is dynamic, potential errors arising from this cannot be found.\footnote{This can occur in dynamic functions with inconsistent branches. But this is extremely rare, and can be fixed for most cases by generating the identity function where function hole's expected type allow.} Extensions to program synthesis (\cref{sec:LogicProgramming}) would require more sophisticated function instantiation.
 

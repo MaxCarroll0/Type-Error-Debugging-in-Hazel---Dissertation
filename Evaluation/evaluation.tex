@@ -271,6 +271,7 @@ In \cref{fig:LetSliceOmitted}, a bound integer \code{x} is only used in one bran
 
 
 \subsubsection{Error Slices}
+\label{sec:ErrorSlices}
 Type errors arise from inconsistencies between a term’s analysis and synthesis slices, or across synthesising branches. Understanding the error requires comparing all the slices involved.
 
 Some type parts may agree, hence another form of type joining was introduced to isolate only the inconsistent parts. For instance, in \cref{fig:ErrorSlice}, differences like \code{(Int, Int)} vs \code{(Int, String)} highlight only the mismatched sub-slices.
