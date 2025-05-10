@@ -1,9 +1,9 @@
 \chapter{Implementation}\label{chap:Implementation}
 This project was conducted in \textit{two} major phases:
 \begin{enumerate}
-\item I devised a mathematical theory for \textit{type slicing} and \textit{cast slicing}. I considered changes to the system of Seidel et al \cite{SearchProc}. for the \textit{type error witnesses search procedure} to work in Hazel.  
+\item I devised a mathematical theory for \textit{type slicing} and \textit{cast slicing} and considered changes to the system of Seidel et al. \cite{SearchProc} for creating a \textit{type error witnesses search procedure} in Hazel.  
 
-\item I implement the theories, extending to the majority of Hazel. Suitable deviations from the theory, made upon critical evaluation, are detailed throughout.
+\item I iteratively implement and evaluate the theories and search procedure, extending to the majority of Hazel. Suitable deviations from the theory, made upon critical evaluation, are detailed throughout.
 \end{enumerate}
 
 \section{Type Slicing Theory}\label{sec:TypeSlicingTheory}
@@ -224,7 +224,7 @@ Notice that the only sub-terms which do not contribute have their type changed w
 These can be calculated mimicking the Hazel typing rules. During subsumption, remove synthesis slice sub-part which match with dynamic parts of the analysing type. Contextual parts are found by passing context slices directly as inputs to type analysis rules.
 
 \section{Cast Slicing Theory}\label{sec:CastSlicingTheory}
-Cast slicing propagates type slice information during evaluation, by tagging casts types with type slices. A primary reason in formalising type-indexed slices was to make slices decomposable during evaluation, retaining only sub-slices relevant to the part of the type involved in the decomposed cast. This requires changing the syntax of casts $\scast{\S}{\S}$ and inserting casts between slices during elaboration. The first two criteria work together during elaboration, analysis slices inserted when casting on a elaborated expression who had it's type \textit{analysed}, and vice versa. The rules are found in
+Cast slicing propagates type slice information during evaluation, by tagging casts types with type slices. A primary reason in formalising type-indexed slices was to make slices decomposable during evaluation, retaining only sub-slices relevant to the part of the type involved in the decomposed cast. This requires changing the syntax of casts to $\scast{\S}{\S}$ and inserting casts between slices during elaboration. The first two criteria work together during elaboration, analysis slices inserted when casting on a elaborated expression who had it's type \textit{analysed}, and the synthesised for synthesis slices. The rules are found in
 \cref{sec:CastSlicingElaboration}.
 
 \section{Type Slicing Implementation}\label{sec:TypeSlicingImplementation}

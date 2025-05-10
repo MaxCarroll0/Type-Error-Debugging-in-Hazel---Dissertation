@@ -1,10 +1,11 @@
 \chapter{Conclusions}\label{chap:Conclusions}
 This project aimed to enhance type error debugging in Hazel by implementing two novel features: \textit{type slicing} and \textit{cast slicing}. These features were successfully formalised and implemented, with further variations explored and incorporated.
 
-Type slicing provided comprehensive explanations for expressions' types and errors. It proved more expressive than initially planned, applying to all expressions, not just errors, hence being useful in more situations. Cast slicing effectively linked dynamic (cast) errors with the static code context that caused them. Further, they provided more concise explanations for errors than type slices.
+All core goals and extensions set out in \cref{sec:RequirementAnalysis} were achieved except for the low priority extensions, of which extended pattern instantiation was partially implemented.
 
-Additionally, a search procedure successfully found dynamic witnesses for static type error in the majority of cases. Together, these features cohesively provide a richer, more intuitive type debugging system and a expanded framework to learn how the type system works, offering both abstract and concrete perspectives on type errors.
+Further, type slicing proved more expressive than initially planned, applying to \textit{all} expressions, \textit{not just errors}. Therefore, it can also be used to learn and build understanding on how Hazel's type system works, not just for debugging errors. 
 
+Additionally, an indeterminate evaluation framework (\cref{sec:IndetEval}) was built, greatly generalising the search procedure to allow multiple search orderings (DFS, BFS, IDFS, BDFS, and extensible to future methods). And, searching for different classes of results, e.g. concrete values, or derived results like sizes of expressions or variable substitution steps.
 \section{Further Directions}
 This section presents some \textit{extensions} to improve the features as justified by the evaluation (\cref{sec:CriticalAnalysis} \& \ref{sec:HolisticEvaluation}) alongside other interesting {applications}. 
 

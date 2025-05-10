@@ -237,21 +237,87 @@ Computers are deterministic, therefore, the declarative specification abstracts 
 
 \section{Starting Point}\label{sec:StartingPoint}
 \subsubsection{Concepts}
-The foundations of most concepts in understanding Hazel from Part IB Semantics of Programming (and Part II Types later). The concept of gradual typing briefly appeared in Part IB Concepts of Programming Languages, but was not formalised. Dynamic typing, gradual typing, holes, and contextual modal type theory were not covered in Part IB, so were partially researched leading up to the project, then researched further in greater depth during the early stages. Similarly, Part IB Artificial Integlligence provided some context for search procedures. Primarily, the OCaml search procedure for ill-typed witnesses Seidel et al. \cite{SearchProc} and the Hazel core language \cite{HazelLivePaper} were researched over the preceding summer.
+Only the basic foundations of most concepts in understanding Hazel were covered in Part IB Semantics of Programming (and Part II Types later). The concept of gradual typing briefly appeared in Part IB Concepts of Programming Languages, but was not formalised. Monads and non-determinism were also present in this course, but not their intersection.
 
 \subsubsection{Tools and Source Code}
-My only experience in OCaml was from the Part IA Foundations of Computer Science course. The Hazel source code had not been inspected in any detail until after starting the project.
+My only experience in OCaml was from the Part IA Foundations of Computer Science course. This project builds directly upon the open-source Hazel language codebase \cite{HazelCode}. The type witness search procedure is inspired by Seidel et al. \cite{SearchProc}, however my implementation differs significantly, being applied to Hazel rather than OCaml. Three (DFS, BFS, BDFS) searching methods for monadic non-determinism are based on Spivey \cite{Bunches} with minor changes, due to OCaml being a strict language.
 
-\section{Requirement Analysis}\label{sec:RequirementAnalysis}
+\section{Requirements Analysis}\label{sec:RequirementAnalysis}
+At a high level, this project aimed to achieve three goals:
+\begin{enumerate}
+\item Create a more complete highlighting system for static type errors in Hazel.
+\item Create a (complete) source code highlighting system for dynamic errors in Hazel.
+\item Provide dynamic witnesses for static errors in Hazel. 
+\end{enumerate}
+At the time of writing the project proposal (\cref{sec:ProjectProposal}), the second aim was unexplored in existing research, so a concrete requirements were not yet known. Similarly, the first goal had not yet been considered, but naturally follows from the direction that the theorising of cast slicing took.
 
-\section{Software Engineering Methodology}\label{sec:EngineeringMethodology}
-Do the theory first. 
+Developing theories was high risk and took longer than expected. But, significant slack time was allocated to mitigate this, and the original goals were left open to simpler formalisations than the one eventually taken.\footnote{For example, a less complete highlighting based only upon traces.}
 
-Git. Merging from dev frequently (many of which were very difficult, as my code touches all of type checking and much of dynamics; and some massive changes, i.e. UI update). 
+After formalisation (phase 1), a set of goals and extensions were devised. This includes those for the witness search procedure taken from the project proposal. The goals should be achieved for a subset of Hazel; Hazel features are classified in \cref{fig:Classes} into: must implement, extensions, and won't implement\footnote{Those where the project is less applicable}. Most extensions relate to \textit{maintainability} of code, \textit{conciseness} of slices, witness \textit{coverage} improvements, and \textit{usability} (UI improvements), the latter two considered with lower priority.
 
-Talking with devs over slack.
+\begin{figure}[h]
+\begin{tabular}{lp{12cm}}
+Class & Features\\
+\hline
+{\color{red}Must Implement} & {Base types: their constants \& operations, lists, functions, bindings, type aliases, tuples, sum types \& constructors, holes, casts.}\\
+{\color{orange}Extensions} & Pattern matching, labelled tuples (*), type functions, recursive types.\\
+{\color{blue}Won't Implement} & Tests, deferrals, probes (*).\\
+\end{tabular}
+\ \\
 
-Using existing unit tests \& tests in web documentation to ensure typing is not broken.
+(*) New features merged from main branch not present in Hazel when proposal was written. 
+\caption{Hazel Subsets to Implement for}
+\label{fig:Classes}
+\end{figure}
 
-\section{Legality}\label{sec:Legality}
-MIT licence for Hazel.
+\paragraph{{\color{red} Core Goals}} Create/translate a corpus of ill-typed Hazel programs for evaluation usage. The witness search procedure must have reasonable coverage ($>75\%$) in a time suitable for interactive debugging (30s) over the corpus. Implement synthesis and analysis type slice theory, and cast slice theory with a basic UI highlighting the source code.
+
+\paragraph{{\color{orange} Extensions}} Implement contribution slice theory. Customisable search procedure instantiation ordering. \textit{(Maintainability)} Segregate type slicing logic from type checking semantics. Segregate cast slicing logic from transition semantics. \textit{(Conciseness)} Error slices (*). Minimised error slices (**). 
+
+\paragraph{{\color{blue} Low-Priority Extensions}} \textit{(Coverage)} Extended pattern instantiation (**). \textit{(Usability)} Trace visualisation \& compression. Graphs for cast dependence. UI to select sub-parts of slices (*). 
+
+
+Extensions with (*) were added post-evaluation and (**) after re-evaluation.
+\section{Software Engineering Tools and Techniques}\label{sec:EngineeringMethodology}
+\paragraph{Methodology} A spiral development model was followed, with each iteration refining the implementation through defined milestones (see project proposal) and repeated evaluation (\cref{fig:Phases}). New extensions were added after each evaluation and prioritised based on their risk to not be fully implemented by a deadline (coverage improvements and usability extensions having higher risk).
+
+\begin{figure}
+\centering
+\tikzstyle{phase} = [rectangle, rounded corners, minimum width=3cm, minimum height=1cm, text centered, draw=black, fill=blue!20]
+\tikzstyle{evaluation} = [phase, fill=orange!30]
+\tikzstyle{implementation} = [phase, fill=green!30]
+\tikzstyle{arrow} = [thick, ->, >=Stealth]
+\begin{tikzpicture}[node distance=1.2cm and 0.8cm]
+
+\node (f1) [phase] {\parbox{3cm}{\small\raggedright Formalise slicing theories. Define evaluation criteria.}};
+\node (f2) [implementation, right=of f1] {\parbox{3cm}{\small\raggedright Implement core goals}};
+\node (f3a) [evaluation, right=of f2] {\parbox{3cm}{\small\raggedright Evaluate success. Core goals not met ($<75\%$ coverage).}};
+\node (f3b) [phase, right=of f3a] {\parbox{3cm}{\small\raggedright Plan new extensions, prioritised on risk. Refine evaluation criteria.}};
+\node (f4) [implementation, below=of f3b] {\parbox{3cm}{\small\raggedright Implement improvements}};
+\node (f5a) [evaluation, left=of f4] {\parbox{3cm}{\small\raggedright Re-evaluate with refined criteria. Core goals met.}};
+\node (f5b) [phase, left=of f5a] {\parbox{3cm}{\small\raggedright Plan improvements and further extensions, priotise on risk.}};
+\node (f6) [implementation, left=of f5b] {\parbox{3cm}{\small\raggedright Implement highest priority extensions}};
+\node (f7) [evaluation, below=of f6] {\parbox{3.3cm}{\small\raggedright Evaluate completed extensions}};
+
+\draw [arrow] (f1) -- (f2);
+\draw [arrow] (f2) -- (f3a);
+\draw [arrow] (f3a) -- (f3b);
+\draw [arrow] (f3b) -- (f4);
+\draw [arrow] (f4) -- (f5a);
+\draw [arrow] (f5a) -- (f5b);
+\draw [arrow] (f5b) -- (f6);
+\draw [arrow] (f6) -- (f7);
+
+\end{tikzpicture}
+\caption{Phases of development}
+\label{fig:Phases}
+\end{figure}
+\paragraph{Hazel Codebase \& Interaction} The Hazel codebase is extensive (65k lines), with much of it being undocumented. As such interaction with the Hazel development team was required to clarify workings. Equally, I found and raised issues on bugs throughout, some being fixed by myself and later merged into the main development branch. 
+\paragraph{Version Control \& Merges} Git and GitHub were used for version control and backups, upon a fork of the Hazel codebase. My project had various extensions and alternate implementations and improvements, for which multiple branches were created.
+
+Hazel is a very active research project, so many bugfixes (and bugs introduced) and new features were added over the course of developing this project. These updates were regularly merged into my project, often requiring extensive conflict resolution (Slicing touches almost the entire codebase). Included in this were two major merges for labelled tuples and a UI architecture rewrite. See \cref{sec:Merges} for a list of merges.
+\paragraph{Continuous Integration \& Deployment} The main branch of this project is integrated with Hazel's continuous integration and deployment system (using GitHub actions). As such, unit tests and coverage are performed automatically, and the main branch of this project can be accessed at \url{https://hazel.org/build/witnesses-type-slicing/}.\footnote{This is continuously deployed. New functionality implemented \textit{after} the deadline may also be present.}
+\paragraph{Testing} Hazel performs it's testing by listing code samples with errors labelled by comments. Or, more recently, shifting towards unit regression tests using the \textit{Alcotest} package \cite{AlcoTest}. I reuse these to ensure type checking and evaluation is not broken by my additions. However, as slicing involves random term IDs, unit testing is more difficult. Therefore, I use the earlier method of testing directly within the editor, querying the slicing UI to test for calculation errors.
+\paragraph{Tools} No new dependencies were introduced into Hazel, instead existing dependencies were used, e.g. \code{Js_of_ocaml} \cite{JSOO} for regex matching, Jane Street \code{Base.Sequence} \cite{Base} for streams. However, micro benchmarking of the search procedure was performed using \textit{Bechamel} \cite{Bechamel}
+
+\paragraph{Licences} Hazel is open-source available under an MIT licence. The source OCaml corpus of ill-typed programs \cite{OCamlCorpus} translated into Hazel is freely available under a Creative Commons Zero (CC0) licence. We again license the project with an MIT licence and the translated Hazel corpus with a CC0 licence.
