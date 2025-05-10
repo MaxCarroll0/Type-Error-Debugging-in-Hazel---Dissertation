@@ -29,7 +29,7 @@ Omitted sub-terms are replaced by a \textit{gap} term, notated $\gap$. Represent
 We can then define a \textit{precision} partial order \cite{PartialOrder} on term slices: $\varsigma_1 \sqsubseteq \varsigma_2$ meaning $\varsigma_1$ is less or equally precise than $\varsigma_2$. That is, $\varsigma_1$ matches $\varsigma_2$ structurally except that some sub-terms may be gaps. For example:
 \[\gap \sqsubseteq\gap + \gap\sqsubseteq 1 + \gap \sqsubseteq 1 + 2\]
 
-\paragraph{Lattice Structure:}\label{sec:JoinTypesTheory} For any \textit{complete term}\footnote{Having no gaps.} $t$, the slices of $t$ form a \textit{bounded lattice structure} \cite{Lattice}. That is, every pair $\varsigma_1, \varsigma_2$ has a \textit{join} $\varsigma_1 \sqcup \varsigma_2$ and \textit{meet} $\varsigma_1 \sqcap \varsigma_2$. In general, not all slices slices have joins: $1 \centernot\sqcup\ 2$, but do have meets as $\gap \sqsubseteq \varsigma$ for all $\varsigma$.
+\paragraph{Lattice Structure}\label{sec:JoinTypesTheory} For any \textit{complete term}\footnote{Having no gaps.} $t$, the slices of $t$ form a \textit{bounded lattice structure} \cite{Lattice}. That is, every pair $\varsigma_1, \varsigma_2$ has a \textit{join} $\varsigma_1 \sqcup \varsigma_2$ and \textit{meet} $\varsigma_1 \sqcap \varsigma_2$. In general, not all slices slices have joins: $1 \centernot\sqcup\ 2$, but do have meets as $\gap \sqsubseteq \varsigma$ for all $\varsigma$.
  
 \subsubsection{Typing Assumption Slices}
 Expression typing is performed given a set of \textit{typing assumptions}. Therefore, in addition, we also desire a slice taking the \textit{relevant}\footnote{To the given criterion.} assumptions. Typing assumptions are \textit{partial functions} mapping variables to types (see \cref{sec:TypingJudgements}). 
@@ -50,7 +50,7 @@ Again, slicing complete typing assumptions $\Gamma$ forms a bounded lattice. In 
 \subsubsection{Expression Typing Slices}
 Finally, an \textit{expression typing slice}, $\rho$, is a pair, $\varsigma^\gamma$, of a term slice and a typing slice. Precision, joins and meets, can be extended pointwise to term typing slices with all the same properties.
 
-\paragraph{Typing Checking:} \textit{Expression slices} can be \textit{type checked} under the \textit{type assumption slices} by replacing gaps $\gap$ by: holes of arbitrary metavariable $\hole^u$ in \textit{expressions}, fresh variables in \textit{patterns}, and the dynamic type in \textit{types}. Notated by $\type{\cdot}$.
+\paragraph{Typing Checking} \textit{Expression slices} can be \textit{type checked} under the \textit{type assumption slices} by replacing gaps $\gap$ by: holes of arbitrary metavariable $\hole^u$ in \textit{expressions}, fresh variables in \textit{patterns}, and the dynamic type in \textit{types}. Notated by $\type{\cdot}$.
 
 \begin{definition}[Expression Typing Slice Type Checking]
 For expression typing slice $\varsigma^{\gamma}$ and type $\tau$. $\synthesis[\gamma]{\varsigma}{\tau}$ iff $\synthesis[\type{\gamma}]{\type{\varsigma}}{\tau}$ and $\analysis[\gamma]{\varsigma}{\tau}$ iff $\analysis[\type{\gamma}]{\type{\varsigma}}{\tau}$.
@@ -92,7 +92,7 @@ For typing assumption slice $\gamma$ and typing assumption context slice $\f$. T
 \subsubsection{Context Typing Slices}
 Finally, an \textit{expression context typing slice}, $\p$, is a pair, $\Cs^\f$, of an expression context slice and a typing assumption context slice defined pointwise, with all the same properties (including composition).
 
-\paragraph{Type Checking: } An analogous $\type{\cdot}$ translation can be defined.
+\paragraph{Type Checking} An analogous $\type{\cdot}$ translation can be defined.
 
 \subsection{Type-Indexed Slices}\label{sec:TypeIndexedSlices}
 Decomposing slices by their type is required for cast slicing and useful in calculating slices according to analysis slices and hence also contribution slices. For example consider the following context slice explaining why the underlined term analyses $\code{Bool} \to \code{Int}$:
@@ -192,19 +192,19 @@ This can again be calculated by a judgement reading as, \textit{$e$ which type c
 The rules build upon rules defining minimally scoped checking contexts, and are more involved, making use of \textit{type-indexed} synthesis slices\footnote{Hence, requiring conversion of (indexed) expression slices to context slices}, see \cref{fig:AnalysisSliceApplication}:
 \begin{figure}[h]
 \centering
-\begin{subfigure}{\0.4\textwidth}
+\begin{subfigure}{0.4\textwidth}
 \[(\lambda x : \dyn. \lambda y : \code{Int}. y)(\code{true})\]
 \caption{A function: synthesising $\code{Int} \to \code{Int}$.}
 \end{subfigure}$\qquad$
-\begin{subfigure}{\0.4\textwidth}
+\begin{subfigure}{0.4\textwidth}
 \[\hlcmaths[yellow!30]{(\lambda} x : \dyn\hlcmaths[yellow!30]{. \lambda y : \code{Int}. y)(}\code{true}\hlcmaths[yellow!30]{)}\]
 \caption{Its slice.}
 \end{subfigure}
-\begin{subfigure}{\0.4\textwidth}
+\begin{subfigure}{0.4\textwidth}
 \[\hlcmaths[yellow!30]{(\lambda} x : \dyn\hlcmaths[yellow!30]{. \lambda} y \hlcmaths[yellow!30]{: \code{Int}.} y\hlcmaths[yellow!30]{)(}\code{true}\hlcmaths[yellow!30]{)}\]
 \caption{The sub-slice relating \textit{only} to the input part $\code{Int}$.}
 \end{subfigure}$\qquad$
-\begin{subfigure}{\0.4\textwidth}
+\begin{subfigure}{0.4\textwidth}
 \[\hlcmaths[yellow!30]{(\lambda} x : \dyn\hlcmaths[yellow!30]{. \lambda} y \hlcmaths[yellow!30]{: \code{Int}.} y\hlcmaths[yellow!30]{)(}\code{true}\hlcmaths[yellow!30]{)(}\underline{1}\hlcmaths[yellow!30]{)}\]
 \caption{The analysis slice of the function's argument ($\underline{1}$) when applied.}
 \end{subfigure}
@@ -698,8 +698,8 @@ This is implemented using Hazel's evaluator abstraction (\code{EV_MODE}), separa
 Suppose we know which hole to instantiate and to which type (\cref{sec:TypesForHoles}). How do we refine these holes fairly and lazily, to the \textit{least specific} value that allows evaluation to continue?
 
 Base types must be instantiated directly to their (possibly infinite set of) values, for example:
-\paragraph{Booleans:} \code{return(true) <||> return(false)}.
-\paragraph{Integers:} A recursive definition using lazy application \code{|>-}, see \cref{fig:Integers}:
+\paragraph{Booleans} \code{return(true) <||> return(false)}.
+\paragraph{Integers} A recursive definition using lazy application \code{|>-}, see \cref{fig:Integers}:
 \begin{figure}[h]
 \begin{minted}{reason}
 let rec ints_from = n => return(n) <||> wrap(n + 1 |>- ints_from)
@@ -727,7 +727,7 @@ let ints = nats <||> wrap(negs)
 \label{fig:Integers}
 \end{figure}
  
-\paragraph{Strings:} A string is either \textit{empty} or is a string with a first character from a finite set. We can recursively wrap all strings, prefixed by each character. See \cref{fig:Strings}:
+\paragraph{Strings} A string is either \textit{empty} or is a string with a first character from a finite set. We can recursively wrap all strings, prefixed by each character. See \cref{fig:Strings}:
 \begin{figure}[h]
 \begin{minted}{reason}
 let chars = ... // Choice every single letter string to be considered
@@ -743,11 +743,11 @@ let rec strings = () => return("")
 
 Other types are \textit{inductive}, these can be represented indirectly by lazily instantiating only their \textit{outermost} constructors: 
  
-\paragraph{Lists:} A list is either the empty list, $[\ ]$ or a cons $\dyn_1 :: \dyn_2$. To retain the correct dynamic type information, $\dyn_2$ must be cast back to the list type. 
-\paragraph{Sum Types:} Enumerate each of the sum's constructors with their least specific value.
-\paragraph{Functions:} Constant functions have least specific values $\lambda \_.\ \dyn$. The function may then be applied to any value, and it's result synthesised after application. This can synthesise any return value, hence errors in the usage of the function will be detected. But, when the \textit{input} has an erroneous type but is not yet caught,\footnote{Due to partial annotations.} these will be lost.\footnote{This is rare, and could be mitigated by generating the identity function where possible.}
+\paragraph{Lists} A list is either the empty list, $[\ ]$ or a cons $\dyn_1 :: \dyn_2$. To retain the correct dynamic type information, $\dyn_2$ must be cast back to the list type. 
+\paragraph{Sum Types} Enumerate each of the sum's constructors with their least specific value.
+\paragraph{Functions} Constant functions have least specific values $\lambda \_.\ \dyn$. The function may then be applied to any value, and it's result synthesised after application. This can synthesise any return value, hence errors in the usage of the function will be detected. But, when the \textit{input} has an erroneous type but is not yet caught,\footnote{Due to partial annotations.} these will be lost.\footnote{This is rare, and could be mitigated by generating the identity function where possible.}
 
-\paragraph{Maintaining Correct Casts:}
+\paragraph{Maintaining Correct Casts}
 Holes have a dynamic type at runtime. Therefore, the hole's context \textit{expects} a dynamic expression. Therefore, we must cast every instantiation back to the dynamic type.
 
 \subsubsection{Substituting Holes}\label{sec:HoleSubstitutionImplementation}
@@ -770,10 +770,10 @@ If we know which hole to instantiate, how do we know which type to instantiate i
 
 For efficiency, my implementation both determines \textit{which hole}, and it's \textit{type information} during the same pass.
 
-\paragraph{Directly from Casts: }
+\paragraph{Directly from Casts}
 Most of the time, a hole is directly surrounded by a cast, whose type information can be used to perform an instantiation.
 
-\paragraph{Cast Laziness:}\label{sec:CastLaziness}
+\paragraph{Cast Laziness}\label{sec:CastLaziness}
 However, this is \textit{not} always the case. For efficiency reasons, Hazel treats casts over compound data lazily, e.g. casts around tuples will only by pushed inside upon usage of a component of the tuple. Treating casts eagerly is a significant change to the Hazel semantics, so was opted against. \Cref{sec:EvalCastLaziness} evaluates the consequence of this choice. 
 
 
@@ -812,13 +812,13 @@ We reuse the previous framework (\cref{fig:IndetEvalBlock}), but abstract the th
 \label{sec:CastFailureDetection}
 To search for cast errors, we must first define what one is. A reasonable definition is terms which contain \textit{cast failures}; in Hazel, these are casts between \textit{inconsistent ground types}. However, this has some issues:
 
-\paragraph{Multiple Cast Failures:} Terms may have multiple cast failures, some of which discovered during static type checking and inserted via elaboration. But these failures won't stop evaluation until necessary. Therefore, we should consider only the casts which are directly \textit{causing} a term to get stuck, this is implemented similarly to choosing which hole to instantiate (\cref{sec:ChooseHole}).
+\paragraph{Multiple Cast Failures} Terms may have multiple cast failures, some of which discovered during static type checking and inserted via elaboration. But these failures won't stop evaluation until necessary. Therefore, we should consider only the casts which are directly \textit{causing} a term to get stuck, this is implemented similarly to choosing which hole to instantiate (\cref{sec:ChooseHole}).
 
 \paragraph{Cast Laziness}
 \label{sec:SearchCastLaziness}
 Only casts between \textit{ground} types are checked for consistency. Due to cast laziness (\cref{sec:CastLaziness}), some compound terms will be cast between inconsistent types, but \textit{not} placed within a \textit{cast failure}. As before, this issue is ignored due to requiring large changes to Hazel semantics, the evaluation finds it to be a rare occurrence.
 
-\paragraph{Dynamic Match Statements:} When matching dynamically on values with different types, the instantiations wrap the scrutinee in casts to each type. If any of these casts failed, they should not count as witnesses, as they were introduced entirely by the instantiation procedure. 
+\paragraph{Dynamic Match Statements} When matching dynamically on values with different types, the instantiations wrap the scrutinee in casts to each type. If any of these casts failed, they should not count as witnesses, as they were introduced entirely by the instantiation procedure. 
 
 \subsection{Searching Methods}\label{sec:SearchMethods}
 I implement \textit{four} different search methods, implementing the non-determinism signature specified in \cref{sec:ResolvingNondeterminism}.
@@ -832,15 +832,15 @@ Breadth first search represents forests by sequences of sequences \cite{BFSCombi
 The other monadic operators are complex, but \code{join : t(t('a)) => t('a)} can be visualised  in \cref{fig:BFSJoin}: for simplicity showing joining trees of trees, which is extended to forests by choicing the trees in each inner forest.
 
 \begin{figure}[h]
-\vcenter{\hbox{\begin{subfigure}{0.45\textwidth}
+\[\vcenter{\hbox{\begin{subfigure}{0.45\textwidth}
 \centering
 \begin{tikzpicture}[scale=0.8, transform shape,
   main tree/.style={grow=right, sibling distance=3cm, level distance=3cm},
   sub tree/.style={grow=right, sibling distance=1cm, level distance=1cm},
   every node/.style={circle, draw, minimum size=6mm, inner sep=0pt},
-  main node/.style={draw=red, thick, fill=none},
+  main node/.style={draw=red, thick},
   sub node/.style={draw=blue, fill=blue},
-  invisible/.style={draw=blue, fill=none, text=none}
+  invisible/.style={draw=blue}
   ]
 
 % Main tree in x–z plane
@@ -898,16 +898,16 @@ The other monadic operators are complex, but \code{join : t(t('a)) => t('a)} can
 \end{tikzpicture}
 \caption{Before Join: Singleton forest of singleton forests (list of lists of lists of lists). Rectangles are the inner lists of the forests.}
 \end{subfigure}}}
-$\quad\mapsto\quad$
+\quad\mapsto\quad
 \vcenter{\hbox{\begin{subfigure}{0.45\textwidth}
 \begin{tikzpicture}[scale=0.8, transform shape,
   main tree/.style={grow=right, sibling distance=3cm, level distance=3cm},
   level 2/.style={sibling distance=1cm},
   sub tree/.style={grow=right, sibling distance=1cm, level distance=2cm},
   every node/.style={circle, draw, minimum size=6mm, inner sep=0pt},
-  main node/.style={draw=red, thick, fill=none},
+  main node/.style={draw=red, thick},
   sub node/.style={draw=blue, fill=blue},
-  invisible/.style={draw=blue, fill=none, text=none}
+  invisible/.style={draw=blue}
   ]
 
 % Main tree in x–z plane
@@ -937,7 +937,7 @@ $\quad\mapsto\quad$
 \end{tikzpicture}
 \caption{After Join: Flattened into a single forest (list of lists) by rotating vertical trees into horizontal plane. Solid circles are the solutions actually stored in the BFS lists.}
 \end{subfigure}}}
-
+\]
 \caption{BFS Join}
 \label{fig:BFSJoin}
 \end{figure}

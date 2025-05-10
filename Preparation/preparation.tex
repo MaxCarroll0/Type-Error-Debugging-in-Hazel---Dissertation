@@ -209,7 +209,7 @@ That is, the order of making binary choices does not matter, and there is no rea
 
 There are many proposed ways to represent and manage non-deterministic programs which I considered, of which a monadic representation over a tree based state-space model was chosen as a good balance of flexibility, simplicity, and familiarity to other Hazel developers. \Cref{sec:NonDeterminismAppendix} reasons and details other options considered: continuations, effect handlers, tagless final DSLs, direct implementation.  
 
-\paragraph{Monadic Non-determinism:} Some monads (\cref{sec:Monads} explains monads) can be extended to represent non-determinism by adding the \texttt{choice} and \texttt{fail} operators satisfying the usual laws.
+\paragraph{Monadic Non-determinism} Some monads (\cref{sec:Monads} explains monads) can be extended to represent non-determinism by adding the \texttt{choice} and \texttt{fail} operators satisfying the usual laws.
 These operations interact by \texttt{bind} distributing over \texttt{choice}, and \texttt{fail} being a left-identity for \texttt{bind}.
 \[\texttt{bind}(m_1 \texttt{ <||> } m_2)(f) = \texttt{bind}(m_1)(f) \texttt{ <||> } \texttt{bind}(m_2)(f)\]
 \[\texttt{bind}(\texttt{fail})(f) = \texttt{fail}\]

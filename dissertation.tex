@@ -1,15 +1,17 @@
 \documentclass[12pt, oneside, a4paper, final]{memoir}
 
 \setlrmarginsandblock{2cm}{2cm}{*}
-\checkandfixthelayout 
+\setulmarginsandblock{2cm}{2cm}{*}
+\checkandfixthelayout
 \input{dissertation-info}
 \input{preamble}
-
+\usepackage{etoolbox}
 \input{pageformat}
 
 \begin{document}
-
 %TC:ignore
+
+
 \frontmatter
 \include{Cover Page/coverpage}
 \pdfbookmark[1]{Declaration}{Declaration of Originality}
@@ -17,6 +19,49 @@
 \pdfbookmark[1]{Proforma}{Proforma}
 \input{Proforma/proforma}
 \input{Acknowledgements/acknowledgements}
+
+\chapterstyle{dash}
+
+\setlength{\beforechapskip}{-35pt}\setlength{\afterchapskip}{15pt}
+
+\titlespacing*{\section}{0pt}{1.5ex plus .2ex minus .1ex}{1.5ex}
+\titlespacing*{\subsection}{0pt}{1.5ex plus .2ex minus .1ex}{1.5ex}
+\titlespacing*{\subsubsection}{0pt}{1.5ex plus .2ex minus .1ex}{1.5ex}
+\titlespacing*{\paragraph}{0pt}{1ex}{1em}
+
+% Section
+\titleformat{\section}
+  {\normalfont\large\centering}
+  {—~{\thesection}~—}
+  {1em}
+  {#1}
+
+% Subsection
+\titleformat{\subsection}
+  {\normalfont\large\centering}
+  {—~\thesubsection~—}
+  {1em}
+  {#1}
+
+% Subsubsection (unnumbered, dashes around title, italic)
+\titleformat{\subsubsection}
+  {\normalfont\normalsize\itshape\centering}
+  {}
+  {0pt}
+  {—~#1~—}
+
+% Paragraph: italic, ends with dash
+\titleformat{\paragraph}[runin]
+  {\normalfont\itshape}
+  {}
+  {0pt}
+  {—~#1}
+  [~—]
+
+\pagestyle{ruled}
+\setlrmarginsandblock{2cm}{2cm}{*}
+\setulmarginsandblock{2cm}{2cm}{*}
+\checkandfixthelayout[fixed]
 
 \newpage
 \setcounter{tocdepth}{2}
@@ -26,7 +71,6 @@
 
 \mainmatter
 
-\pagestyle{chapter}
 \include{Introduction/introduction}
 \include{Preparation/preparation}
 \include{Implementation/implementation}
