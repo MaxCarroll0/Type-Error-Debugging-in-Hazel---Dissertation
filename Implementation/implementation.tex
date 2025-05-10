@@ -216,9 +216,9 @@ The rules build upon rules defining minimally scoped checking contexts, and are 
 \label{sec:ContributionSlices}
 This criterion highlights all regions of code which \textit{contribute} to typing succeeding. That is, all sub-terms who could change their type to make the term ill-typed. For example, for the underlined term:
 
-\[((\lambda f: \code{Int} \to \dyn.\ f(1))\underline{(\lambda x : \code{Int}.\ x)}) : \code{Int} \to \code{Int}\]
+\[((\lambda f: \code{Int} \to \dyn.\ f(1))\underline{(\lambda x : \code{Int}.\ x)})\]
 Both contextual and synthetic parts (in dark yellow) contribute:
-\[\hlcmaths[yellow!30]{((\lambda} f\hlcmaths[yellow!30]{: \code{Int} \to \dyn}.\ f(1)\hlcmaths[yellow!30]{)}\underline{\hlcmaths[yellow!70]{(\lambda} x \hlcmaths[yellow!70]{: \code{Int}.}\ x\hlcmaths[yellow!70]{)}}\hlcmaths[yellow!30]{) : \code{Int} \to \code{Int}}\]
+\[\hlcmaths[yellow!30]{(\lambda} f\hlcmaths[yellow!30]{: \code{Int} \to \dyn}.\ f(1)\hlcmaths[yellow!30]{)}\underline{\hlcmaths[yellow!70]{(\lambda} x \hlcmaths[yellow!70]{: \code{Int}.}\ x\hlcmaths[yellow!70]{)}}\]
 Notice that the only sub-terms which do not contribute have their type changed without affecting the overall type must be expected to be dynamically annotated. Therefore, this criterion omits the dynamic code regions.
 
 These can be calculated mimicking the Hazel typing rules. During subsumption, remove synthesis slice sub-part which match with dynamic parts of the analysing type. Contextual parts are found by passing context slices directly as inputs to type analysis rules.
@@ -479,13 +479,13 @@ The type slices of the expression at the cursor (in red) are highlighted, see \c
 \end{subfigure}
 \begin{subfigure}[t]{0.45\textwidth}
 \centering
-\includegraphics[width=1\textwidth]{Media/Figures/list_ana}
-\caption{The list input is expected to be an \code{[Int]} as it is applied to \code{hd} which is a function annotated with input type \code{[Int]}.}
+\includegraphics[width=1\textwidth]{Media/Figures/hd_syn}
+\caption{The variable usage of \code{hd} synthesises \code{[Int]}$\to$ \code{IntOption} similarly, whose slice is retrieved from the typing context.}
 \end{subfigure}
 \begin{subfigure}[t]{0.45\textwidth}
 \centering
-\includegraphics[width=1\textwidth]{Media/Figures/hd_syn}
-\caption{The variable usage of \code{hd} synthesises \code{[Int]}$\to$ \code{IntOption} similarly (and also due to the binding).}
+\includegraphics[width=1\textwidth]{Media/Figures/list_ana}
+\caption{The list input is expected to be an \code{[Int]} as it is applied to \code{hd} which is a function annotated with input type \code{[Int]}.}
 \end{subfigure}
 \caption{Type Slices}
 \label{fig:SliceExamples}
@@ -539,38 +539,19 @@ Type slices within casts can be selected from the evaluation result and displaye
 \section{Indeterminate Evaluation}\label{sec:IndetEval}
 Dynamic errors include evaluation traces, which can aid in debugging \cite{TraceVisualisation}, yet static type errors lack such traces. Seidel et al. \cite{SearchProc} offer an algorithm  to search for these traces for static errors in OCaml by lazily, non-deterministically narrowing input holes to least specific values based on their usage context. 
 
-This section creates a framework for non-deterministic evaluation of indeterminate expressions by lazily performing hole substitutions using type information from dynamic casts. Unlike Seidel, this supports more language features (all of Hazel), any number of inputs (holes), and exhaustive generation of these inputs. Further, it is a general evaluation method, not limited to cast error searches. Specifics relating to cast errors, are covered in \cref{sec:SearchProcedure}.
-
-This section covers the following, answering each question:
-\begin{enumerate}
-\item[\ref{sec:ResolvingNondeterminism}] How should we resolve the non-determinism in instantiating holes \textit{fairly}? How can the search order be abstracted? Unlike Seidel's approach, my implementation is \textit{fair}: exhaustively considering all possibilities, and allows search methods that avoid (unnecessary) non-termination.
-\item[\ref{sec:IndetEvalAlgorithm}] Describes an algorithm for indeterminate evaluation. Is every possibility explored fairly?
-\item[\ref{sec:ThreadingState}] How can \textit{per-solution} state be maintained irrespective of evaluation order?
-\item[\ref{sec:HoleInstantiation}] Discusses hole instantiation and substitution. What does lazy instantiation actually entail, when exactly should a hole be instantiated? Which hole\footnote{There may be multiple.} should be instantiated in order to continue evaluation to make progress? How should holes be substituted with their narrowed values; the same hole may exist in multiple locations within the expression?
-\item[\ref{sec:OneStepEvaluator}] How to use the evaluation abstraction (\cref{sec:EVMODE}) to perform just one evaluation step?
-\item[\ref{sec:TypesForHoles}] Finally, I consider Hazel-specific problems. Once we know which hole to instantiate, how can we get it's \textit{expected type}? Hazel's lazy treatment of pushing casts into compound data types means not all such holes will be wrapped directly in casts. Additionally, the case of pattern matching is difficult, allowing holes to be \textit{non-uniformly} cast to \textit{differing types}. How can holes be instantiated in these situations?
-\end{enumerate}
-As always, a UI is implemented in \cref{sec:UIIndetEval}.
+This section creates a framework for non-deterministic evaluation of indeterminate expressions by lazily performing hole substitutions using type information from dynamic casts. Unlike Seidel, this supports more language features (all of Hazel), any number of inputs (holes), and exhaustive generation of these inputs. It is a general evaluation method, not limited to cast error searches. Specifics relating to cast errors and implementing search orderings, are covered in \cref{sec:SearchProcedure}.
 
 \subsection{Resolving Non-determinism}
 \label{sec:ResolvingNondeterminism}
 To model infinite non-determinism I create a monadic DSL with an explicitly tree/forest-based representation. The forest model allows for varying low level search traversals. The module type of combinators is in \code{Nondeterminism.Search}; it's underlying parametric type is \code{t('a)} with \code{'a} being the type of the solutions. \Cref{sec:SearchMethods} discusses the actual implementations of this interface, giving four searching procedures.
 
-\subsubsection{Monadic Non-determinism}
-\cref{sec:Nondeterminism} described a high level monadic framework for nondeterminism. I extend this with some extra functions:
 
-\begin{itemize}
-\item Standard \code{map} and \code{join} functions. Mapping transforms all possible solutions, but does not change if a candidate \textit{is} a solution.
-\item \code{once : t('a) => option('a)}, extracts any one solution, if one exists. This can be used to efficiently model \textit{don't care} non-determinism, where if one possibility fails, then we know all others fail also.
-\item \code{run : t('a) => Sequence.t('a)} produces a lazy list (Jane Street's \code{Base.Sequence}) of all solutions.
-\item \code{guard : bool => t(unit)}, represents success. When chaining binds, if any guard binding fails, then the whole computation fails.
-\item \code{ifte : m('a) => ('a => m('b)) => m('b)}. This corresponds to Mercury's interpretation of an if-then-else construct \cite{Mercury}. It is put to good use for computations which explain the failure of the conditional.
-\end{itemize}
+In addition the functions from \Cref{sec:Nondeterminism}, I add standard \code{map} and \code{join} functions, and various other functions, e.g. \code{ifte} modelled after Mercury's if-then-else construct \cite{Mercury}.
 
 \subsubsection{Abstracting Search Order: Forest Model}
 Typical stream-based models of non-determinism \cite{ListOfSuccess} only admit the possibility of depth-first search (DFS). Stream concatenation provides no way of remembering choice points and backtracking before finishing a computation. 
 
-Instead, monadic non-determinism can be represented by forests \cite{Bunches}. A forest is a list of trees, and can be defined as a monad. Choice, similarly to streams, is performed by concatenating forests. Finally, in order to build tree structure, a \code{wrap} combinator can wrap a forest as a tree whose root leads branches to each tree in the original forest, see \cref{fig:Wrap}.
+Instead, we can use a model based on forests (lists of trees) \cite{Bunches}. Choice, similarly to streams, is performed by concatenating forests. Finally, to build tree structures, a \code{wrap} combinator wraps every tree up into a single tree with a new root, see \cref{fig:Wrap}. Effectively, this encodes a  notion of cost for search paths.
 
 \begin{figure}[h]
 \centering
@@ -600,18 +581,15 @@ Instead, monadic non-determinism can be represented by forests \cite{Bunches}. A
 \label{fig:Wrap}
 \end{figure}
 
-Therefore, I extend the DSL with a \code{wrap : t('a) => t('a)} combinator. Here, \code{wrap} is abstract, the underlying implementation does not actually need to use a forest data structure.\footnote{Therefore, DFS can still be efficiently implemented with regular streams.}
-
-These trees can be traversed in various orders, e.g. breadth-first search (BFS)\cite{BFSCombinators}, or bounded DFS. With this in mind, \code{run} now represents performing the search on the tree, returning the solutions in sequence.
-
-In essence, \code{wrap} allows encoding some notion of \textit{cost}\footnote{The depth of the node in the tree.} to solutions, which can then affect the search order.
+The DSL is extended with a \code{wrap : t('a) => t('a)} combinator. As \code{wrap} is abstract, the underlying implementation does not actually need to use a forest data structure.\footnote{Therefore, DFS is still implemented with regular streams.} 
+Finally, a \code{run} function produces a lazy list of solutions in the tree with ordering specified by the search method.
 
 \subsubsection{Recursive Functions}
 As OCaml is strict, defining infinite choices via recursion can lead to non-termination during definition. I define a shorthand lazy application function \code{apply(f, x)} by \code{return(x) >>= f}, represented infix by \code{|>-}. Provided that bind lazily applies \code{f},\footnote{Which it usually does, consider streams as an example.} recursive functions can be written directly resulting in infinite choices without OCaml's strictness leading to infinite recursion.
 
 \subsection{A Non-Deterministic Evaluation Algorithm}
 \label{sec:IndetEvalAlgorithm}
-This section demonstrates how we can indeterminately evaluation to return all possible values. Demonstrated by \cref{fig:IndetEvalBlock} and with code extract \cref{fig:IndetEval}.
+This section demonstrates one indeterminate evaluation algorithm evaluating terms to concrete values in \cref{fig:IndetEvalBlock} with an accompanying code extract \cref{fig:IndetEval}.
 
 \begin{figure}[h]
 \centering
@@ -674,11 +652,12 @@ This section demonstrates how we can indeterminately evaluation to return all po
 \label{fig:IndetEvalBlock}
 \end{figure}
 
-Instantiation is implemented by a \textit{non-deterministic} function \code{instantiate}, discussed in detail in \cref{sec:HoleInstantiation}: \[\code{Instantiation.instantiate : Exp.t => m(Exp.t)}\]
+Instantiation is implemented by a \textit{non-deterministic} function \code{instantiate}, discussed in detail in \cref{sec:HoleInstantiation}: \[\code{Instantiation.instantiate : Exp.t => S.t(Exp.t)}\]
 
-Classifying a term $d$, into values, indeterminate terms, and expressions with a possible step is done by a (deterministic) function \code{take_step}, discussed in \cref{sec:OneStepEvaluator}: \[\code{OneStepEvaluator.take_step : Exp.t => TryStep.t}\] 
+Evaluation steps are performed by a (deterministic) function \code{take_step}, classifing it's input as either (concrete) values, indeterminate values, steppable expressions. The step evaluator re-uses the Hazel stepper logic, which had existing bugs to be fixed: causing non-termination of fixed points\footnote{Due to incorrect management of closures; the main branch stepper is still broken as of May 9th.} and misclassifying concrete values as indeterminate values: 
+\[\code{OneStepEvaluator.take_step : Exp.t => TryStep.t}\] 
 
-To ensure that the search tree has finite branching factor, possibly infinite choices must be wrapped, e.g. evaluation steps. To allow for multiple searching methods, the algorithm is placed within a \textit{functor}, which takes a searching method, \code{S : Search}.
+To ensure that the search tree has finite branching factor, possibly infinite choices must be wrapped, e.g. evaluation steps. The actual implementation additionally threads state tracking number of instantiations and trace length throughout the algorithm.
 
 \begin{figure}[h]
 \begin{minted}{reason}
@@ -693,7 +672,7 @@ module Make = (S: Search) => {
     | BoxedValue => return(d)
     | Indet => 
       d |>- Instantiation.instantiate
-        >>- values;
+        >>= values;
     | Step(d') => wrap(d' |>- values);
     | exception (EvaluatorError.Exception(_)) => fail
     };
@@ -704,19 +683,8 @@ module Make = (S: Search) => {
 \label{fig:IndetEval}
 \end{figure} 
 
-\subsection{Threading Evaluation State}
-In order to track statistics for use in the evaluation, state must be threaded through indeterminate evaluation. State tracked includes, on a \textit{per-solution} basis:
-\begin{itemize}
-\item Trace length.
-\item Number of and size of instantiations performed.
-\end{itemize}
-
-So instead of threading only the solutions, \code{DHExp.t}, I also thread the state, \\\code{(DHExp.t, IndetEvaluatorState.t)}, updating according depending on the branch taken.
-
-Additionally, Hazel evaluates expressions in an global environment (\code{env : Environment.t}) which must also be passed down, but does not change after performing a step.
-
 \subsection{Hole Instantiation \& Substitution}\label{sec:HoleInstantiation}
-There are three key problems to solve in order to instantiate terms.
+This section details the semantics of hole instantiations, including Hazel-specific issues.
 
 \subsubsection{Choosing which Hole to Instantiate}
 \label{sec:ChooseHole}
@@ -724,7 +692,7 @@ An indeterminate term may contain \textit{multiple} holes or even \textit{no} ho
 
 When attempting to evaluate the indeterminate term some transitions rules require a sub-term to be concrete (e.g. a function during application). We chose to instantiate the hole that blocks the \textit{first} blocked transition rule. If latter holes were instantiated, the term might \textit{still} be unevaluable due to this first hole.
 
-This is implemented using Hazel's evaluator abstraction (\code{EV_MODE}), separating this logic from the transition semantics. Therefore, hole choice logic will automatically update to any future changes in the transition semantics.
+This is implemented using Hazel's evaluator abstraction (\code{EV_MODE}), separating this logic from the transition semantics. Therefore, hole choosing logic will automatically update to future changes in the transition semantics.
 
 \subsubsection{Synthesising Terms for Types}
 Suppose we know which hole to instantiate and to which type (\cref{sec:TypesForHoles}). How do we refine these holes fairly and lazily, to the \textit{least specific} value that allows evaluation to continue?
@@ -762,10 +730,10 @@ let ints = nats <||> wrap(negs)
 \paragraph{Strings:} A string is either \textit{empty} or is a string with a first character from a finite set. We can recursively wrap all strings, prefixed by each character. See \cref{fig:Strings}:
 \begin{figure}[h]
 \begin{minted}{reason}
-let chars = // Every single letter string considered
+let chars = ... // Choice every single letter string to be considered
 let rec strings = () => return("") 
   <||> wrap(chars >>= chr => 
-            (() |>- strings) >>- str => 
+            (() |>- strings) >>= str => 
             chr ++ str)) 
 \end{minted}
 \caption{Enumerating Strings}
@@ -773,18 +741,17 @@ let rec strings = () => return("")
 \end{figure}
 \
 
-Other types are \textit{inductive}, these can be represented indirectly by lazily instantiating only their \textit{outermost} constructor: 
+Other types are \textit{inductive}, these can be represented indirectly by lazily instantiating only their \textit{outermost} constructors: 
  
 \paragraph{Lists:} A list is either the empty list, $[\ ]$ or a cons $\dyn_1 :: \dyn_2$. To retain the correct dynamic type information, $\dyn_2$ must be cast back to the list type. 
 \paragraph{Sum Types:} Enumerate each of the sum's constructors with their least specific value.
-\paragraph{Functions:} Constant functions have least specific values $\lambda \_.\ \dyn$. The function may then be applied to any value, and it's result synthesised after application. This can synthesise any return value, hence errors in the usage of the function will be detected. But, if the \textit{input} has an erroneous type but is uncaught as the function is dynamic, potential errors arising from this cannot be found.\footnote{This can occur in dynamic functions with inconsistent branches. But this is extremely rare, and can be fixed for most cases by generating the identity function where function hole's expected type allow.} Extensions to program synthesis (\cref{sec:LogicProgramming}) would require more sophisticated function instantiation.
+\paragraph{Functions:} Constant functions have least specific values $\lambda \_.\ \dyn$. The function may then be applied to any value, and it's result synthesised after application. This can synthesise any return value, hence errors in the usage of the function will be detected. But, when the \textit{input} has an erroneous type but is not yet caught,\footnote{Due to partial annotations.} these will be lost.\footnote{This is rare, and could be mitigated by generating the identity function where possible.}
 
-
-\subsubsection{Maintaining Correct Casts}
-Every hole has a dynamic type at runtime. Therefore, that hole's context \textit{expects} it to have the dynamic type. Therefore, we must cast every instantiation back to the dynamic type.
+\paragraph{Maintaining Correct Casts:}
+Holes have a dynamic type at runtime. Therefore, the hole's context \textit{expects} a dynamic expression. Therefore, we must cast every instantiation back to the dynamic type.
 
 \subsubsection{Substituting Holes}\label{sec:HoleSubstitutionImplementation}
-Holes can be bound to variables in the execution environment, and may also be duplicated, before they are required to be instantiated, see \cref{fig:HoleDuplication}. Therefore, instantiations must be substituted for every occurrence of the same hole.
+Holes can be bound to variables in the execution environment, and may also be duplicated, before they are required to be instantiated, see \cref{fig:HoleDuplication}. Every occurrence must be substituted.
 
 \begin{figure}[h]
 \centering
@@ -793,53 +760,38 @@ Holes can be bound to variables in the execution environment, and may also be du
 \label{fig:HoleDuplication}
 \end{figure}
 
-Consistent hole substitution was described as part of the Hazel calculus \cref{sec:HoleSubstitution}. Unexpectedly, the main Hazel branch did not yet implement it. A full implementation of metavariables and delayed closures is complex. Therefore, as hole closures are not required for hole instantiation,\footnote{Currently, there is no need to instantiate to a variable reference.} I instead use the existing term ids to represent metavariables, and ensure these ids are maintained and propagated correctly throughout statics, elaboration, and evaluation.\footnote{A huge portion of the code-base required checks.}
+Hole substitution was described as part of the Hazel calculus \cref{sec:HoleSubstitution}. But, unexpectedly, the main Hazel branch does not yet implement it. A full implementation of metavariables and delayed closures is complex. Therefore, as hole closures are not required for hole instantiation,\footnote{Instantiations do not contain variable references.} I use existing term ids identify holes, ensuring these are maintained and propagated correctly, so that duplicated holes retain the same ID.\footnote{All of elaboration and dynamics required these checks.}
 
-We can substitute terms for every hole with the given ID throughout the entire expressions. Substitutions within closures \textit{include} eagerly evaluating the resulting binding to ensure the invariant that closures bind variables to values. 
+Substitutions must also be performed within closures, eagerly evaluating the results to ensure that closures bind variables to values. 
 
-\subsection{One Step Evaluator}\label{sec:OneStepEvaluator}
-The step evaluator uses the evaluation abstraction to create an \textit{evaluation context} from a term, to return:
-\begin{itemize}
-\item An evaluation context, with a \textit{mark} inserted in place of the sub-term which is evaluated according to the transition rules.
-\item The environment under which the sub-term is evaluated.
-\item The kind of rule that was used (e.g. substitution, addition, etc.).
-\end{itemize}
-
-This information allows indeterminate evaluation methods to treat different steps differently. For example one might wish to return only the substitution steps, to produce a compressed execution trace.
-
-\subsection{Determining the Types for Holes}
+\subsection{Determining the Types for Hole Substitutions}
 \label{sec:TypesForHoles}
-If we know which hole to instantiate, how do we know which type to instantiate it to?
+If we know which hole to instantiate, how do we know which type to instantiate it to? This logic is highly specific to Hazel's cast semantics, with many Hazel-specific issues arising.
 
 For efficiency, my implementation both determines \textit{which hole}, and it's \textit{type information} during the same pass.
 
-\subsubsection{Directly from Casts}
+\paragraph{Directly from Casts: }
 Most of the time, a hole is directly surrounded by a cast, whose type information can be used to perform an instantiation.
 
-\subsubsection{Cast Laziness}\label{sec:CastLaziness}
-However, this is \textit{not} always the case. For efficiency reasons, Hazel treats casts over compound data-types lazily, e.g. casts around tuples will only by pushed inside upon usage of a component of the tuple.
-
-Treating casts eagerly is a significant change to the Hazel semantics, so was opted against. \Cref{sec:EvalCastLaziness} discusses the consequence of this choice. 
+\paragraph{Cast Laziness:}\label{sec:CastLaziness}
+However, this is \textit{not} always the case. For efficiency reasons, Hazel treats casts over compound data lazily, e.g. casts around tuples will only by pushed inside upon usage of a component of the tuple. Treating casts eagerly is a significant change to the Hazel semantics, so was opted against. \Cref{sec:EvalCastLaziness} evaluates the consequence of this choice. 
 
 
 \subsubsection{Pattern Matching}
 \label{sec:PatternMatching}
-Does a hole even have only one possible type? The introduction of (dynamic) pattern matching actually allows terms to be matched against \textit{non-uniform} types if the scrutinee is dynamic. In \cref{fig:DynamicPatternMatching}, if \code{term} is an integer 0 then it returns 0, but if it's the string "one" then it returns 1. Hence instantiating \code{code} to either an int or string might allow progress.
+Does a hole even have only one possible type? Dynamic pattern matching actually allows terms to be matched against \textit{non-uniform} types. See \cref{fig:DynamicPatternMatching}, having branches having patterns of multiple types. Hence instantiating to any of the types might allow progress.
 
 \begin{figure}[h]
 \centering
-\includegraphics[width=0.3\textwidth]{Media/Figures/dynmatch}
+\includegraphics[width=0.25\textwidth]{Media/Figures/dynmatch}
 \caption{Dynamic/Type-case Match Statement}
 \label{fig:DynamicPatternMatching}
 \end{figure}
-
-Hazel implements this by placing casts on the \textit{branches}, rather than the scrutinee. Therefore, we can collect each of these possible types from the casts, and wrap them around the scrutinee, continuing evaluation accordingly.
+We can collect each of these possible types from the elaborated casts inserted on the \textit{branches}, non-deterministically rewrapping them around the scrutinee.
 
 \subsubsection{Extended Match Expression Instantiation (Pattern Instantiation)}
 \label{sec:ExtendedPatternMatching}
-An interesting extension was partially implemented which improves code coverage and additionally detects errors within patterns. 
-
-It instantiates holes in a match expression according also to the \textit{structure} of each pattern, allowing the instantiation to prioritise searching along each branch. We instantiate the scrutinee with the least specific versions which match the patterns on each branch, e.g. \code{?::?} for \code{x::xs}. However, sometimes this instantiation is not specific enough to explicitly not match with previous statements, hence getting stuck. Proposed solutions can be found in \cref{sec:extendedmatching}.
+An interesting extension was partially implemented which improves code coverage and additionally detects errors within patterns. It instantiates holes in a match expression according also to the \textit{structure} of each pattern, allowing the instantiation to prioritise searching along each branch. We instantiate the scrutinee with the least specific versions which match the patterns on each branch, e.g. \dyn\code{::}\dyn\ for \code{x::xs}. However, difficulties come when the scrutinee is a compound term, or when least specific matches only indeterminately matching earlier branches. Further details addressing these issues can be found in \cref{sec:extendedmatching}.
 
 \subsection{User Interface}\label{sec:UIIndetEval}
 The default evaluation method returns every possible indeterminate or concrete values. The possibilities can be cycled through via some arrows buttons.
@@ -854,11 +806,11 @@ Now that an framework for indeterminate evaluation has been specified, the follo
 
 \subsection{Abstract Indeterminate Evaluation}
 \label{sec:AbstractSearch}
-We reuse the previous framework (\cref{fig:IndetEvalBlock}), but abstract the the return logic to a higher-order \code{logic} function. This also allows returning other types, for example, the integer \textit{size} of values. Or return only specific classes of expressions, e.g. those with cast errors. An `expert' search abstraction is also provided which allows instantiation to be changed.
+We reuse the previous framework (\cref{fig:IndetEvalBlock}), but abstract the the return logic to a higher-order \code{logic} function. This also allows returning other types, for example, the integer \textit{size} of values. Or return only specific classes of expressions, e.g. those with cast errors. An `expert' search abstraction is also provided which allows custom instantiation to be injected.
 
 \subsection{Detecting Relevant Cast Errors}
 \label{sec:CastFailureDetection}
-To search for cast errors, we must first define what one is. A reasonable definition is terms which contain \textit{cast failures}, in Hazel these are casts between \textit{inconsistent ground types}. However, this has some issues:
+To search for cast errors, we must first define what one is. A reasonable definition is terms which contain \textit{cast failures}; in Hazel, these are casts between \textit{inconsistent ground types}. However, this has some issues:
 
 \paragraph{Multiple Cast Failures:} Terms may have multiple cast failures, some of which discovered during static type checking and inserted via elaboration. But these failures won't stop evaluation until necessary. Therefore, we should consider only the casts which are directly \textit{causing} a term to get stuck, this is implemented similarly to choosing which hole to instantiate (\cref{sec:ChooseHole}).
 
@@ -868,20 +820,16 @@ Only casts between \textit{ground} types are checked for consistency. Due to cas
 
 \paragraph{Dynamic Match Statements:} When matching dynamically on values with different types, the instantiations wrap the scrutinee in casts to each type. If any of these casts failed, they should not count as witnesses, as they were introduced entirely by the instantiation procedure. 
 
-\subsection{Explaining Static Errors}
-\label{sec:StaticCastError}
-A static type error will place a term inside a cast error during elaboration. If the resulting cast error is dependent on the statically inserted cast error, then the resulting cast slice and trace can be considered as an explanation for the static error.
-
 \subsection{Searching Methods}\label{sec:SearchMethods}
 I implement \textit{four} different search methods, implementing the non-determinism signature specified in \cref{sec:ResolvingNondeterminism}.
 
-\subsubsection{Depth First Search}
-Modelling DFS by streams is a typical method: implementing choice and conjunction via appending leads to depth-first search. In which case, \code{wrap} is just the identity function, there is no tree structure internally.
+\paragraph{Depth First Search (DFS)}
+Modelling DFS by streams is a typical method \cite{ListOfSuccess}: implementing choice and conjunction via appending, and \code{wrap} being identity function (no internal tree structure needed).
 
-\subsubsection{Breadth First Search}
-Breadth first search represents forests by sequences of sequences \cite{BFSCombinators}, with the inner sequences being the concatenation of every node of that level in every tree in the forest. Then, \code{choice} concatenates each level. While \code{wrap} conses the empty list, that is, pushes down every level of solutions and inserts an empty level at the top.
+\paragraph{Breadth First Search (BFS)}
+Breadth first search represents forests by sequences of sequences \cite{BFSCombinators}, with the $n$th inner sequences representing every solution in the $n$th level of the trees in the forest. Then, \code{choice} concatenates each level, and \code{wrap} conses the empty list, pushing every solution one level down.
 
-The other monadic operators are complex, but \code{join : t(t('a)) => t('a)} can be shown visually. \Cref{fig:BFSJoin} demonstrates how to flatten trees of trees, then you can join a forest by folding this tree join over the trees in the forest.
+The other monadic operators are complex, but \code{join : t(t('a)) => t('a)} can be visualised  in \cref{fig:BFSJoin}: for simplicity showing joining trees of trees, which is extended to forests by choicing the trees in each inner forest.
 
 \begin{figure}[h]
 \vcenter{\hbox{\begin{subfigure}{0.45\textwidth}
@@ -890,7 +838,7 @@ The other monadic operators are complex, but \code{join : t(t('a)) => t('a)} can
   main tree/.style={grow=right, sibling distance=3cm, level distance=3cm},
   sub tree/.style={grow=right, sibling distance=1cm, level distance=1cm},
   every node/.style={circle, draw, minimum size=6mm, inner sep=0pt},
-  main node/.style={draw=red, thick, fill=red},
+  main node/.style={draw=red, thick, fill=none},
   sub node/.style={draw=blue, fill=blue},
   invisible/.style={draw=blue, fill=none, text=none}
   ]
@@ -922,7 +870,7 @@ The other monadic operators are complex, but \code{join : t(t('a)) => t('a)} can
     
     \node[invisible] {}
       child {node[sub node] {}}
-      child {node[sub node] {}
+      child {node[invisible] {}
         child {node[sub node] {}}
         child {node[sub node] {}}
       };
@@ -941,8 +889,14 @@ The other monadic operators are complex, but \code{join : t(t('a)) => t('a)} can
   \end{scope}
 }
 
+\foreach \n in {a1, a2} {
+  \begin{scope}[shift={(\n)}, canvas is yz plane at x=0, sub tree]
+    \node[sub node] {};
+  \end{scope}
+}
+
 \end{tikzpicture}
-\caption{Before Join}
+\caption{Before Join: Singleton forest of singleton forests (list of lists of lists of lists). Rectangles are the inner lists of the forests.}
 \end{subfigure}}}
 $\quad\mapsto\quad$
 \vcenter{\hbox{\begin{subfigure}{0.45\textwidth}
@@ -951,7 +905,7 @@ $\quad\mapsto\quad$
   level 2/.style={sibling distance=1cm},
   sub tree/.style={grow=right, sibling distance=1cm, level distance=2cm},
   every node/.style={circle, draw, minimum size=6mm, inner sep=0pt},
-  main node/.style={draw=red, thick, fill=red},
+  main node/.style={draw=red, thick, fill=none},
   sub node/.style={draw=blue, fill=blue},
   invisible/.style={draw=blue, fill=none, text=none}
   ]
@@ -964,50 +918,43 @@ $\quad\mapsto\quad$
     \fill[green!40, fill opacity=0.5,  rounded corners] (5.5,-7) rectangle (6.5,6);
 \node[main node] (root) {}
   child {node[main node] (a) {}
-    child {node[main node] (a1) {}}
+    child {node[sub node] (a1) {}}
     child {node[sub node] (a3) {}}
-    child {node[main node] (a2) {}}
+    child {node[sub node] (a2) {}}
     child {node[sub node] (a4) {}}
   }
   child {node[sub node] (c) {}
   }
+  child {node[invisible] (d) {}
+    child {node[sub node] (d1) {}}
+    child {node[sub node] (d2) {}}
+  }
   child {node[main node] (b) {}
     child {node[sub node] (b1) {}}
     child {node[sub node] (b2) {}}
-  }
-  child {node[sub node] (d) {}
-    child {node[sub node] (d1) {}}
-    child {node[sub node] (d2) {}}
   };
 \end{scope}
 \end{tikzpicture}
-\caption{After Join}
+\caption{After Join: Flattened into a single forest (list of lists) by rotating vertical trees into horizontal plane. Solid circles are the solutions actually stored in the BFS lists.}
 \end{subfigure}}}
 
-\caption{Tree Join}
+\caption{BFS Join}
 \label{fig:BFSJoin}
 \end{figure}
-The standard definition for \code{bind} \cite{Bunches} does not work easily in OCaml due to it's strictness. Defining joins directly ensured that bind acted lazily.
+This join and mapping can be defined lazily; the standard definition for \code{bind} from the paper \cite{Bunches} does not work easily in OCaml due to its strictness.
 
-\subsubsection{Bounded Depth First Search}
-BFS is fair, avoiding non-termination (for finite branching factor), but it has \textit{exponential} space complexity in the depth of the level being explored \cite{NorvigAI}.
+\paragraph{Bounded Depth First Search (BDFS)}
+BFS is fair, avoiding non-termination (for finite branching factor), but it has \textit{exponential} space complexity in the depth of the level being explored \cite{NorvigAI}. In comparison, DFS only requires space linear in the depth explored.
 
-In comparison, DFS only requires space linear in the depth explored.
+Bounded DFS, performs successive depth-bounded depth first searches, retaining low space complexity of DFS while avoiding unfairness. Previous solutions are repeatedly explored, but this does not increase the already exponential time complexity of the search.
 
-The use of bounded DFS (BDFS), successive depth-bounded depth first searches, retains low space complexity of DFS while also avoiding non-termination. While upper parts of are repeatedly explored, this does not increase the already exponential time complexity of the search.\footnote{For branching factor greater than 1.} 
+Spivey \cite{Bunches} represent this by functions \code{Int => ['a, Int]}, calculating solutions within an integer depth bound. Solutions are tagged with their remaining depth budgets, which allows keeping only the fringe solutions (zero budget) upon each iteration, so the same solution will not appear twice.
 
-We can use functions \code{Int => (Bool, [('a, int)])} to represent iterative deepening \cite{SearchAlgebra}. This calculates every solution found within an integer depth bound \code{d}, alongside it's remaining depth budget \code{r}. The boolean tag is false if the depth bound was never reached, in which case, no more solutions exist. The remaining depth budget allows only solutions on the fringe (zero budget) to be output upon each iteration, so the same solution will not appear twice.
-
-Then, \code{return} represents a single solution with unused depth budget:\\
-\code{return(x)  =  (d => (false, [(x, d)]))}. \code{fail} gives the empty list \code{fail  =  d => []}. Choice appends all solutions at any given depth bound \code{m <||> n  =  d => m(d) @ n(d)}. Binding, \code{m >>= f} takes solutions in \code{m} who have depth budget to use, and applies \code{f} and calculates all solutions from \code{f} using the remaining budget, concatenating these results to form a single list.
-
-Then \code{wrap(m)} (the forest \code{m} wrapped up as a single tree) has solutions at depth incremented by 1, and none at depth 0: \code{wrap(m)(0) = []} and \code{wrap(m)(bound) = p(bound - 1)}.
-
-I implement this as a functor which allows the how depth bound increases to be specified.
+I augment this into an \code{Bound.t => (Bool, ['a, Bound.t])}, implemented as a functor allowing customised depth bound increases. The boolean is false only if no search path reaches the depth bound, in which case the trees have been fully searched and the algorithm can be terminated.
 
 
-\subsubsection{Interleaved Streams}
-The use of streams, but with fair choice and conjunction via interleaved ordering ensures termination for every solution. This has the advantage of working even for trees with infinite branching factor. However, interleaving has a linear space complexity, leading to the undesirable exponential space complexity as with breadth-first search. For this, \code{wrap} is the identity, as with DFS.
+\paragraph{Interleaved Streams (IDFS)}
+Streams, but with choice and conjunction via interleaving also ensures fairness. This works even for trees with infinite branching factor. However, interleaving has a linear space complexity, resulting in exponential space complexity as with BFS.
 
 \subsection{User Interface}
 The user can switch the search procedure on via a switch in the settings.
