@@ -45,5 +45,9 @@ Hazel currently has a branch exploring global inference \texttt{(thi)}, although
 \subsubsection{Constraint Slicing}
 The search procedure and cast slicing are relatively easily extended to a let-polymorphic Hazel in the style of Miyazaki et al. However, type slicing now has to consider non-local constraints alongside code which sourced them, differing significantly from bidirectional type slicing. Somewhat similar ideas, but limited only to errors, have been explored in \textit{constraint-based type error slicing} by Haack and Wells \cite{HaackErrSlice}.
 
-\section{Reflections}
-TODO
+\section{Lessons Learnt}
+This project required extensive theory and mathematical thought, requiring in extensive reading of the surrounding research. I have, therefore, learnt how to effectively find \textit{relevant} research and quickly extract and understand their key contributions.
+
+Further, it worked on the rapidly moving open-source codebase Hazel. As such, I have learnt how a large software project works, learning how to use effectively use version control and continuous integration tools. Additionally, communicating with other developers has offered insights into how collaborative development of software works.
+
+The result was an extensive multi-faceted project, requiring extensive effort. On reflection, it might have been better to focus on either type slicing \textit{or} the search procedure, allowing time to turn one of these into a truly \textit{usable} debugging aid.
