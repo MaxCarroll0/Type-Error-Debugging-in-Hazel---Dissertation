@@ -10,7 +10,7 @@ Additionally, an indeterminate evaluation framework (\cref{sec:IndetEval}) was b
 This section presents some \textit{extensions} to improve the features as justified by the evaluation (\cref{sec:CriticalAnalysis} \& \ref{sec:HolisticEvaluation}) alongside other interesting {applications}. 
 
 \subsection{UI Improvements, User Studies}
-The current UI can be improved as suggested in \Cref{sec:UIImprovements}. Once these are implemented, a user study could assess the real world effectiveness of type slicing and cast slicing in improving understanding of the type system, and locating errors.
+During the holistic evaluation, various usability and UI improvements were considered and added as low-priority extensions (\cref{sec:UIImprovements}). Once implemented, a user study could assess the real world effectiveness of type slicing and cast slicing in improving understanding of the type system, and locating errors.
 
 \subsection{Cast Slicing}
 Cast slicing only propagates type slice information throughout evaluation. As demonstrated, this is useful for debugging. But, it provides no slicing on execution properties of the program. Extended slicing methods could, for example, provide a minimal program which evaluates to the \textit{same} cast around the \textit{same} value. This could build on traditional \textit{dynamic slicing} methods \cite{DynProgSlice, FunctionalProgExplain}, and find use also in debugging \textit{semantic} errors.
@@ -51,3 +51,5 @@ This project required extensive theory and mathematical thought, requiring in ex
 Further, it worked on the rapidly moving open-source codebase Hazel. As such, I have learnt how a large software project works, learning how to use effectively use version control and continuous integration tools. Additionally, communicating with other developers has offered insights into how collaborative development of software works.
 
 The result was an extensive multi-faceted project, requiring extensive effort. On reflection, it might have been better to focus on either type slicing \textit{or} the search procedure, allowing time to turn one of these into a truly \textit{usable} debugging aid.
+
+(Lessons learnt on automating testing)

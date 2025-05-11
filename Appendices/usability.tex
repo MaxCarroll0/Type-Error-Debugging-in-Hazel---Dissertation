@@ -1,0 +1,11 @@
+\chapter{Unimplemented Usability Improvements \& Extensions}\label{sec:UIImprovements}
+ Below are proposed improvements, which the architecture of both Hazel and the new features can easily support:
+
+\begin{itemize}
+\item Display type slices only \textit{upon request} using the Hazel context inspector, showing the \textit{analysing} and \textit{synthesising} types of the selected expression, see \cref{fig:ContextInspector}.
+\item Allow users to deconstruct type slices to query specific parts, e.g. select the just the sub-slice explaining the \textit{return type} of a function or just the function arrow part. This could be done by selecting the type parts in the context inspector.
+This interaction would help users really understand how code comes together to define it's types.
+\item Visualise graphs of cast dependencies, showing the \textit{execution} context leading to a cast error, summarising more concisely than full evaluation traces.
+\item Provide a UI for the search procedure's execution traces and instantiations, integrated with Hazel's trace visualiser. This could include trace compression for better readability (e.g., skipping irrelevant function calls).
+\item Implement key bindings to cycle through indeterminate evaluation paths more quickly.
+\end{itemize}

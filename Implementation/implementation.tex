@@ -236,9 +236,9 @@ Hazel represents its terms as a standard abstract syntax tree (AST) via mutual r
 
 \begin{figure}
 \centering
-\resizebox{0.8\textwidth}{!}{\begin{tikzpicture}[
+\resizebox{0.6\textwidth}{!}{\begin{tikzpicture}[
 node distance=2cm and 4cm,
-box/.style={draw, rounded corners, minimum width=5cm, align=left, text width=7cm, inner sep=10pt, thick},
+box/.style={draw, rounded corners, minimum width=2cm, align=left, text width=4cm, inner sep=10pt, thick},
 exprbox/.style={box, draw={rgb,255:red,86;green,109;blue,117}},
 pattsbox/.style={box, draw={rgb,255:red,24;green,156;blue,218}},
 typesbox/.style={box, draw={rgb,255:red,159;green,106;blue,228}},
@@ -251,32 +251,19 @@ arrowEnv/.style={-{Latex[round]}, thick, draw={rgb,255:red,135;green,119;blue,76
 
 % Nodes
 \node[exprbox] (expr) {
-\textbf{\textcolor[rgb]{0.337,0.427,0.459}{Expressions}}:\
-Constructors, holes, constants, casts, operators, variables,  lists, tuples, labelled tuples\
-let bindings, functions, closures,\
-type functions, type aliases,\
-pattern matching expressions,\ fixed points.
-};
+\textbf{\textcolor[rgb]{0.337,0.427,0.459}{Expressions: \\\texttt{let ? = ? in x}}}};
 
 \node[envsbox, right=of expr] (envs) {
-\textbf{\textcolor[rgb]{0.529,0.467,0.298}{Closure Environments}}:\
-Maps variables to values\
-in a syntactic context.
-};
-
-\node[yshift=-0.74cm,typesbox, below=of envs] (types) {
-\textbf{\textcolor[rgb]{0.624,0.416,0.894}{Types}}:\
-Dynamic type, base types,\
-functions types, product types,\
-tuple label types, sum types,\
-type variables, universal types,\
-recursive types.
+\textbf{\textcolor[rgb]{0.529,0.467,0.298}{Closures}}
+(Mapping variables to values)
 };
 
 \node[pattsbox, below=of expr] (patts) {
-\textbf{\textcolor[rgb]{0.094,0.612,0.855}{Patterns}}:\
-Variables, holes, wildcards,\
-constructors, lists, tuples, labelled tuples, annotations.
+\textbf{\textcolor[rgb]{0.094,0.612,0.855}{Patterns: \texttt{(x, y)}}}
+};
+
+\node[typesbox, right=of patts] (types) {
+\textbf{\textcolor[rgb]{0.624,0.416,0.894}{Types: \texttt{(Int, Bool)}}}
 };
 
 % Arrows for containment
@@ -302,7 +289,7 @@ constructors, lists, tuples, labelled tuples, annotations.
 
 \begin{figure}[h]
 \center\includegraphics[width=0.6\textwidth]{Media/Figures/tuple_term_structure}
-\caption{Let binding a tuple patter with a type annotation.}
+\caption{Let binding a tuple pattern with a type annotation.}
 \label{fig:tupletermstructure}
 \end{figure}
  
@@ -957,9 +944,9 @@ The user can switch the search procedure on via a toggle in the settings.
 The submitted code contains the three most important branches of this project (\texttt{Evaluation}, \texttt{witnesses-type-slicing}, \texttt{contribution-slices}). The \texttt{Evaluation} branch factors out a \code{Js_of_ocaml} \cite{JSOO} dependency from the Hazel core library, meaning evaluation code can be run natively and on the command line; however, the web interface is therefore unusable on this branch.
 
 \subsection{Hazel Architecture}
-The Hazel architecture demonstrates in \cref{fig:Architecture} with green files/directories added, orange files modified \textit{significantly}, and blue files modified \textit{insignificantly}\footnote{However, these refactorings still took a significant amount of time, sometimes requiring careful management of slices.} or unmodified. 97 files were added/edited, not all can fit, so anything omitted is considered insignificant to understanding this project.
+The Hazel architecture demonstrates in \cref{fig:Architecture} with green files/directories added, orange files modified \textit{significantly}, and blue files modified \textit{insignificantly}\footnote{However, still needing to know how they work.} or unmodified. 97 files were added/edited, not all can fit, so anything omitted is considered insignificant to understanding this project.
  \Cref{fig:Evaluation} shows the structure of the evaluation modules.
- %TC:ignore
+
 \begin{figure}[h]
  \tiny
  \begin{tabular}{llp{10cm}}
@@ -984,6 +971,7 @@ The Hazel architecture demonstrates in \cref{fig:Architecture} with green files/
 \end{figure} 
  
  \begin{figure}
+ \centering
  \tiny
  \begin{tabular}{lllllp{3.3cm}}
  Dir & Description\\
@@ -1039,11 +1027,12 @@ The Hazel architecture demonstrates in \cref{fig:Architecture} with green files/
  {\color{blue}\ \ \ $\vdash$}&{\color{blue}\texttt{./util/*}} & \multicolumn{4}{l}{Utility modules (adds \code{Base.Sequence})}\\
 {\color{orange}\texttt{test/*}} & \multicolumn{5}{l}{Test cases: Updates to use type slices}\\
 {\color{Green}\ \ \ $\vdash$} & {\color{Green}\texttt{./Test\_Unboxing.re}} & \multicolumn{4}{l}{Adds list unboxing tests (also merged into \code{dev} branch) }
- \end{tabular}
+ \end{tabular}\ 
+ \vspace{12pt}
+ 
+\textbf{Key:} {\color{Green} Additions}, {\color{orange} Significant Modifications}, {\color{blue} Insignificant or No Modifications}
  \caption{Hazel Architecture \& Additions}
  \label{fig:Architecture}
 \end{figure}
 
-
-%TC:endignore
 

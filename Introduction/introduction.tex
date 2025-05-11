@@ -11,7 +11,7 @@ Additionally, they don't generally specify any source code context which caused 
 
 This project seeks to improve user understanding of type errors by localising static type errors more completely, and \textit{combining} the benefits of static and dynamic type errors.
 
-I consider three research problems and implement three features to solve them in the Hazel language \cite{Hazel}:\footnote{The answers may differ greatly for other languages. Hazel provides a good balance between complexity and usefulness.}
+I consider three research problems and implement three features to solve them for the Hazel language \cite{Hazel}:\footnote{The answers may differ greatly for other languages. Hazel provides a good balance between complexity and usefulness.}
 \begin{enumerate}
 \item Can we statically highlight code which explains \textit{static type errors} more \textit{completely}, including all code that contributes to the error? 
 
@@ -34,7 +34,7 @@ This would provide an \textit{intuitive} concrete explanation for static type er
 
 Hazel \cite{Hazel} is a functional, locally inferred, and gradually typed research language that allows writing \textit{incomplete programs} under active development at the University of Michigan. Being gradually typed, allowing both static and dynamic code to coexist, this project successfully demonstrates the utility of these three features in improving understanding of \textit{both} static and dynamic errors as well as how the two classes of errors interact.
 
-\paragraph{Example:} \Cref{fig:ErrorExample} shows an attempt at writing an int list concatenation function. But list cons (\code{::}) is used instead of list concatenation (\code{@}). Type slicing will automatically highlight the code that caused \code{x} to synthesise the \code{[Int]} type and the code that enforces the requirement that \code{x} is an \code{Int}. If the error is still not clear, the search procedure can be used to generate inputs which evaluate to cast errors, for example \code{concat([[], []])}, giving a concrete evaluation trace to an error. Finally, cast slicing will allow the cast errors to be selected, highlighting source code that enforced the cast which can be more concise than statically computed type slices. The results of this example among others are explored in the evaluation (\cref{sec:EvalExamples}).
+\paragraph{Example} \Cref{fig:ErrorExample} shows an attempt at writing an int list concatenation function. But list cons (\code{::}) is used instead of list concatenation (\code{@}). Type slicing will automatically highlight the code that caused \code{x} to synthesise the \code{[Int]} type and the code that enforces the requirement that \code{x} is an \code{Int}. If the error is still not clear, the search procedure can be used to generate inputs which evaluate to cast errors, for example \code{concat([[], []])}, giving a concrete evaluation trace to an error. Finally, cast slicing will allow the cast errors to be selected, highlighting source code that enforced the cast which can be more concise than statically computed type slices. The results of this example among others are explored in the evaluation (\cref{sec:EvalExamples}).
 
 \begin{figure}[h]
 \centering
@@ -57,10 +57,10 @@ The \textit{type witness search procedure} is	 based upon Seidel et al. \cite{Se
 
 \Cref{sec:TypeSlicingTheory} and \cref{sec:CastSlicingTheory} conceive and formalise the ideas of \textit{type slices} and \textit{cast slices} applied to the Hazel core calculus. 
  
- An implementation (\cref{sec:TypeSlicingImplementation}-\ref{sec:CastSlicingImplementation}) of the slicing theories was created covering \textit{most}\footnote{Except for type substitution.} of the Hazel language, including a user interface. 
+ An implementation (\cref{sec:TypeSlicingImplementation}-\ref{sec:CastSlicingImplementation}) of the slicing theories was created covering \textit{most} of the Hazel language, including a user interface. 
  
  A \textit{type witness search procedure} was successfully implemented (\cref{sec:SearchProcedure}). This involved created a non-deterministic evaluation method (\cref{sec:IndetEval}) abstracting search order and search logic.
 
-The slicing features and search procedure met all goals\footnote{Including those on the project proposal, this evaluation is more extensive.} (\cref{sec:EvaluationGoals}), showing \textit{effectiveness} (\cref{sec:EffectivenessAnalysis}) and being reasonably \textit{performant} (\cref{sec:PerformanceAnalysis}) over a corpus of \textit{well-typed} and \textit{ill-typed} Hazel programs respectively (\cref{sec:CorpusCollection}). Further, the features weaknesses were evaluation, with considered improvements implemented or devised (\cref{sec:CriticalAnalysis}). Additionally, a holistic evaluation was performed (\cref{sec:HolisticEvaluation}), considering the use of all the features, in combination with Hazel's existing error highlighting, for debugging both static and dynamic type errors.
+The slicing features and search procedure met all goals (\cref{sec:EvaluationGoals}), showing \textit{effectiveness} (\cref{sec:EffectivenessAnalysis}) and being reasonably \textit{performant} (\cref{sec:PerformanceAnalysis}) over a corpus of \textit{well-typed} and \textit{ill-typed} Hazel programs respectively (\cref{sec:CorpusCollection}). Further, the features weaknesses were evaluation, with considered improvements implemented or devised (\cref{sec:CriticalAnalysis}). Additionally, a holistic evaluation was performed (\cref{sec:HolisticEvaluation}), considering the use of all the features, in combination with Hazel's existing error highlighting, for debugging both static and dynamic type errors.
 
 Finally, further directions and improvements have been presented in \cref{chap:Conclusions}.

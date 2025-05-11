@@ -8,9 +8,26 @@
 \usepackage{etoolbox}
 \input{pageformat}
 
+\usepackage{letltxmacro}
+
+\LetLtxMacro\Oldfootnote\footnote
+
+\newcommand{\EnableFootNotes}{%
+  \LetLtxMacro\footnote\Oldfootnote%
+}
+
+\newcommand{\DisableFootNotes}{%
+  \renewcommand{\footnote}[2][]{\relax}
+}
+
+
+\makepagestyle{myruled}
+\makeheadrule{myruled}{\textwidth}{\normalrulethickness}
+\makeevenhead{myruled}{\scshape\thesection}{\thepage}{}
+\makeoddhead{myruled}{}{\thepage}{\thesection}
+
 \begin{document}
 %TC:ignore
-
 
 \frontmatter
 \include{Cover Page/coverpage}
@@ -61,12 +78,15 @@
 \pagestyle{ruled}
 \setlrmarginsandblock{2cm}{2cm}{*}
 \setulmarginsandblock{2cm}{2cm}{*}
+\setheaderspaces{*}{4pt}{*}
 \checkandfixthelayout[fixed]
 
 \newpage
 \setcounter{tocdepth}{2}
 \pdfbookmark[1]{Contents}{Contents}
 \tableofcontents*
+
+%\DisableFootNotes
 %TC:endignore
 
 \mainmatter
@@ -93,12 +113,12 @@
 \include{Appendices/typejudgements}
 \include{Appendices/formalsemantics}
 \include{Appendices/nondeterminismalternatives}
-\include{Appendices/monads}
 \include{Appendices/slicing}
-\include{Appendices/slicingstaticsexamples}
 \include{Appendices/unboxingbugs}
 \include{Appendices/extendedmatching}
 \include{Appendices/merges}
+\include{Appendices/results}
+\include{Appendices/usability}
 
 \backmatter
 \include{Proposal/proposal}

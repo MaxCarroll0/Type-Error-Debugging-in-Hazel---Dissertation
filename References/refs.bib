@@ -1234,6 +1234,25 @@ isbn="978-3-030-98869-2"
   year         = 2025,
   url          = {https://github.com/patricoferris/hazel_of_ocaml}
 }
+@inproceedings{FairNondeterminism,
+author = {Kiselyov, Oleg and Shan, Chung-chieh and Friedman, Daniel P. and Sabry, Amr},
+title = {Backtracking, interleaving, and terminating monad transformers: (functional pearl)},
+year = {2005},
+isbn = {1595930647},
+publisher = {Association for Computing Machinery},
+address = {New York, NY, USA},
+url = {https://doi.org/10.1145/1086365.1086390},
+doi = {10.1145/1086365.1086390},
+abstract = {We design and implement a library for adding backtracking computations to any Haskell monad. Inspired by logic programming, our library provides, in addition to the operations required by the MonadPlus interface, constructs for fair disjunctions, fair conjunctions, conditionals, pruning, and an expressive top-level interface. Implementing these additional constructs is easy in models of backtracking based on streams, but not known to be possible in continuation-based models. We show that all these additional constructs can be generically and monadically realized using a single primitive msplit. We present two implementations of the library: one using success and failure continuations; and the other using control operators for manipulating delimited continuations.},
+booktitle = {Proceedings of the Tenth ACM SIGPLAN International Conference on Functional Programming},
+pages = {192–203},
+numpages = {12},
+keywords = {Haskell, Prolog, continuations, control delimiters, logic programming, streams},
+location = {Tallinn, Estonia},
+series = {ICFP '05}
+}
+
+
 
 @misc{HazelCorpus,
   author       = {Patrick Ferris},
