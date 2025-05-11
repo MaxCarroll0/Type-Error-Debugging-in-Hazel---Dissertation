@@ -1,4 +1,5 @@
 \usepackage{graphicx}
+\usepackage[explicit]{titlesec}
 \usepackage[utf8]{inputenc}
 \usepackage[backend=biber, style=numeric, sorting=ydnt]{biblatex}
 \usepackage[dvipsnames]{xcolor}
@@ -10,6 +11,7 @@
 \usepackage{wasysym}
 \DeclareMathAlphabet{\mathdcal}{U}{dutchcal}{m}{n}
 \usepackage{amssymb}
+\usepackage{amsthm}
 
 \usepackage[edges]{forest}
 
@@ -24,7 +26,7 @@
 
 \usepackage{soul}
 \usepackage{tikz}
-\usetikzlibrary{shapes.geometric, positioning, chains, trees}
+\usetikzlibrary{3d, shapes.geometric, positioning, chains, trees, arrows.meta, calc, backgrounds}
 \usepackage{pgfplots}
 \usepackage{svg}
 \usepackage {siunitx}
@@ -101,6 +103,8 @@
 \usepackage{cleveref}
 \usepackage{fvextra} \DefineVerbatimEnvironment{Highlighting}{Verbatim}{breaklines,commandchars=\\\{\}} 
 
+\usepackage{centernot}
+
 \newtheorem{conjecture}{Conjecture}
 \newtheorem{definition}{Definition}
 \newtheorem{proposition}{Proposition}
@@ -111,8 +115,12 @@
 %TC:group tabular 1 1
 %TC:group table 0 1
 %TC:macro \footnote [text]
+%TC:envir minted [ignore] displaymath
+%TC:envir lstlisting [ignore] displaymath
+%TC:envir code [ignore] displaymath
+%TC:envir figure [ignore] displaymath
 
-\immediate\write18{texcount -inc -sum -0 \jobname.tex > wordcount.aux }
+\immediate\write18{texcount -inc -sum=1,0,0,0,0,0,0 -0 \jobname.tex > wordcount.aux }
 \newcommand{\wordcount}{\input{wordcount.aux}}
 
 \setsecnumdepth{subsection}

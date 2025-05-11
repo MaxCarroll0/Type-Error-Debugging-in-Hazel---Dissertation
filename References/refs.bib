@@ -18,6 +18,23 @@ url = {https://hazel.org/},
 urldate = {2025-02-28},
 }
 
+@online{JSOO,
+title = {Javascript of OCaml package},
+url = {https://ocaml.org/p/js_of_ocaml/5.0.1/doc/Js_of_ocaml/Regexp/index.html},
+urldate = {2025-05-10},
+}
+
+@online{Base,
+title = {Jane Street: Base},
+url = {https://ocaml.org/p/base/v0.15.0/doc/Base/index.html},
+urldate = {2025-05-10}}
+
+@online{AlcoTest,
+title = {Alcotest: OCaml unit testing framework},
+url = {https://github.com/mirage/alcotest},
+urldate = {2025-05-10}
+}
+
 
 @online{CurryLang,
 title = {The Curry Programming Language},
@@ -684,6 +701,14 @@ series = {ICSE '18}
       url={https://arxiv.org/abs/2105.02162}, 
 }
 
+@article{HazelTutor,
+  title={Hazel tutor: Guiding novices through type-driven development strategies},
+  author={Potter, Hannah and Omar, Cyrus},
+  journal={Human Aspects of Types and Reasoning Assistants (HATRA)},
+  year={2020}
+}
+
+
 @article{StudentTypeErrorFixes,
 author = {Wu, Baijun and Chen, Sheng},
 title = {How type errors were fixed and what students did?},
@@ -1209,6 +1234,25 @@ isbn="978-3-030-98869-2"
   year         = 2025,
   url          = {https://github.com/patricoferris/hazel_of_ocaml}
 }
+@inproceedings{FairNondeterminism,
+author = {Kiselyov, Oleg and Shan, Chung-chieh and Friedman, Daniel P. and Sabry, Amr},
+title = {Backtracking, interleaving, and terminating monad transformers: (functional pearl)},
+year = {2005},
+isbn = {1595930647},
+publisher = {Association for Computing Machinery},
+address = {New York, NY, USA},
+url = {https://doi.org/10.1145/1086365.1086390},
+doi = {10.1145/1086365.1086390},
+abstract = {We design and implement a library for adding backtracking computations to any Haskell monad. Inspired by logic programming, our library provides, in addition to the operations required by the MonadPlus interface, constructs for fair disjunctions, fair conjunctions, conditionals, pruning, and an expressive top-level interface. Implementing these additional constructs is easy in models of backtracking based on streams, but not known to be possible in continuation-based models. We show that all these additional constructs can be generically and monadically realized using a single primitive msplit. We present two implementations of the library: one using success and failure continuations; and the other using control operators for manipulating delimited continuations.},
+booktitle = {Proceedings of the Tenth ACM SIGPLAN International Conference on Functional Programming},
+pages = {192–203},
+numpages = {12},
+keywords = {Haskell, Prolog, continuations, control delimiters, logic programming, streams},
+location = {Tallinn, Estonia},
+series = {ICFP '05}
+}
+
+
 
 @misc{HazelCorpus,
   author       = {Patrick Ferris},
@@ -1278,24 +1322,6 @@ numpages = {39},
 keywords = {static analysis, software testing, concolic execution, Symbolic execution}
 }
 
-@inproceedings{10.1145/1291151.1291159,
-author = {Syme, Don and Neverov, Gregory and Margetson, James},
-title = {Extensible pattern matching via a lightweight language extension},
-year = {2007},
-isbn = {9781595938152},
-publisher = {Association for Computing Machinery},
-address = {New York, NY, USA},
-url = {https://doi.org/10.1145/1291151.1291159},
-doi = {10.1145/1291151.1291159},
-abstract = {Pattern matching of algebraic data types (ADTs) is a standard feature in typed functional programming languages, but it is well known that it interacts poorly with abstraction. While several partial solutions to this problem have been proposed, few have been implemented or used. This paper describes an extension to the .NET language F# called active patterns, which supports pattern matching over abstract representations of generic heterogeneous data such as XML and term structures, including where these are represented via object models in other .NET languages. Our design is the first to incorporate both ad hoc pattern matching functions for partial decompositions and "views" for total decompositions, and yet remains a simple and lightweight extension. We give a description of the language extension along with numerous motivating examples. Finally we describe how this feature would interact with other reasonable and related language extensions: existential types quantified at data discrimination tags, GADTs, and monadic generalizations of pattern matching.},
-booktitle = {Proceedings of the 12th ACM SIGPLAN International Conference on Functional Programming},
-pages = {29–40},
-numpages = {12},
-keywords = {F#, ML, functional programming, pattern matching},
-location = {Freiburg, Germany},
-series = {ICFP '07}
-}
-
 @article{ActivePatterns,
 author = {Syme, Don and Neverov, Gregory and Margetson, James},
 title = {Extensible pattern matching via a lightweight language extension},
@@ -1308,12 +1334,11 @@ number = {9},
 issn = {0362-1340},
 url = {https://doi.org/10.1145/1291220.1291159},
 doi = {10.1145/1291220.1291159},
-abstract = {Pattern matching of algebraic data types (ADTs) is a standard feature in typed functional programming languages, but it is well known that it interacts poorly with abstraction. While several partial solutions to this problem have been proposed, few have been implemented or used. This paper describes an extension to the .NET language F# called active patterns, which supports pattern matching over abstract representations of generic heterogeneous data such as XML and term structures, including where these are represented via object models in other .NET languages. Our design is the first to incorporate both ad hoc pattern matching functions for partial decompositions and "views" for total decompositions, and yet remains a simple and lightweight extension. We give a description of the language extension along with numerous motivating examples. Finally we describe how this feature would interact with other reasonable and related language extensions: existential types quantified at data discrimination tags, GADTs, and monadic generalizations of pattern matching.},
 journal = {SIGPLAN Not.},
 month = oct,
 pages = {29–40},
 numpages = {12},
-keywords = {F#, ML, functional programming, pattern matching}
+keywords = {ML, functional programming, pattern matching}
 }
 
 @inproceedings{Views,
@@ -1333,4 +1358,22 @@ location = {Munich, West Germany},
 series = {POPL '87}
 }
 
-@article{PatternMatchingWarnings, title={Warnings for pattern matching}, volume={17}, DOI={10.1017/S0956796807006223}, number={3}, journal={Journal of Functional Programming}, author={MARANGET, LUC}, year={2007}, pages={387–421}} <div></div>
+@article{PatternMatchingWarnings, title={Warnings for pattern matching}, volume={17}, DOI={10.1017/S0956796807006223}, number={3}, journal={Journal of Functional Programming}, author={MARANGET, LUC}, year={2007}, pages={387–421}}
+
+@article{HazelStructureCalculus,
+  author       = {Cyrus Omar and
+                  Ian Voysey and
+                  Michael Hilton and
+                  Jonathan Aldrich and
+                  Matthew A. Hammer},
+  title        = {Hazelnut: {A} Bidirectionally Typed Structure Editor Calculus},
+  journal      = {CoRR},
+  volume       = {abs/1607.04180},
+  year         = {2016},
+  url          = {http://arxiv.org/abs/1607.04180},
+  eprinttype    = {arXiv},
+  eprint       = {1607.04180},
+  timestamp    = {Mon, 13 Aug 2018 16:46:28 +0200},
+  biburl       = {https://dblp.org/rec/journals/corr/OmarVHAH16.bib},
+  bibsource    = {dblp computer science bibliography, https://dblp.org}
+}

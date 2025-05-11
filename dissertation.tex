@@ -1,16 +1,34 @@
 \documentclass[12pt, oneside, a4paper, final]{memoir}
 
 \setlrmarginsandblock{2cm}{2cm}{*}
-\checkandfixthelayout 
-
+\setulmarginsandblock{2cm}{2cm}{*}
+\checkandfixthelayout
 \input{dissertation-info}
 \input{preamble}
-
+\usepackage{etoolbox}
 \input{pageformat}
 
-\begin{document}
+\usepackage{letltxmacro}
 
+\LetLtxMacro\Oldfootnote\footnote
+
+\newcommand{\EnableFootNotes}{%
+  \LetLtxMacro\footnote\Oldfootnote%
+}
+
+\newcommand{\DisableFootNotes}{%
+  \renewcommand{\footnote}[2][]{\relax}
+}
+
+
+\makepagestyle{myruled}
+\makeheadrule{myruled}{\textwidth}{\normalrulethickness}
+\makeevenhead{myruled}{\scshape\thesection}{\thepage}{}
+\makeoddhead{myruled}{}{\thepage}{\thesection}
+
+\begin{document}
 %TC:ignore
+
 \frontmatter
 \include{Cover Page/coverpage}
 \pdfbookmark[1]{Declaration}{Declaration of Originality}
@@ -19,15 +37,60 @@
 \input{Proforma/proforma}
 \input{Acknowledgements/acknowledgements}
 
+\chapterstyle{dash}
+
+\setlength{\beforechapskip}{-35pt}\setlength{\afterchapskip}{15pt}
+
+\titlespacing*{\section}{0pt}{1.5ex plus .2ex minus .1ex}{1.5ex}
+\titlespacing*{\subsection}{0pt}{1.5ex plus .2ex minus .1ex}{1.5ex}
+\titlespacing*{\subsubsection}{0pt}{1.5ex plus .2ex minus .1ex}{1.5ex}
+\titlespacing*{\paragraph}{0pt}{1ex}{1em}
+
+% Section
+\titleformat{\section}
+  {\normalfont\large\centering}
+  {—~{\thesection}~—}
+  {1em}
+  {#1}
+
+% Subsection
+\titleformat{\subsection}
+  {\normalfont\large\centering}
+  {—~\thesubsection~—}
+  {1em}
+  {#1}
+
+% Subsubsection (unnumbered, dashes around title, italic)
+\titleformat{\subsubsection}
+  {\normalfont\normalsize\itshape\centering}
+  {}
+  {0pt}
+  {—~#1~—}
+
+% Paragraph: italic, ends with dash
+\titleformat{\paragraph}[runin]
+  {\normalfont\itshape}
+  {}
+  {0pt}
+  {—~#1}
+  [~—]
+
+\pagestyle{ruled}
+\setlrmarginsandblock{2cm}{2cm}{*}
+\setulmarginsandblock{2cm}{2cm}{*}
+\setheaderspaces{*}{4pt}{*}
+\checkandfixthelayout[fixed]
+
 \newpage
 \setcounter{tocdepth}{2}
 \pdfbookmark[1]{Contents}{Contents}
 \tableofcontents*
+
+%\DisableFootNotes
 %TC:endignore
 
 \mainmatter
 
-\pagestyle{chapter}
 \include{Introduction/introduction}
 \include{Preparation/preparation}
 \include{Implementation/implementation}
@@ -47,21 +110,17 @@
 \printbibliography
 
 \appendix
+\include{Appendices/typejudgements}
 \include{Appendices/formalsemantics}
+\include{Appendices/nondeterminismalternatives}
 \include{Appendices/slicing}
-\include{Appendices/slicecategories}
-\include{Appendices/hazelterms}
-\include{Appendices/hazelarchitecture}
-\include{Appendices/clarification}
+\include{Appendices/unboxingbugs}
+\include{Appendices/extendedmatching}
 \include{Appendices/merges}
-\include{Appendices/selectedexamples}
-\include{Appendices/symbolicexecution}
+\include{Appendices/results}
+\include{Appendices/usability}
 
 \backmatter
-\textbf{Look at books for index structure reference. List key concepts, e.g. Core Hazel, Zipper, CMTT, Gradual Types.}
-
-\textbf{Make sure the use of terms is consistent throughout dissertation.}
-\printindex
 \include{Proposal/proposal}
 %TC:endignore
 

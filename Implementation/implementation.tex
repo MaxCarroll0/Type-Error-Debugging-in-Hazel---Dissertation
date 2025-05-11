@@ -1,17 +1,18 @@
 \chapter{Implementation}\label{chap:Implementation}
 This project was conducted in \textit{two} major phases:
+\begin{enumerate}
+\item I devised a mathematical theory for \textit{type slicing} and \textit{cast slicing} and considered changes to the system of Seidel et al. \cite{SearchProc} for creating a \textit{type error witnesses search procedure} in Hazel.  
 
-First, I constructed a core mathematical theory for \textit{type slicing} and \textit{cast slicing} formalising what these ideas actually were and considered the changes to the system presented by Seidel et al. for the \textit{type error witnesses search procedure} to work in Hazel.  
-
-Then, I implemented the theories, making it suitable for implementation and extending it to the majority of the Hazel language. Further, suitable deviations from the theory were made upon critical evaluation and are detailed throughout.
+\item I iteratively implement and evaluate the theories and search procedure, extending to the majority of Hazel. Suitable deviations from the theory, made upon critical evaluation, are detailed throughout.
+\end{enumerate}
 
 \section{Type Slicing Theory}\label{sec:TypeSlicingTheory}
 
-I develop a novel method, \textit{type slicing}, as a mechanism to aid programmers in understanding \textit{why} a term has a given type via static means. Three slicing mechanism have been devised with differing characteristics, all of which associate terms with their typing derivation to produce a \textit{typing slices}. 
+I develop a novel method, \textit{type slicing}, to aid programmers in understanding \textit{how} a bidirectional type system works. First I define typing slices. Then, three slicing criteria: synthesis, analysis, and contribution slices, each associate typing derivations with different explanatory slices. 
 
-The first two criteria attempt to give insight on the structure of the typing derivations, and hence how types are decided. While the third criterion gives a complete picture of the regions of code which contribute to the a term's type.
+The first two criteria give insight on the synthesised and analysed type contributions. The third completes a picture of code regions contributing in any way to a term's type.
 
-I would like to stress that the second and third criterion were \textit{very challenging} to formalise, requiring non-obvious mathematical machinery: \textit{context typing slices} (\cref{sec:ContextTypingSlices}), \textit{checking contexts} (\cref{def:CheckingContext}), and \textit{type-indexed slices} (\cref{sec:TypeIndexedSlices}).
+The second and third criterion were \textit{very challenging} to formalise, requiring non-obvious mathematical machinery: \textit{context typing slices} (\cref{sec:ContextTypingSlices}), \textit{checking contexts} (\cref{sec:CheckingContexts}), and \textit{type-indexed slices} (\cref{sec:TypeIndexedSlices}). Only the basic definitions are given here, the full theory is found in \cref{sec:SlicingTheory}.
 
 \subsection{Expression Typing Slices}\label{sec:ExpressionTypingSlices}
 First, I introduce what \textit{slices} are in this context. The aim is to provide a formal representation of term \textit{highlighting}. 
@@ -19,229 +20,103 @@ First, I introduce what \textit{slices} are in this context. The aim is to provi
 \subsubsection{Term Slices}
 A \textit{term slice} is a term with some sub-terms omitted. The omitted terms are those that are \textit{not} highlighted. For example if my slicing criterion is to \textit{omit terms which are typed as} \code{Int}, then the following expressions highlights as:
 
-\[\hlcmaths[yellow!30]{(\lambda x: \code{Int}.\ \lambda y : \code{Bool}.}\ x\hlcmaths[yellow!30]{)(}1\hlcmaths[yellow!30]{)}\]
+\[\hlcmaths[yellow!30]{(\lambda} x: \code{Int}\hlcmaths[yellow!30]{.\ \lambda y : \code{Bool}.}\ x\hlcmaths[yellow!30]{)(}1\hlcmaths[yellow!30]{)}\]
 
 
-Omitted sub-terms are replaced by a \textit{gap} term, notated $\gap$. Representing the highlighted example above, we get the slice:
-\[(\lambda x : \code{Int}.\ \lambda y : \code{Bool}.\ \gap)(\gap)\]
+Omitted sub-terms are replaced by a \textit{gap} term, notated $\gap$. Representing the example above, we get:
+\[(\lambda \gap.\ \lambda y : \code{Bool}.\ \gap)(\gap)\]
 
-Similarly, this one can omit variable names and parts of types. We get a syntax specified in \cref{def:ExpressionSliceSyntax}, extending the Hazel core syntax from \cref{fig:syntax}: 
-\begin{definition}[Term Slice Syntax]
-\label{def:ExpressionSliceSyntax}
-Pattern expression slices $p$:
-\[p ::= \gap \mid x\]
-Type slices $\upsilon$:\footnote{A \textit{type slice} is also used to refer to this whole mechanism. The overall theory is referred to \textit{typing slices} to distinguish from slices of type terms where ambiguous.}
-\[\upsilon ::= \gap \mid \dyn \mid b \mid \upsilon \to \upsilon\]
-Expression slices $\varsigma$:
-\[\varsigma ::= \gap \mid  c \mid x \mid \lambda p : \upsilon.\ \varsigma \mid \lambda p.\ \varsigma \mid \varsigma(\varsigma) \mid \hole^u \mid \hole[\varsigma]^u \mid \varsigma : \upsilon\]
-\end{definition}
-
-We then have a \textit{precision} relation on term slices: $\varsigma_1 \sqsubseteq \varsigma_2$ meaning $\varsigma_1$ is less or equally precise than $\varsigma_2$. That is, $\varsigma_1$ matches $\varsigma_2$ structurally except that some sub-terms may be gaps. Full definition in appendix \textbf{ref appendix}. For example, see this precision chain:
+We can then define a \textit{precision} partial order \cite{PartialOrder} on term slices: $\varsigma_1 \sqsubseteq \varsigma_2$ meaning $\varsigma_1$ is less or equally precise than $\varsigma_2$. That is, $\varsigma_1$ matches $\varsigma_2$ structurally except that some sub-terms may be gaps. For example:
 \[\gap \sqsubseteq\gap + \gap\sqsubseteq 1 + \gap \sqsubseteq 1 + 2\]
-Precision forms a partial order \cite{PartialOrder}, that is, a reflexive, antisymmetric, and transitive relation. Respectively:
-\[\inference{}{\varsigma \sqsubseteq \varsigma} \quad \inference{\varsigma_1 \sqsubseteq \varsigma_2 & \varsigma_2 \sqsubseteq \varsigma_1}{\varsigma_1 = \varsigma_2} \quad \inference{\varsigma_1 \sqsubseteq \varsigma_2 & \varsigma_2 \sqsubseteq \varsigma_3}{\varsigma_1 \sqsubseteq \varsigma_3}\]
-We also have a \textit{bottom} (least) element, $\gap \sqsubseteq \varsigma$ (for all $\varsigma$). This relation is trivially extended to include \textit{complete terms}\footnote{With no gaps.} $e$ which are \textit{top} elements of their respective chains: if $e \sqsubseteq \varsigma$ then $e = \varsigma$. Sometimes I refer to this relation as $\varsigma_1$ is a term slice \textit{of} $\varsigma_2$ iff $\varsigma_1 \sqsubseteq \varsigma_2$.
 
-For any \textit{complete term} $t$, the slices of $t$ form a \textit{bounded lattice structure} \cite{Lattice}. That is, every pair $\varsigma_1, \varsigma_2$ has a \textit{join} $\varsigma_1 \sqcup \varsigma_2$ and \textit{meet} $\varsigma_1 \sqcap \varsigma_2$:
-\begin{proposition}[Term Slice Bounded Lattice]
-For any term $t$, the set of slices $\varsigma_1$ and $\varsigma_2$ of $t$ forms a bounded lattice:
-
-\begin{minipage}{0.95\textwidth}
-\begin{itemize}
-\item The join, $\varsigma_1 \sqcup \varsigma_2$ exists , being an upper bound for $\varsigma_1, \varsigma_2$:
-\[\varsigma_1 \sqsubseteq \varsigma_1 \sqcup \varsigma_2\qquad \varsigma_2 \sqsubseteq \varsigma_1 \sqcup \varsigma_2\]
-And, any other slice $\varsigma \sqsubseteq t$ which is also an upper bound of $\varsigma_1, \varsigma_2$ is more or equally precise than the join:
-\[\varsigma_1 \sqcup \varsigma_2 \sqsubseteq \varsigma\]
-\item The meet, $\varsigma_1 \sqcap \varsigma_2$ exists, being a lower bound for $\varsigma_1, \varsigma_2$:
-\[\varsigma_1 \sqcap \varsigma_2 \sqsubseteq \varsigma_1\qquad  \varsigma_1 \sqcap \varsigma_2 \sqsubseteq\varsigma_2\]
-And, any other slice $\varsigma \sqsubseteq t$ which is also a lower bound of $\varsigma_1, \varsigma_2$ is less or equally precise than the meet:
-\[ \varsigma \sqsubseteq\varsigma_1 \sqcup \varsigma_2\]
-\item And the join and meet operations satisfy the absorption laws for any slice $\varsigma$:
-\[\varsigma_1 \sqcap (\varsigma_1 \sqcup \varsigma_2) = \varsigma_1 \qquad \varsigma_1 \sqcup (\varsigma_1 \sqcap \varsigma_2) = \varsigma_1\]
-And idempotent laws:
-\[\varsigma_1 \sqcup \varsigma_1 = \varsigma_1 = \varsigma_1 \sqcap \varsigma_1\]
-\item The lattice is bounded. That is, $\gap \sqsubseteq \varsigma \sqsubseteq t$.
-\end{itemize}
-\end{minipage}
-\end{proposition}
-
-Note that not every pair of slices has a join: consider $1$ and $2$. But, every pair does have a meet as for all $\varsigma_1, \varsigma_2$, $\gap \sqsubseteq \varsigma_1$ and $\gap \sqsubseteq \varsigma_2$.
+\paragraph{Lattice Structure}\label{sec:JoinTypesTheory} For any \textit{complete term}\footnote{Having no gaps.} $t$, the slices of $t$ form a \textit{bounded lattice structure} \cite{Lattice}. That is, every pair $\varsigma_1, \varsigma_2$ has a \textit{join} $\varsigma_1 \sqcup \varsigma_2$ and \textit{meet} $\varsigma_1 \sqcap \varsigma_2$. In general, not all slices slices have joins: $1 \centernot\sqcup\ 2$, but do have meets as $\gap \sqsubseteq \varsigma$ for all $\varsigma$.
  
 \subsubsection{Typing Assumption Slices}
-Expression typing is performed given a set of \textit{typing assumptions}. Therefore, in addition to a slice of expressions, we also desire a slice of the typing assumptions, to represent the \textit{relevant}\footnote{Relevant to the given criterion.} parts of the typing assumptions. Typing assumptions are \textit{partial functions} mapping variables to types notated $x : \tau$ (see \cref{sec:TypingJudgements}). 
+Expression typing is performed given a set of \textit{typing assumptions}. Therefore, in addition, we also desire a slice taking the \textit{relevant}\footnote{To the given criterion.} assumptions. Typing assumptions are \textit{partial functions} mapping variables to types (see \cref{sec:TypingJudgements}). 
 
-Therefore, \textit{typing assumptions slices} can be represented by partial functions mapping variables to \textit{type slices}. That is, a typing assumption set is a slice of another if it maps \textit{no more} variables to \textit{at most} as specific types. The precision relation, $\sqsubseteq$, can be extended to typing assumptions by extensionality \cite{Extensionality} and using the subset relation:
+Hence, their slices slices are partial functions to \textit{type slices}. Such that, a slice maps no more variables to no more precise types. This, and meets and joins, can be extended by extensionality \cite{Extensionality}:
 
 \begin{definition}[Typing Assumption Slice Precision]
 For typing assumption slices $\gamma_1, \gamma_2$. Where $\mathrm{dom}(f)$ is the set of variables for which a partial function $f$ is \textit{defined}:
 \[\gamma_1 \sqsubseteq \gamma_2 \iff \mathrm{dom}(\gamma_1) \subseteq \mathrm{dom}(\gamma_2) \text{ and } \forall x \in  \mathrm{dom}(\gamma_1).\ \gamma_1(x) \sqsubseteq \gamma_2(x)\]
 \end{definition}
-Equally, joins and meet can be extended extensionality:
 \begin{definition}[Typing Assumption Slice Joins and Meets]
-For typing slices $\gamma_1, \gamma_2$, and any variable $x$:
+For typing slices $\gamma_1, \gamma_2$, and any variable $x$: 
 
-
-\begin{minipage}{0.8\textwidth}
-\begin{itemize}
-\item If $\gamma_1(x) = \bot$ then $(\gamma_1 \sqcup \gamma_2)(x) = \gamma_2(x)$ and $(\gamma_1 \sqcap \gamma_2)(x) = \bot$. 
-\item If $\gamma_2(x) = \bot$ then $(\gamma_1 \sqcup \gamma_2)(x) = \gamma_1(x)$ and $(\gamma_1 \sqcap \gamma_2)(x) = \bot$
-\item Otherwise, $(\gamma_1 \sqcup \gamma_2)(x) = \gamma_1(x) \sqcup \gamma_2(x)$.
-\end{itemize}
-\end{minipage}
+If $\gamma_1(x) = \bot$ then $(\gamma_1 \sqcup \gamma_2)(x) = \gamma_2(x)$ and $(\gamma_1 \sqcap \gamma_2)(x) = \bot$, analogously if $\gamma_2(x) = \bot$. Otherwise, $(\gamma_1 \sqcup \gamma_2)(x) = \gamma_1(x) \sqcup \gamma_2(x)$.
 \end{definition}
-Again, the slices $\gamma$ of complete typing assumptions $\Gamma$ form a bounded lattice. Similarly, not every pair of slices has a join, as not every type slice has a join: consider $x : \code{Int}$ and $x : \code{String}$.
+Again, slicing complete typing assumptions $\Gamma$ forms a bounded lattice. In general, some slices have no join: consider $x : \code{Int}$ and $x : \code{String}$.
 
-\begin{proposition}[Typing Assumption Slices form Bounded Lattices]
-For any typing assumptions $\Gamma$, the set of slices $\gamma$ of $\Gamma$ form a bounded lattice with bottom element of the empty function $\emptyset$ and top element $\Gamma$.
-\end{proposition}
 \subsubsection{Expression Typing Slices}
-Finally, an \textit{expression typing slice}, $\rho$, is a pair, $\varsigma^\gamma$, of a term slice and a typing slice. Precision, joins and meets, can be extended pointwise to term typing slices with all the same properties:
-\begin{definition}[Expression Typing Slice Precision]
-For expression typing slices $\varsigma_1^{\gamma_1}$, $\varsigma_2^{\gamma_2}$:
-\[\varsigma_1^{\gamma_1} \sqsubseteq \varsigma_2^{\gamma_2} \iff  \varsigma_1 \sqsubseteq \varsigma_2 \text{ and } \gamma_1 \sqsubseteq \gamma_2\]
-\end{definition}
-\begin{definition}[Expression Typing Slice Joins and Meets]
-For expression typing slices $\varsigma_1^{\gamma_1}$, $\varsigma_2^{\gamma_2}$:
-\[\varsigma_1^{\gamma_1} \sqcup \varsigma_2^{\gamma_2} = (\varsigma_1 \sqcup \varsigma_2)^{\gamma_1 \sqcup \gamma_2}\]
-\[\varsigma_1^{\gamma_1} \sqcap \varsigma_2^{\gamma_2} = (\varsigma_1 \sqcap \varsigma_2)^{\gamma_1 \sqcap \gamma_2}\]
-\end{definition}
+Finally, an \textit{expression typing slice}, $\rho$, is a pair, $\varsigma^\gamma$, of a term slice and a typing slice. Precision, joins and meets, can be extended pointwise to term typing slices with all the same properties.
 
-For any pair of complete expressions $e$ and typing assumptions $\Gamma$, then the expression typing slices of these forms a bounded lattice.
-
-\begin{proposition}[Expression Typing Slices for Bounded Lattices]
-For any expression $e$ and typing assumption $\Gamma$, the set of expression typing slices $\varsigma^{\gamma}$ of $e^{\Gamma}$ forms a bounded lattice with bottom element $\gap^{\emptyset}$ and top element $e^{\Gamma}$.
-\end{proposition}
-
-The \textit{expression slices} can be \textit{type checked} under the \textit{type assumption slices} by replacing gaps $\gap$ by: holes of arbitrary metavariable $\hole^u$ in \textit{expressions}, fresh variables in \textit{patterns}, and the dynamic type in \textit{types}. This transformation $\type{\cdot}$ is stated formally in the appendix \textbf{(fig APPENDIX)}.
+\paragraph{Typing Checking} \textit{Expression slices} can be \textit{type checked} under the \textit{type assumption slices} by replacing gaps $\gap$ by: holes of arbitrary metavariable $\hole^u$ in \textit{expressions}, fresh variables in \textit{patterns}, and the dynamic type in \textit{types}. Notated by $\type{\cdot}$.
 
 \begin{definition}[Expression Typing Slice Type Checking]
-For expression typing slice $\varsigma^{\gamma}$ and type $\tau$. $\synthesis[\gamma]{e}{\tau}$ iff $\synthesis[\type{\gamma}]{\type{e}}{\tau}$ and $\analysis[\gamma]{e}{\tau}$ iff $\analysis[\type{\gamma}]{\type{e}}{\tau}$.
+For expression typing slice $\varsigma^{\gamma}$ and type $\tau$. $\synthesis[\gamma]{\varsigma}{\tau}$ iff $\synthesis[\type{\gamma}]{\type{\varsigma}}{\tau}$ and $\analysis[\gamma]{\varsigma}{\tau}$ iff $\analysis[\type{\gamma}]{\type{\varsigma}}{\tau}$.
 \end{definition}
 \subsection{Context Typing Slices}\label{sec:ContextTypingSlices}
 Next, some of an expression's type might be enforced by the surrounding \textit{context}. For example, the  type of the underlined expression below is enforced by the surrounding highlighted annotation:
 \[\underline{(\lambda x. \hole^u )} \hlcmaths[yellow!30]{:  \code{Bool} \hlcmaths[yellow!30]{\to \code{Int}}}\]
 
-\subsubsection{Contexts \& Context Slices}
+\subsubsection{Contexts and Their Slices}
 \renewcommand{\C}{\mathdcal{C}}
-We represent these surrounding contexts by a \textit{term context} $\mathdcal{C}$. Which marks \textit{exactly one} sub-term as $\cmark$:
-\begin{definition}[Contexts Syntax]
-Pattern contexts -- mapping patterns to patterns:
-\[\mathdcal{P} ::= \cmark \mid x\]
-Type contexts -- mapping types to types: 
-\[\mathdcal{T} ::= \cmark \mid \dyn \mid b \mid \mathdcal{T} \to \tau \mid \tau \to \mathdcal{T}\]
-Expression contexts -- mapping patterns, types, or expression to expressions:\footnote{Note that $\C$ is also used for generic term contexts sometimes.}
-\[\C ::=  \cmark \mid \lambda \mathdcal{P} : \tau.\ e \mid \lambda x : \mathdcal{T}.\ e \mid \lambda x : \tau.\ \C \mid \lambda \mathdcal{P}.\ e \mid \lambda x.\ \C \mid \C(e) \mid e(\C) \mid e : \mathdcal{T} \mid \C : \tau\]
-\end{definition}
-
-Where $\C\{e\}$ substitutes expression $e$ for the mark $\cmark$ in $\C$, the result of this is necessarily an expression. Similarly for pattern and type contexts $\mathdcal{P}, \mathdcal{T}$ whose substitutions return patterns and types. Additionally, contexts are \textit{composable}: substituting a context into a context, $\C_1\{\C_2\}$ produces another valid context when the domain of $\C_1$ is from expressions. Notate this by $\C_1 \circ \C_2$. From here on I notate all contexts like functions, specifying their domain and co-domain where appropriate: $\C : \code{Typ} \to \code{Exp}$ for example.
+We represent these surrounding contexts by a \textit{term context} $\mathdcal{C}$. Which marks \textit{exactly one} sub-term as $\cmark$. Where $\C\{t\}$ substitutes term $t$ for the mark $\cmark$ in $\C$, only allowed if the marked position expects a term of the same class as $t$ (pattern \code{Pat}, type \code{Typ}, or expression \code{Exp}). Notate the classes by $\C : \code{X} \to \code{Y}$. Contexts are \textit{composable}: $(\C_1 \circ \C_2)(t) = \C_1\{\C_2\{t\}\}$ when $\C_1 : \code{X} \to \code{Y}$ and $\C_2 : \code{Y} \to \code{Z}$. Composition is associative.
 
 
 \newcommand{\Cs}{\mathdcal{c}}
 \newcommand{\p}{\mathdcal{p}}
-Then, contexts can be extended to slices, $\Cs$, analogously to the previous section. However, the precision relation $\sqsubseteq$ is defined differently, requiring that the mark $\cmark$ must remain in the same position in the structure. For example $\cmark(\gap) \sqsubseteq \cmark(1)$, but $\cmark \not \sqsubseteq \cmark(1)$. This can be concisely defined by \textit{extensionality}:
+These extend to slices analogously to term slices. However, the precision relation $\sqsubseteq$ more restrictive, requiring the mark $\cmark$ to remain in the same structural position. For example: $\cmark(\gap) \sqsubseteq \cmark(1)$, but $\cmark \not \sqsubseteq \cmark(1)$. Concisely defined by \textit{extensionality}:
 
 \begin{definition}[Context Precision]\label{def:ContextPrecision}
 If $\Cs : \code{X} \to \code{Y}$ and $\Cs' : \code{X} \to \code{Y}$ are context slices, then $\Cs' \sqsubseteq \Cs$ if and only if, for all terms $t$ of class $\code{X}$, that $\Cs'\{t\} \sqsubseteq \Cs\{t\}$.
 \end{definition}
 
-Again, we refer to a context slice $\Cs'$ \textit{of} $\Cs$ as one satisfying that $\Cs' \sqsubseteq \Cs$.
-
-We also get that filling contexts preserves the precision relations both on term slices \textit{and} context slices:\footnote{The conjectures are heavily suspected but not formally proven in the appendix.}
-\begin{conjecture}[Context Filling Preserves Precision]
+We find that filling contexts preserves the precision relations both on term slices \textit{and} context slices:
+\begin{proposition}[Context Filling Preserves Precision]
 For context slice $\Cs : \code{X} \to \code{Y}$ and term slice $\varsigma$ of class \code{X}. Then if we have slices $\varsigma' \sqsubseteq \varsigma$, $\Cs' \sqsubseteq \Cs$ then also $\Cs'\{\varsigma'\} \sqsubseteq \Cs\{\varsigma\}$.
-\end{conjecture}
-
-Joins and meets can be defined via extensionality:
-\begin{definition}[Context Slice Joins \& Meets]
-For context slices $\Cs_1 : \code{X} \to \code{Y}$ and $\Cs_2 : \code{X} \to \code{Y}$ and any term $t$ of class \code{X}:
-\[(\Cs_1 \sqcup \Cs_2)\{t\} = \Cs_1\{t\} \sqcup \Cs_2\{t\}\]
-\[(\Cs_1 \sqcap \Cs_2)\{t\} = \Cs_1\{t\} \sqcap \Cs_2\{t\}\]
-\end{definition}
-
-Again, these form a lattice:
-\begin{proposition}[Context Slices form Bounded Lattices]
-For any context $\C$, the set of slices $\Cs$ of $\C$ form a bounded lattice with bottom element of the \textit{purely structural context}\footnote{With the $\cmark$ is the \textit{same position} but every other sub-term being a $\gap$. Defined in appendix.} and top element $\C$.
 \end{proposition}
 
-\subsubsection{Typing Assumption Contexts \& Context Slices}
-The accompanying notion of a \textit{typing assumption slice} can be extended to \textit{functions on typing assumptions}. This function represents what typing assumptions need to be \textit{added}, or can be \textit{removed} when typing an expression $e$ and within it's context slice.
+Joins and meets can be defined extensionally as before, still forming bounded lattices over complete contexts. The lattice bottom is the \textit{purely structural context}, consisting of only gaps with the mark in the correct position. In general, in addition to joins, not all contexts have meets: $\cmark\centernot \sqcap \cmark(\gap)$.
+
+\subsubsection{Typing Assumption Contexts and Their Slices}
+The accompanying notion typing notion can be represented by \textit{endomorphisms on typing assumption slices}. These functions represents which \textit{relevant} typing assumptions must be \textit{added}, and those safely \textit{removable} when typing an expression within a context slice.
 
 \renewcommand{\F}{\mathdcal{F}}
 \newcommand{\f}{\mathdcal{f}}
-\begin{definition}[Typing Assumption Contexts \& Slices]
-A typing assumption context $\F$ is a function from typing assumption to typing assumptions. A typing assumption context slice $\f$ is a function from typing assumption slices to typing assumption slices.
-\end{definition}
 
-Functions can be composed and a precision partial order can also be defined via extensionality:
-\begin{definition}[Typing Assumption Context Slice Precision]\label{def:FunctionPrecision}
-If $\f'$ and $\f$ are typing assumption context slices, then $\f' \sqsubseteq \f$ if and only if, for all typing context slices $\gamma$, that $\f'(\gamma) \sqsubseteq \f(\gamma)$.
-\end{definition}
-Again, such functions are monotone:
-\begin{conjecture}[Function Application Preserves Precision]
+Precision, joins, and meets can be defined via extensionality. As usual forming bounded lattices on complete functions, the bottom being the constant function to the empty typing assumptions. Again, such functions are monotone:
+\begin{proposition}[Function Application Preserves Precision]
 For typing assumption slice $\gamma$ and typing assumption context slice $\f$. Then if we have slices $\gamma' \sqsubseteq \gamma$, $f' \sqsubseteq f$ then also $f'(\gamma') \sqsubseteq f(\gamma)$.
-\end{conjecture}
-Joins and meets are also defined extensionally:
-\begin{definition}[Typing Assumption Context Slice Joins \& Meets] For typing assumption context slices $\f_1$ and $\f_2$ and any typing assumption slice $\gamma$:
-\[(\f_1 \sqcup \f_2)(\gamma) = \f_1(\gamma) \sqcup \f_2(\gamma)\]
-\[(\f_1 \sqcap \f_2)(\gamma) = \f_1(\gamma) \sqcap \f_2(\gamma)\]
-\end{definition}
-
-\begin{conjecture}[Typing Assumption Context Slices form Bounded Lattices]
-For any typing assumption context $\F$, the set of slices $\f$ of $\F$ form a bounded lattice with bottom element being the constant function to the empty typing assumption function and top element $\F$.
-\end{conjecture}
-
-As usual, not all joins exist: if the assumption context slices map the slices to inconsistent typing assumption slices. 
-\subsubsection{Context Typing Slices}
-Finally, an \textit{expression context typing slice}, $\p$, is a pair, $\Cs^\f$, of an expression context slice and a typing assumption context slice. Precision, composition, application, joins and meets, can be extended pointwise to term typing slices with all the same properties:
-\begin{definition}[Expression Context Typing Slice Precision]
-For expression context typing slices $\Cs_1^{\f_1}$, $\Cs_2^{\f_2}$:
-\[\Cs_1^{\f_1} \sqsubseteq \Cs_2^{\f_2} \iff  \Cs_1 \sqsubseteq \Cs_2 \text{ and } \f_1 \sqsubseteq \f_2\]
-\end{definition}
-\begin{definition}[Expression Context Typing Slice Composition \& Application]
-For expression context typing slices $\Cs^{\f}$, $\Cs'^{\f'}$, and expression typing slices $\varsigma^{\gamma}$:
-\[\Cs^{\f} \circ \Cs'^{\f'} =  (\Cs \circ \Cs')^{\f \circ \f'}\]
-\[\Cs_1^{\f_1}\{\varsigma^{\gamma}\} =  \Cs_1\{\varsigma\}^{\f_1(\gamma)}\]
-\end{definition}
-\begin{definition}[Expression Context Typing Slice Joins and Meets]
-For expression typing slices $\Cs_1^{\f_1}$, $\Cs_2^{\f_2}$:
-\[\Cs_1^{\f_1} \sqcup \Cs_2^{\f_2} = (\Cs_1 \sqcup \Cs_2)^{\f_1 \sqcup \f_2}\]
-\[\Cs_1^{\f_1} \sqcap \Cs_2^{\f_2} = (\Cs_1 \sqcap \Cs_2)^{\f_1 \sqcap \f_2}\]
-\end{definition}
-
-For any pair of expressions contexts $\C$ and typing assumption contexts $\F$, then the expression typing slices of these forms a bounded lattice.
-
-\begin{proposition}[Expression Context Typing Slices form Bounded Lattices]
-For any expression context $\C$ and typing assumption context $\F$, the set of expression context typing slices $\Cs^{\f}$ of $\C^{\F}$ forms a bounded lattice with bottom element, the purely structural context and the function to the empty typing assumptions, and top element $e^{\Gamma}$.
 \end{proposition}
+\subsubsection{Context Typing Slices}
+Finally, an \textit{expression context typing slice}, $\p$, is a pair, $\Cs^\f$, of an expression context slice and a typing assumption context slice defined pointwise, with all the same properties (including composition).
+
+\paragraph{Type Checking} An analogous $\type{\cdot}$ translation can be defined.
 
 \subsection{Type-Indexed Slices}\label{sec:TypeIndexedSlices}
-Tagging slices by their type and allowing decomposition into sub-slices for each part of the type is required for \textit{cast slicing} and useful in calculating slices according to \textit{analysis slices} and \textit{contribution slices} criteria. For example consider the same context slice:
+Decomposing slices by their type is required for cast slicing and useful in calculating slices according to analysis slices and hence also contribution slices. For example consider the following context slice explaining why the underlined term analyses $\code{Bool} \to \code{Int}$:
 \[\underline{(\lambda x. \hole^u )} \hlcmaths[yellow!30]{:  \code{Bool} \hlcmaths[yellow!30]{\to \code{Int}}}\]
-This context slice would be tagged with type $\code{Bool} \to \code{Int}$ and the respective sub-slice considering only the return type would omit the \code{Bool} term:
+This would be tagged with the type $\code{Bool} \to \code{Int}$ where a sub-slice considering \textit{only} the \code{Int} return type (omitting the \code{Bool} annotation) can be extracted:
 \[\underline{(\lambda x. \hole^u )} \hlcmaths[yellow!30]{:}  \code{Bool} \hlcmaths[yellow!30]{\to \code{Int}}\]
+This section will only consider \textit{context slices}, but term slices are type-indexed analogously.
 
-This section will only consider \textit{context slices}, but term slices are type-indexed in exactly the same way. By extending the class of possible contexts, an expression slice can be considered as a \textit{terminal context}\footnote{Being a terminal morphism when thinking of morphisms in a category.} taking any input to the expression slice.\footnote{These will be used interchangeably from now on.}
-\begin{definition}[Term Slices as Terminal Context Slices]
-A terminal context slice for a term typing slice $\rho$ is a context typing slice $\p$ such that for every context typing slice $\p'$ and expression typing slice $\rho'$:
-\[\p \circ \p' = \p \text{ and } \p\{\rho'\} = \rho\]
-\end{definition}
-
-The main property that we want these indexed-slices to maintain is that a slice can be \textit{reconstructed} from their sub-parts. \textit{Joining} the sub-slices should produce the slice for the entire type. As not every slice can be joined, we can pair sub-slices with contexts which place the two sub-slices inside the same structure, making them join-able.
+The main property that indexed-slices should maintain is that slices can be \textit{reconstructed} from their sub-parts. Joining the sub-slices will produce the full type. As sub-slices may slice different regions of code, we pair them with contexts which place the sub-slices within the same context, making them join-able.
 
 \renewcommand{\S}{\mathdcal{S}}
 \renewcommand{\s}{\mathdcal{s}}
 \begin{definition}[Type-Indexed Context Typing Slices]
 Syntactically defined: 
 \[\S ::= \p \mid \p * \S \to \p * \S\] 
-With any $\S$ only being valid if it has a full slice. The full slice of $\S$ is notated $\overline{\S}$ and defined recursively:
+With any $\S$ only being valid if it has a full slice. The full slice of $\S$, notated $\overline{\S}$, is defined:
 \[\overline{\p} = \p\]
 \[\overline{\p_1 * \S_1 \to \p_2 * \S_2} = \p_1 \circ \overline{\S_1} \sqcup \p_2 \circ \overline{S_2}\]
 \end{definition}
 Then left \textit{(incremental)} composition and right \textit{(global)} composition can be defined, by composing at the upper type constructor or at the leaves respectively:
 \begin{definition}[Type-Indexed Context Typing Slice Composition]
-For type-indexed context typing slices $\S$ and $\S'$.  If $\S = \p$ and $\S' = \p'$:\footnote{In shorthand, the overline for a base type slice is often omitted.}
+For type-indexed context typing slices $\S$ and $\S'$.  If $\S = \p$ and $\S' = \p'$:
 \[\p' \circ \p = \overline{\p'} \circ \overline{\p}\qquad \p \circ \p' = \overline{\p} \circ \overline{\p'}\]
-If $\S = \p$ and $\S' = \p_1' * \S_1' \to \p_2' * \S_2'$:\footnote{In shorthand, brackets will be omitted.}
+If $\S = \p$ and $\S' = \p_1' * \S_1' \to \p_2' * \S_2'$:
 \[S \circ \S' = (\p \circ p_1') * \S_1' \to (\p \circ \p_2') * \S_2'\]
 If $\S = \p_1 * \S_1 \to \p_2 * \S_2$:
 \[\S \circ \S' = \p_1 * (\S_1 \circ \S') \to \p_2 * (\S_2 \circ \S')\]
@@ -252,55 +127,41 @@ This definition stems from it representing regular context typing slice composit
 For type-indexed slices $\S$ and $\S'$: 
 \[\overline{\S \circ \S'} = \overline{\S} \circ \overline{\S'}\]
 \end{proposition}
+Application, notated $\mid>$ be defined similarly, converting indexed context slices into valid indexed expression slices. The opposite direction is more difficult and can be found in appendix (\cref{def:Application}).
 
 
 \subsection{Criterion 1: Synthesis Slices}
 \label{sec:SynthesisSlices}
 
-The first slicing method aims to concisely explain why an expression \textit{synthesises} a type. It omits all  sub-terms which analyse against a type retrieved from synthesising some other part of the program. For example, the following term synthesises a $\code{Bool} \to \code{Bool}$ type, and the variable $x : \code{Int}$ and argument are irrelevant:
+Synthesis slices aim to explain why an expression \textit{synthesises} a type. They omits all sub-terms which analyse against a type retrieved from synthesising some other part of the program. For example, the following term synthesises a $\code{Bool} \to \code{Bool}$ type, and the variable $x : \code{Int}$ and argument are irrelevant:
 
 \[\hlcmaths[yellow!30]{(\lambda} x: \code{Int}\hlcmaths[yellow!30]{.\ \lambda y : \code{Bool}.\ y)(}1\hlcmaths[yellow!30]{)}\]
 
 \begin{definition}[Synthesis Slices]
-For a synthesising expression, $synthesis{e}{\tau}$. A synthesis slice is an expression typing slice $\varsigma^{\gamma}$ of $e^\Gamma$ which also synthesises $\tau$, that is, $\synthesis[\type{\gamma}]{\type{\varsigma}}{\tau}$.
+For a synthesising expression, $\synthesis{e}{\tau}$. A synthesis slice is an expression typing slice $\varsigma^{\gamma}$ of $e^\Gamma$ which also synthesises $\tau$, that is, $\synthesis[\type{\gamma}]{\type{\varsigma}}{\tau}$.
 \end{definition}
 \begin{proposition}[Minimum Synthesis Slices]
-A minimum synthesis slice of $e^\Gamma$ is a synthesis slice $\rho$ such that any other synthesis slices $\rho'$ are at least as specific, $\rho \sqsubseteq \rho'$. This minimum always uniquely exists.
+A minimum synthesis slice of $\synthesis{e}{\tau}$, under $\sqsubseteq$, exists and is unique.
 \end{proposition}
 
-These slices can be defined via a typing judgement $\synthesisslice{e}{\tau}{\S}$, meaning $\S$ is the type-indexed synthesis slice of $e^\Gamma$ synthesising $\tau$. The non-indexed version can be retrieved by $\overline{\S}$. This judgement mimics the Hazel typing rules, while omitting portions of the program which are \textit{type analysed} from the slice.  
-
-For example, when encountering application, the type of the function is synthesised purely by the function itself, so the argument can be omitted:
-\[\inference{\synthesisslice{e_1}{\tau_1}{\S_1} & \tau_1 \funmatch \tau_2 \to \tau & \S_1 \funmatch \S_2 \to \S & \analysis{e_2}{\tau_2}}{\synthesisslice{e_1(e_2)}{\tau}{\S}}\]
-Where function matching $\funmatch$ is extended to slices by eagerly applying the contexts paired with the slice sub-parts if applicable:
-\[\Cs \funmatch \Cs \to \Cs\]
-\[\Cs_1 * \S_1 \to \Cs_2 * \S_2 \funmatch \Cs_1 \circ \S_1 \to \Cs_2 \circ \S_2\]
-This approach correctly calculates the synthesis slices.
-\begin{conjecture}[Correctness]
-\label{conj:SynthesisSliceCorrectness}
-If $\synthesis{e}{\tau}$ then:
-\begin{itemize}
-\item $\synthesisslice{e}{\tau}{\rho}$ where $\rho = \varsigma^\gamma$ with $\synthesis[\gamma]{\varsigma}{\tau}$.
-\item For any $\rho' = \varsigma'^{\gamma'} \sqsubseteq e^\Gamma$ such that $\synthesis[\gamma']{\varsigma'}{\tau}$ then $\rho \sqsubseteq \rho'$.
-\end{itemize}
-\end{conjecture}
+These slices can be calculated via a typing judgement $\synthesisslice{e}{\tau}{\S}$, meaning $\S$ is the type-indexed synthesis slice of $e^\Gamma$ synthesising $\tau$. The judgement rules mimic Hazel's typing rules, giving an algorithm to calculate minimum synthesis slices (see \cref{sec:SynthesisSlicesJudgement}).
 
 \subsection{Criterion 2: Analysis Slices}\label{sec:AnalysisSlices}
-A similar idea can be devised for analysis slices. Essentially, we do the opposite of \textit{criterion 1} and omit sub-terms where \textit{synthesis} was used. The objective is to show \textit{why} a term is required to be checking against a type.
-
-The way to represent these are \textit{context slices}. It is the terms immediately \textit{around} the sub-term where the type checking is enforced. For example, when checking this annotated term:
+A similar idea can be devised for type analysis, represented using \textit{context slices}. After all, it is the terms immediately \textit{around} the sub-term where the type checking is enforced. For example, when checking this annotated term:
 \[(\lambda x. \hole^u) : \code{Bool} \to \code{Int}\]
-The \textit{inner hole term} $\hole^u$ (underlined) is required to be consistent with \code{Int} due to the annotation. Therefore, the hole's analysis slice will be:
+The \textit{inner hole term} $\hole^u$ (underlined) is required to be consistent with \code{Int} due to the annotation and lambda constructor present in it's context. The analysis slice will be:
 \[\hlcmaths[yellow!30]{(\lambda} x\hlcmaths[yellow!30]{.} \underline{\hole^u} \hlcmaths[yellow!30]{) : } \code{Bool} \hlcmaths[yellow!30]{\to \code{Int}}\]
-Intuitively, this means that the \textit{contextual} reason for $\hole^u$ to be required to be an \code{Int} is: that it is within a function which the annotation enforced to check against $\code{Bool} \to \code{Int}$, of which only the return type ($\code{Int}$) is relevant.
 
-In other words, if the context slice was type synthesised, then the marked term would still be \textit{required} to check against \code{Int}. However, the overall synthesised type may differ.\footnote{The previous example would synthesis $\dyn \to \code{Int}$ as opposed to $\code{Bool} \to \code{Int}$.}
+In other words, if the context slice was type checked, then the inner hole would \textit{still} required to analyse against \code{Int}. However, the overall synthesised type may differ, this sliced example would synthesis $\dyn \to \code{Int}$ vs. the unsliced $\code{Bool} \to \code{Int}$.
 
 
 \subsubsection{Checking Context}
-For this, we only want to consider the smallest context scope\footnote{The \textit{size} of the context around the marked term.} that enforced the type checking. For example, the below term has 3 annotations, but only the inner one enforces the \code{Int} type on the integer 1:
+\label{sec:CheckingContexts}
+We only want to consider the smallest context scope\footnote{The \textit{size} of the context around the marked term.} that enforced the type checking. For example, the below term has 3 annotations, but only the inner one enforces the \code{Int} type on the integer 1:
 \[\underline{1} \hlcmaths[yellow!30]{: \code{Int}} : \dyn : \code{Bool}\]
-I refer to this minimum context scope as the \textit{checking context}, and checking contexts will always synthesise a type. Another way for types to be enforced is via application. The integer argument's type is enforced by the annotation on the function:
+I refer to this as the \textit{minimally scoped checking context}. Note that checking contexts will always synthesise a type. 
+
+To give another example, an integer argument's type is enforced by the annotation on the function:
 \[\hlcmaths[yellow!30]{(\lambda} x \hlcmaths[yellow!30]{: \code{Int}.}\ \hole^u\hlcmaths[yellow!30]{)(}\underline{1}\hlcmaths[yellow!30]{)}\]
 
 
@@ -308,201 +169,141 @@ I refer to this minimum context scope as the \textit{checking context}, and chec
 \label{def:CheckingContext}
 For term $e$ checking against $\tau$: $\analysis[\Gamma]{e}{\tau}$. A checking context for $e$ is an expression context $\C$ and typing assumption context $\F$ such that: 
 \begin{itemize}
+\item $\C \neq \cmark$.
 \item $\synthesis[\F(\Gamma)]{\C\{e\}}{\tau'}$ for some $\tau'$.
 \item The above derivation has a sub-derivation $\analysis[\Gamma]{e}{\tau}$.
 \end{itemize}
 \end{definition}
 \begin{definition}[Minimally Scoped Checking Context]
-For a derivation $\analysis[\Gamma]{e}{\tau}$, it's minimally scoped expression checking context is a checking context of $e$ such that no sub-context is also a checking context.
+For a derivation $\analysis[\Gamma]{e}{\tau}$, a minimally scoped expression checking context is a checking context of $e$ such that no sub-context is also a checking context.
 \end{definition}
 
-All possible minimally scoped checking contexts can be constructed syntactically via rules. This coincides with the definition above, but is more amenable to performing proofs on. Given in the appendix \textbf{ref}.
-
-If $e'$ is a sub-term in a synthesising expression $e$, there will be a unique minimally scoped checking context $\C$ which matches the structure of the original term and typing assumption context $\F$ mapping the context used to type $e'$ to the context used to synthesise $e'$ in it's checking context. 
-\begin{proposition}[Checking Context of a Sub-term in a Derivation]
-If derivation $\synthesis{e}{\tau}$ contains a analysis sub-derivation $\analysis[\Gamma']{e'}{\tau'}$ for sub-term $e'$. Then there is a unique minimally scoped context $\C$ for $e'$ and typing assumption context $\F$ for $\Gamma'$ such that:
-\begin{itemize}
-\item $\C\{e'\}$ is a sub-term of $e$, or is $e$ itself.
-\item Derivation $\synthesis{e}{\tau}$ contains a sub-derivation for $\synthesis[\F(\Gamma')]{\C\{e'\}}{\tau''}$, or is the derivation itself: $\tau'' = \tau, \C\{e'\} = e,$ and $\F(\gamma') = \Gamma$.
-\end{itemize}
-\end{proposition}
-
-This checking context of a sub-term in a derivation can be calculated during type checking of the term. These checking contexts are what is actually useful for explaining type analysis in a \textit{specific} program.
-
-But, more generally, analysis slices are then a slice of any \textit{minimally scoped checking context}.
-
+All minimally scoped checking contexts can be constructed syntactically via rules (\cref{sec:CheckingContexts}). For a sub-term in a program, there will be a unique minimally scoped context which matches with the program structure (appendix \cref{def:CheckingContextInProgram}). Analysis slices are slices of minimally scoped checking contexts.
 \begin{definition}[Analysis Slice]\label{def:analysisslice}
-For a term $e$ analysing against $\tau$: $\analysis{e}{\tau}$, and a checking context $\C^\F$ for $e$. An analysis slice is a slice, $\Cs^\f$, of $\C^\F$ which is also a checking context for $e$. That is:
-\begin{itemize}
-\item $\synthesis[\f(\Gamma)]{\Cs\{e\}}{\tau'}$ for some $\tau'$.
-\item The above derivation has a sub-derivation for $\analysis{e}{\tau}$. 
-\end{itemize}
+For $\analysis{e}{\tau}$ with a minimally scoped checking context $\C^\F$. An analysis slice is a context slice $\Cs^\f$ of $\C^\F$ where $\type{\Cs^\f}$ is also a checking context for $e$.
 \end{definition}
-
-The \textit{minimum analysis slice} is just the minimum under the precision ordering $\sqsubseteq$. And it must be unique:
-
 \begin{conjecture}[Minimum Analysis Slices]\label{conj:AnalysisSliceUniqueness}
-The minimum analysis slice analysing $e$ in a checking context $\C^\F$ is an analysis slice $\p$ such that for any other any other analysis slice $\p'$ is at least as specific, $\p \sqsubseteq \p'$. This minimum always uniquely exists.
+A minimum analysis slice of $\analysis{e}{\tau}$ in a checking context $\C^\F$, under $\sqsubseteq$, exists and is unique.
 \end{conjecture}
 
-This can again be represented by a judgement read as, \textit{$e$ which type checks against $\tau$ in checking context $\C$ has (type-indexed) analysis slice $\S$}:\footnote{Again, non-indexed version retrieved by $\overline{\S}$.}
+This can again be calculated by a judgement reading as, \textit{$e$ which type checks against $\tau$ in checking context $\C$ has (type-indexed) analysis slice $\S$}:
 \[\analysisslice{\C}{e}{\tau}{\p}\]
 
-There are two situations which enforce \textit{checking contexts}, of which application is most interesting, calculating the minimum indexed synthesis slice of the context and retrieving just the sub-slice relevant to typing the \textit{argument}:\footnote{Note that $e_1$ synthesises $\tau_2$ exactly here. Contribution slices consider situations involving subsumption which may synthesise different but consistent types.}
-
-\[\inference{\synthesisslice{e_1}{\tau_1}{\S_1} & \tau_1 \funmatch \tau_2 \to \tau & \S_1 \funmatch \S_2 \to \S & \analysis{e_2}{\tau_2}}{\analysisslice{\C}{e_2}{\tau_2}{(\Cs^\f \mapsto \Cs(\cmark)^\f) \circ S_1}}\]
-Where $(\Cs^\f \mapsto \Cs(\cmark)^\f)$ maps the outer expression slices to context slices matching the input checking context. \textbf{(add this `two-hole-context' to the type-indexed slice section, maybe make type-indexed expression slices explicit.} 
-
-This definition does indeed find the minimum analysis slice:
-\begin{conjecture}[Correctness]\label{conj:AnalysisSliceCorrectness}
-If $\C$ is a checking context for $e$ and $\analysis{e}{\tau}$. Then $\analysisslice{\C}{e}{\tau}{\S}$ and $\S$ is the minimum analysis slice of $e$.
-\end{conjecture}
+The rules build upon rules defining minimally scoped checking contexts, and are more involved, making use of \textit{type-indexed} synthesis slices\footnote{Hence, requiring conversion of (indexed) expression slices to context slices}, see \cref{fig:AnalysisSliceApplication}:
+\begin{figure}[h]
+\centering
+\begin{subfigure}{0.4\textwidth}
+\[(\lambda x : \dyn. \lambda y : \code{Int}. y)(\code{true})\]
+\caption{A function: synthesising $\code{Int} \to \code{Int}$.}
+\end{subfigure}$\qquad$
+\begin{subfigure}{0.4\textwidth}
+\[\hlcmaths[yellow!30]{(\lambda} x : \dyn\hlcmaths[yellow!30]{. \lambda y : \code{Int}. y)(}\code{true}\hlcmaths[yellow!30]{)}\]
+\caption{Its synthesis slice.}
+\end{subfigure}
+\begin{subfigure}{0.4\textwidth}
+\[\hlcmaths[yellow!30]{(\lambda} x : \dyn\hlcmaths[yellow!30]{. \lambda} y \hlcmaths[yellow!30]{: \code{Int}.} y\hlcmaths[yellow!30]{)(}\code{true}\hlcmaths[yellow!30]{)}\]
+\caption{The sub-slice relating \textit{only} to the input part $\code{Int}$.}
+\end{subfigure}$\qquad$
+\begin{subfigure}{0.4\textwidth}
+\[\hlcmaths[yellow!30]{(\lambda} x : \dyn\hlcmaths[yellow!30]{. \lambda} y \hlcmaths[yellow!30]{: \code{Int}.} y\hlcmaths[yellow!30]{)(}\code{true}\hlcmaths[yellow!30]{)(}\underline{1}\hlcmaths[yellow!30]{)}\]
+\caption{The analysis slice of the function's argument ($\underline{1}$) when applied. Uses synthesis slice \textbf{(c)}.}
+\end{subfigure}
+\caption{Analysis slice application uses synthesis slices}
+\label{fig:AnalysisSliceApplication}
+\end{figure}
 
 \subsection{Criterion 3: Contribution Slices}
 \label{sec:ContributionSlices}
-This criterion aims to highlight all regions of code which \textit{contribute} to the given type (either synthesised or analysed). Where \textit{contribute} means that there exists a type that if the sub-term changed it's type to, then the overall term would also change type, or would become ill-typed. Importantly, we also consider \textit{contexts} for expression which are analysed, again considering any component terms which having their type changed would result in an error when trying to analyse against the type. For example in the following term:
+This criterion highlights all regions of code which \textit{contribute} to typing succeeding. That is, all sub-terms who could change their type to make the term ill-typed. For example, for the underlined term:
 
 \[(\lambda f: \code{Int} \to \dyn.\ f(1))\underline{(\lambda x : \code{Int}.\ x)}\]
-The terms which \textit{contribute} to the \textit{underlined} lambda term checking successfully against $\code{Int} \to \dyn$ is everything \textit{except} the $x$ term, while context slice is just the annotation (and required structural constructs). Highlighting related to synthesis will be a darker shade:
+Both contextual and synthetic parts (in dark yellow) contribute:
 \[\hlcmaths[yellow!30]{(\lambda} f\hlcmaths[yellow!30]{: \code{Int} \to \dyn}.\ f(1)\hlcmaths[yellow!30]{)}\underline{\hlcmaths[yellow!70]{(\lambda} x \hlcmaths[yellow!70]{: \code{Int}.}\ x\hlcmaths[yellow!70]{)}}\]
+Notice that the only sub-terms which do not contribute have their type changed without affecting the overall type must be dynamically annotated. Therefore, this criterion omits the dynamic code regions.
 
-Notice that, in any typing derivation the only sub-terms which \textit{can} have their type changed without causing the rule to no longer apply are those which use type \textit{consistency}.\footnote{Note that this logic does \textit{not} extend to globally inferred languages.} The only such rule is \textit{subsumption}. Further, the only time a term could be changed to \textit{any} type and still remain valid is when it is checked for consistency with the dynamic type $\dyn$.
-
-Therefore, this criterion just \textit{omits all dynamically annotated regions} of the program.\footnote{But does not omit the dynamic annotations themselves.} And, the contextual part of the slices are just \textit{analysis slices}.
-
-\begin{definition}[Contribution Slices]\label{def:ContributionSlice}
-For $\synthesis{e}{\tau}$ containing sub-derivation $\analysis[\Gamma']{e'}{\tau'}$ with checking context $\C$.
-
-A \textit{contribution slice} of $e'$ is an \textit{analysis slice} for $e'$ in $\C$ paired with an expression typing slice $\varsigma^\gamma$ such that:
-\begin{itemize}
-\item $\varsigma$ is a slice of $e'$, that $\varsigma \sqsubseteq e'$.
-\item Under restricted typing context $\gamma$, that $\varsigma$ checks against any $\tau'_2$ at least as precise as $\tau'$:\footnote{Essentially, sub-terms that check against $\dyn$ also synthesise $\dyn$. Defined this way to include the case of unannotated lambdas (which do not synthesise).}
-\[\forall \tau'_2.\ \tau' \sqsubseteq \tau'_2 \implies \analysis[\gamma]{e'}{\tau'_2}\]
-\end{itemize}
-A contribution slice for a sub-term $e''$ involved in sub-derivation $\synthesis[\Gamma'']{e''}{\tau''}$ where $e'' \neq e'$ is an expression typing slice $\varsigma''^{\gamma''}$ which also synthesises $\tau''$ under $\gamma''$, that $\synthesis[\gamma'']{\varsigma''}{\tau''}$. Further, any sub-term of $e''$ which has a contribution slice of the above variety, is replaced inside $\varsigma$ by that corresponding expression typing slice.
-\end{definition} 
-The synthetic parts of these slices can be calculated in exactly the same way as synthesis slices, except now also considering the \textit{subsumption} rule. The analytic parts are regular analysis slices.
-
-The subsumption rule synthesises a type for some term, then checks consistency with the checked type. This is where the dynamic portions can be omitted, to give a contribution slice for the checked term. Representing contribution slices with the judgement $\contributionslice{e}{\tau}{\S}$ and $\contributionanalysisslice{\C}{e}{\tau}{\S_e}{\S_c}$, where $\S_e$ is the expression slice part and $\S_c$ is the contextual part:
-
-\[\inference{\contributionslice{e}{\tau}{\S_s} & \tau \sim \tau' & \analysisslice{\C}{e}{\tau'}{\S_c}}{\contributionanalysisslice{\C}{e}{\tau'}{\mathrm{static}(\S_c, \S_s)}{\S_c}}\]
-Where static is takes omits the \textit{right} (synthetic) slice parts where \textit{left} (analytic) slice is a leaf but the right is not. As the types are consistent, these leaves will be the unknown type. This means that portions of the synthetic part of the slice which match against $\dyn$ will be omitted: \textbf{SHOW A DIAGRAM}
-\[\mathrm{static}(\p, \p') = \p'\]
-\[\mathrm{static}(\p, \_ \to \_) = \gap^\emptyset\]
-\[\mathrm{static}(\Cs_1 * \S_1 \to Cs_2 * \S_2,\ \Cs_1' * \S_1' \to Cs_2' * \S_2') = \Cs_1 * \mathrm{static}(\S_1, \S_1') \to \Cs_2' * \mathrm{static}(\S_2, \S_2')\]
-
-\renewcommand{\s}{\mathdcal{s}}
-\begin{figure}[h]
-\[\inference[\tiny SConst]{}{\synthesissliceindexed{c}{b\mid c}} \quad
-\inference[\tiny SVar]{x : \tau \in \Gamma}{\synthesissliceindexed{x}{\mathrm{map}{(x^{\{x:\tau\}}, \tau)}}}\]
-\[ 
-\inference[\tiny SFun]{s_1 = (\gap : \cmark)\circ \mathrm{annot}(\tau_1) &\synthesissliceindexed[\Gamma,x:\tau_1]{e}{s_2}\\ s_2 = i_2 \mid \varsigma^\gamma & x \match{\gamma} p}{\synthesissliceindexed{\lambda x:\tau_1.\ e}{(\lambda \cmark.\ \gap) \circ s_1 \to (\lambda p : \tau_1.\ \cmark) \circ s_2 \mid (\lambda p : \tau_1.\ \varsigma)^{\gamma\backslash x:\tau_1}}}\]
-\textbf{TODO: UPDATE THIS FIGURE, move to appendix!!}
-\[\inference[\tiny SApp]{\synthesissliceindexed{e_1}{s_1} & s_1 \funmatch s_2 \to s \\ \analysissliceindexed{e_2}{s_2(\cmark)}{s_2'}}{\synthesissliceindexed{e_1(e_2)}{\text{app}(s_2')}}\]
- 
-\[\inference[\tiny SEHole]{}{\synthesissliceindexed{\hole^u}{\dyn \mid \hole^u}} \quad \inference[\tiny SNEHole]{\synthesissliceindexed{e}{\p\{i \mid \varsigma^\gamma\}}}{\synthesissliceindexed{\hole[e]^u}{\dyn \mid {\hole[\varsigma]^u}^\gamma}}\]
-\[\quad 
-\inference[\tiny SAsc]{c = \cmark : \text{annot}(\tau) & \analysissliceindexed{e}{\s}{s}}{\synthesis{e : \tau}{\mathrm{app}(s)}}\]
-
-\[\inference[\tiny AFun]{\s \funmatch \s_1 \to \s_2\\ \analysissliceindexed[\Gamma, x:\type{\s_1}]{e}{\s_2 \circ (\lambda x.\ \cmark)}{s_2}}{\analysissliceindexed{\lambda x.e}{\s}{\s_1\{\lambda \gap. \gap\} \to s_2}}\] 
-\[\inference[\tiny ASubsume]{\synthesissliceindexed{e}{s}\\ \type{s} \sim \type{\s}}{\analysissliceindexed{e}{\s}{\bigsqcup\mathrm{static}(\type{\s}, s)}}\]
-\caption{Contribution Slices}
-\label{fig:ContributionSliceRules}
-\end{figure} 
-
-
-\subsection{Type-Indexed Slicing Context}
-\label{sec:TypeSliceContext}
-It seems natural to extend the typing context to become a type-indexed slicing context. Then, when accessing typing assumptions via variable references, the slice information which derived this type can be revealed. But, as no context is propagated, the slices would have no .
+These can be calculated mimicking the Hazel typing rules. During subsumption, remove synthesis slice sub-part which match with dynamic parts of the analysing type. Contextual parts are found by passing context slices directly as inputs to type analysis rules.
 
 \section{Cast Slicing Theory}\label{sec:CastSlicingTheory}
-\textbf{This section is not written yet, but will be very short... The only addition is cast dependence, which is literally just a partial order on casts through dynamics.}
-
-Fairly trivial, just treat tag types in casts with their slices and decompose accordingly.
-
-The idea of it being a minimal expression typing slice producing the same cast doesn't really work here due to dynamics. Explore the maths of this. Either way, it is a useful construct in practice. Exploring this in more detail, looking at \textit{dynamic program slicing} could be a good future direction.
-
-\textbf{Mention and compare with blame tracking?}
-
-\subsection{Indexing Slices by Types}
-
-
-\subsection{Elaboration}
-All casts inserted come from type checking, so can be sliced.
-
-\subsection{Dynamics}
-Ground type casts will be added, but their addition is purely technical and we can treat their reasoning to just be extracting the relevant portion of the original non-ground type.
-
-\subsection{Cast Dependence}
-\label{sec:CastDependence}
-This in combination with the indexed slices could have some nice mathematical properties.
-
-Though, these would need to retrieve information about parts of slices that were lost when decomposing slices. i.e. when a slice $\tau_1 \to \tau_2$ extracts the argument type $\tau_2$, the slicing criteria lose track of the original lambda binding. A way to reinsert these bindings such that we get a minimal term which \textit{Evaluates to the same cast} e.g. But this will have lots of technicalities with correctly tracking the restricted contexts $\gamma'$ for closures (i.e. functions returning functions which have been applied once). \textbf{TALK ABOUT THIS IN THE FURTHER DIRECTIONS SECTION.}
+Cast slicing propagates type slice information during evaluation, by tagging casts types with type slices. A primary reason in formalising type-indexed slices was to make slices decomposable during evaluation, retaining only sub-slices relevant to the part of the type involved in the decomposed cast. This requires changing the syntax of casts to $\scast{\S}{\S}$ and inserting casts between slices during elaboration. The first two criteria work together during elaboration, analysis slices inserted when casting on a elaborated expression who had it's type \textit{analysed}, and the synthesised for synthesis slices. The rules are found in
+\cref{sec:CastSlicingElaboration}.
 
 \section{Type Slicing Implementation}\label{sec:TypeSlicingImplementation}
 Here I detail how the theories above were adapted to produce an implementation for Hazel.
 \subsection{Hazel Terms}
 \label{sec:HazelTerms}
-Hazel represents its abstract syntax tree (AST) \textbf{(cite)} in a standard way by creating a mutually recursive algebraic data-type (\textbf{cite}). 
+Hazel represents its terms as a standard abstract syntax tree (AST) via mutual recursion. Every sub-term is tagged with an identifier (ID, \code{ID.t}). Terms are grouped similarly to the calculus (see \cref{sec:HazelSyntax}), but combining external and internal expressions, and adding patterns and environments, see \cref{fig:HazelTerms} \& \ref{fig:tupletermstructure}.
 
-Terms are classified into similar groups as described in the calculus (see \cref{sec:HazelSyntax}), though combining external and internal expressions, and adding \textit{patterns}:
-\begin{itemize}
-\item \textbf{Expressions}: The primary encompassing term including: constructors\footnote{The basic language constructs: integers, lists, labelled tuples etc. Also, user-defined constructors via sum types.}, holes, operators, variables, let bindings, functions \& closures, type functions, type aliases, pattern match expressions, casts, explicit fix\footnote{Fixed point combinator for recursion.} expression.
-\item \textbf{Types}: Unknown type\footnote{Either dynamic type, or a type hole.}, base types, function types, product types, record types, sum types, type variables, universal types, recursive types.
-\item \textbf{Patterns}: Destructuring constructs for bindings, used in functions, match statements, and let bindings, including: Holes, variables (to bind values to), wildcard, constructors, annotations (enforcing type requirements on bound variables). 
-\item \textbf{Closure Environments}: a closure mapping variables to their assigned values in it's syntactic context.
-\end{itemize}
 
-For example \cref{fig:tupletermstructure} shows a let binding expression whose binding is a tuple pattern (in blue) binding two variables \code{x}, \code{y} annotated with a type (in purple).
+\begin{figure}
+\centering
+\resizebox{0.6\textwidth}{!}{\begin{tikzpicture}[
+node distance=2cm and 4cm,
+box/.style={draw, rounded corners, minimum width=2cm, align=left, text width=4cm, inner sep=10pt, thick},
+exprbox/.style={box, draw={rgb,255:red,86;green,109;blue,117}},
+pattsbox/.style={box, draw={rgb,255:red,24;green,156;blue,218}},
+typesbox/.style={box, draw={rgb,255:red,159;green,106;blue,228}},
+envsbox/.style={box, draw={rgb,255:red,135;green,119;blue,76}},
+arrowExpr/.style={-{Latex[round]}, thick, draw={rgb,255:red,86;green,109;blue,117}},
+arrowPatts/.style={-{Latex[round]}, thick, draw={rgb,255:red,24;green,156;blue,218}},
+arrowTypes/.style={-{Latex[round]}, thick, draw={rgb,255:red,159;green,106;blue,228}},
+arrowEnv/.style={-{Latex[round]}, thick, draw={rgb,255:red,135;green,119;blue,76}}
+]
 
-\begin{figure}[h]
-\center\includegraphics[width=0.75\textwidth]{Media/Figures/tuple_term_structure}
-\caption{Let binding a tuple with a type annotation.}
-\label{fig:tupletermstructure}
+% Nodes
+\node[exprbox] (expr) {
+\textbf{\textcolor[rgb]{0.337,0.427,0.459}{Expressions: \\\texttt{let ? = ? in x}}}};
+
+\node[envsbox, right=of expr] (envs) {
+\textbf{\textcolor[rgb]{0.529,0.467,0.298}{Closures}}
+(Mapping variables to values)
+};
+
+\node[pattsbox, below=of expr] (patts) {
+\textbf{\textcolor[rgb]{0.094,0.612,0.855}{Patterns: \texttt{(x, y)}}}
+};
+
+\node[typesbox, right=of patts] (types) {
+\textbf{\textcolor[rgb]{0.624,0.416,0.894}{Types: \texttt{(Int, Bool)}}}
+};
+
+% Arrows for containment
+\draw[arrowExpr] (expr.south) -- (patts.north);
+\draw[arrowExpr] ($(expr.east)+(0,0.3)$) to[bend left=15] ($(envs.west)+(0,0.3)$);
+\draw[arrowExpr] (expr.south east) to (types.north west);
+
+\draw[arrowPatts] (patts.east) to (types.west);
+
+\draw[arrowEnv] ($(envs.west)+(0,-0.3)$) to[bend left=20] ($(expr.east)+(0,-0.3)$);
+\draw[arrowEnv] (envs.south) -- (types.north);
+
+% Self-loops
+\draw[arrowExpr, looseness=7, out=135, in=45] ($(expr.north)+(-0.3,0)$) to ($(expr.north)+(0.3,0)$);
+\draw[arrowPatts, looseness=7, out=225, in=315] ($(patts.south)+(-0.3,0)$) to ($(patts.south)+(0.3,0)$);
+\draw[arrowTypes, looseness=7, out=225, in=315] ($(types.south)+(-0.3,0)$) to ($(types.south)+(0.3,0)$);
+
+\end{tikzpicture}
+}
+\caption{Mutually Recursive Hazel Terms.}
+\label{fig:HazelTerms}
 \end{figure}
 
-Every term (and sub-term) is annotated with an \textit{identifier} (ID, \code{Id.t}) in the AST which refers back to the syntax structure tree. In a sense, this is the equivalent of \textit{code locations}, but Hazel is edited via a structure editor. 
+\begin{figure}[h]
+\center\includegraphics[width=0.6\textwidth]{Media/Figures/tuple_term_structure}
+\caption{Let binding a tuple pattern with a type annotation.}
+\label{fig:tupletermstructure}
+\end{figure}
+ 
 \subsection{Type Slice Data-Type}\label{sec:TypeSliceDataType}
-I detail here \textit{how} and \textit{why} I implement type slices for Hazel.
 
 \subsubsection{Expression slices as ASTs}
 
-Directly storing expression slices directly as ASTs is both \textit{space and time inefficient}. The AST type is a persistent data structures \cite[ch. 2]{PurelyFunctionalDataStructures}, meaning that any update to the tree will retain both the old and updated tree. All nodes on the path to the updated sub-tree must be copied; for example, \cref{fig:PersistentTrees} shows how a node G (in blue) can be sliced off from the tree while the old tree (in black) and the new tree (in red) both persist and share some unmodified nodes structurally. Expression slices do exactly this slicing operation extensively, so would require significant copying.
-\begin{figure}[h]
-\center\includegraphics[width=0.75\textwidth]{Media/Figures/persistenttree}
-\caption{Persistent Tree}
-\label{fig:PersistentTrees}
-\end{figure}
+Directly storing expression slices directly as ASTs is both \textit{space and time inefficient}, even when accounting for the persistence \cite[ch. 2]{PurelyFunctionalDataStructures} of trees in OCaml. 
 
-There are ways to partially avoid this, for example the \textit{Zipper} data structure represents trees by from the perspective of a \textit{cursor} node rather than the \textit{root}. The part of the tree above the cursor is stored as an \textit{upside-down}. This allows the cursor to be 
-
-We can derive an analogous \textit{one-hole context} type for the AST by \textit{differentiating} it's type \cite{OneHoleContext, TypeDerivatives}. 
-
-
-\textbf{Zippers only useful if we need access to the parent node which cannot just be done by passing down info.}
-
-However, we still have to copy nodes when shifting the cursor; during type-checking all nodes will be visited by the cursor so we would get at least a \textit{doubling} in space used. Additionally, converting a zipper back into a tree would take linear time\footnote{In the depth of the cursor.} and still require copying the path to the cursor as before.\footnote{Still advantageous as it delays the copying only for when the slice is actually \textit{used} in a way that requires this conversion. UI for slices would still work directly on the zipper structure without copying.} 
-
-\begin{figure}[h]
-\textbf{Produce Tikz Diagram Here.}
-\caption{Tree Zipper}
-\label{fig:PersistentZipper}
-\end{figure}
-
-
-\textbf{NOTE: Actually the below might be inaccurate, I think I'm confusing myself with persistence. I think I could actually space-efficiently construct contextual and synthetic slices.}
-
-\textbf{Either way, there is opportunity to speak about persistence with how type slices are combined and decomposed and how they overlap. etc. ?}
-
-\textbf{The benefits of unstructured slices being more flexible apply either way. Plus, I don't actually need the slice structure for highlighting terms. Plus ids take up less space by a constant factor anyway.}
+For highlighting purposes, there is no need to retain the structure (unlike the theory, we do not need to type check the results, instead just assuming correctness). 
 
 \subsubsection{Unstructured Code Slices}
 \label{sec:UnstructuredSlices}
-With this in mind, given that the structure of expression slices does not actually matter for highlighting\footnote{Only matters for type checking slices, which always succeeds by design.}, I represent slices indirectly by these IDs in an \textit{unstructured} list, referred to now as a \textit{code slice} (\code{code_slice} type).
-
- Additionally, this has the side effect of allowing more \textit{granular} control over slices, as they now need not conform with the structure of expressions which is taken advantage of to reduce slice size, \textbf{(ref to section discussing this + evaluation)}.
-
-Equally, the typing assumption slices are only required for formal type checking, however I maintain these is code slices to allow for different UI styling of slices originating from the use of the typing context (bold border).
+With this in mind, I represent slices indirectly by their IDs with an \textit{unstructured} list, referred to now as a \textit{code slice}. Additionally, this allows more \textit{granular} control over slices, as they need not conform with the structure of expressions, which is taken advantage of in reducing slice sizes \cref{sec:SlicingAnalysis}.
 
 \subsubsection{Type-Indexed Slices}
 Cast slicing and contribution slices required \textit{type-indexed} slices. I therefore tag type constructors with slices recursively, i.e.:
@@ -519,65 +320,14 @@ and typslice_t = IdTagged.t(slice_term)
 \caption{Initial Type Slice Data-Type}
 \end{figure}
 
-However, this did not model the structure of type slices particularly well. Slices are generally incrementally constructed. Synthesis slices build upon slices of sub-terms and analysis slices , demonstrated in \cref{fig:IncrementalSlices}. 
-
-The original data-type works well for synthesis slices as the list data-type is persistent and sub-slices are never modified. But not for analysis slices, which require an id to be added to \textit{all} sub-slices. Hence, analysis slices had \textit{quadratic} space complexity in the depth of the type (\textbf{Get numbers in evaluation to show it being worse if possible}).
-
-\begin{figure}[h]
-\begin{minted}{reason}
-let f : Int -> Int = fun x -> x in f(0)
-\end{minted}
-Synthesis slice for f(0) is just constructed incrementally from the slices for 0 and f. 
-
-Analysis slice for 0, f and all it's sub-slices all depend upon the annotation and binding etc.
-\caption{Slicing is Incremental}
-\label{fig:IncrementalSlices}
-\end{figure}
-
-
+However, this did not model the structure of type slices particularly well. Analysis slices add ids to \textit{all} sub-slices, giving \textit{linear} space complexity in the depth of the type.
 
 \subsubsection{Incremental Slices}
-Therefore, I explicitly represent slices incrementally, with two modes, for synthesis slice parts (termed \textit{incremental slice tags}) and analysis slice parts (termed \textit{global slice tags}).
+Therefore, slices are represented incrementally. With \textit{incremental slices} for synthesis slice parts and \textit{global slices} for analysis slice parts.
 
-I now tag each type constructor with incremental or global slices representing:
-\begin{itemize}
-\item Incremental Slice Tag: The slice of an expression is it's sub-slices adding it's incremental slice. But the sub-slices do not depend on the incremental slice.
-\item Global Slice Tag: All the sub-slices of this term depend on this slice.
-\end{itemize}
-So instead of tagging an id in an analysis slice to all subslices, I tag it only to the constructor as a \textit{global slice}, and \textit{lazily} tag it to sub-slices upon usage (during type destructuring).
-
-We get the following type:
+A \textit{global slice} is only tagged once, then \textit{lazily} tagged to sub-slices if used. That is, when de-constructing types, e.g. in function matching. We get the type in \cref{fig:SliceType}:
 \begin{figure}[h]
-\begin{minted}[fontsize=\small]{reason}
-type typslice_typ_term = 
-  | Unknown
-  | Arrow(slice_t, slice_t)  // Function type
-  | ... // Type constructors
-and typslice_term = 
-  | SliceGlobal(slice_t, code_slice)
-  | SliceIncr(slice_t, code_slice)
-and typslice_t = IdTagged.t(typslice_term)
-\end{minted}
-\caption{Incremental Slice Data-Type}
-\end{figure}
-
-A key change when using this model is that when deconstructing types via function matching, list matching, etc. used throughout type checking and unboxing, the global slice must be pushed inside the resulting deconstructed types. This ensures that no part of the analysis slice context is lost \textbf{(compare to function matching in the type-indexed slice theory)}. 
-
-
-\subsubsection{Usability \& Efficiency}
-The type was further changed and many utility functions were added to enforce invariants and to ease development.
-
-\paragraph{Empty Slices} 
-Many type constructors have no associated incremental slice part (\textbf{example}), especially during evaluation. Equally, when type slicing is turned off. A \code{TypSlice(typslice_typ_term)} constructor is added to represent this case.
-
-\paragraph{Fully Empty Slices} For the case when type slicing is turned off we also know that \textit{all} sub-slices are empty, and we get an isomorphism between slices and the original \textit{type}. For convenience in integrating with existing code, a fourth slice type \code{Typ(typ_term)} is added allowing a trivial and \textit{efficient}\footnote{Conversion to the empty slice type would instead take linear time.} injection from types to typeslices by tagging with \code{Typ}. Note that this means the empty slices \code{TypSlice} no longer needs to include atomic types.\footnote{These being equivalent to types, as no sub-slices exist.}
-
-\paragraph{Slice Tag Duplicates}
-The previous formulation allowed structures a type constructor with multiple global slices. For example: \begin{minted}[fontsize=\small]{reason}
-SliceGlobal(SliceIncr(SliceGlobal(Arrow(...,...),...),...),...)\end{minted}
-The possibility of any permutation of slices makes programming awkward when conceptually all we need is \textit{at most one} global and incremental slice tag. 
-I enforce this invariant by refining the type to the actual type used in the final implementation:\footnote{Modulo some insignificant refactorings.}
-\textbf{TODO: Refactor code to use empty type-slices}
+\centering
 \begin{minted}[fontsize=\small]{reason}
 ...
 and typslice_empty_term = [
@@ -598,16 +348,24 @@ and typslice_term = [
 and typslice_t = IdTagged.t(typslice_term)
 ...
 \end{minted}
-\textit{Polymorphic Variants} \cite[ch. 7.4]{RealWorldOCaml}, notated \texttt{[ | ... ]} are used here for convenience in incrementally writing functions, explained for an example \textit{apply} function below. These are variants which exhibit \textit{row polymorphism} \cite{PolymorphicVariants} \cite[ch. 10.8]{ATTAPL} where these variants are related by a \textit{structural subtyping} relation \cite{StructuralSubtyping} where polymorphic variants of the same \textit{structure}, with constructors of the same name and types, are subtypes. 
+\caption{The type slice data-type}
+\label{fig:SliceType}
+\end{figure}
 
-We have that, \code{typslice_empty_term} is a subtype of \code{typslice_incr_term} which is a subtype of \code{typslice_term}. All other type constructors are either co-variant or contra-variant \cite[ch. 2]{BasicCatTheory} with respect to the subtyping relation. For example, id tagging is covariant\footnote{It is just a labelled pair type.}, so an \code{IdTagged.t(typslice_incr_term)} is a subtype of \code{IdTagged.t(typslice_incr_term) = typslice_t}. 
+The invariant that a slice has at most \textit{one} incremental and/or global slice is maintained by splitting into three types (\code{empty_term}, \code{incr_term}, \code{term}). Regular un-sliced types \code{`Typ(...)} are maintained to provide easier interoperability with the rest of the code-base, also allowing type slicing to be turned off.
 
-Equally, a function of type
-$\code{typslice_incr_term} \to \code{typslice_incr_term}$ is a subtype of $\code{typslice_empty_term} \to \code{typslice_term}$, being contravariant in it's argument and covariant in it's result. This function subtyping property significantly reduces work in defining functions on this type as seen below.
+\textit{Polymorphic Variants} \cite[ch. 7.4]{RealWorldOCaml}, notated \texttt{[ | ... ]} are used to more conveniently write functions on slices. This is possible due \textit{row polymorphism} \cite{PolymorphicVariants} \cite[ch. 10.8]{ATTAPL} relating the variants by a \textit{structural subtyping} relation \cite{StructuralSubtyping}. We have that:\footnote{$x :> y$ meaning $x$ a subtype of $y$.} 
+\[\code{typslice_empty_term} :> \code{typslice_incr_term} :> \code{typslice_term}\]
+
+Type constructors are either co-variant or contra-variant \cite[ch. 2]{BasicCatTheory} with respect to the subtyping relation. For example, id tagging is covariant, so:
+\[\code{IdTagged.t(typslice_incr_term)} :> \code{IdTagged.t(typslice_incr_term) = typslice_t}\] 
+Functions are bifunctors: contravariant in their input and covariant in their output, for example:
+\[\code{typslice_incr_term} \to \code{typslice_incr_term} :> \code{typslice_empty_term} \to \code{typslice_term}\]
+
+This function subtyping property significantly reduces work in defining functions on slices (see \cref{fig:Apply}).
 \paragraph{Utility Functions}
-Functions on slices often do not concern the slices, but only the structure of it's underlying type, for example in unboxing\footnote{e.g. checking if a slice is a \textit{list} type.} (\textbf{ref to sec}). In which case it is more convenient to just write a $\code{typ_term} \to \alpha$ and $\code{typslice_term} \to \alpha$ function directly on the possible empty slice types. 
-
-An \code{apply} function is provided to apply this onto the slice term. See how the bottom two branches can both be passed into the \code{apply} function even though they have different types (but are both subtypes of \code{typslice_term}).  
+Functions on slices often only concern the underlying type, e.g. checking if a slice is a list type. Writing direct pattern matching code on $\code{typ_term}$ and $\code{typslice_term}$ is easier. An \code{apply} function can apply these direct functions to the term inside a slice. The bottom two branches can both be passed into \code{apply} function as they are sub-types of \code{typslice_term}.  
+\begin{figure}
 \begin{minted}[fontsize=\small]{reason}
 let rec apply = (f_typ, f_slc, s) =>
   switch (s) {
@@ -617,338 +375,276 @@ let rec apply = (f_typ, f_slc, s) =>
   | `SliceGlobal(s, _) => apply(f_typ, f_slc, s)
   }
 \end{minted}
-Similarly, mapping function which map a $\code{typ_term} \to \code{typ_term}$ and similar functions onto slices are provided while maintaining the slice tags. Another particularly useful one is a mapping function that maps $\code{typ_term} \to \code{typslice_term}$ etc. and merges the slices around the input term and the output slice of the mapped function. Other utility functions include wrapping functions, unpacking functions, matching functions etc.
+\caption{Apply Utility Function}
+\label{fig:Apply}
+\end{figure}
+Many other utility functions are implemented, including mapping functions, wrapping functions, unpacking functions, matching functions.
 
 \subsubsection{Type Slice Joins}
-Type joins are extensively used in the Hazel implementation for \textit{branching statements}. The type of a branching statement is the \textit{least specific} type which is still \textit{at least as specific} as all the branches. This corresponds to the \textit{lattice join} of the types of the branches with respect to the precision relation. 
+Type joins (\cref{sec:JoinTypesTheory}) are extensively used in the Hazel implementation for \textit{branching statements} and in the theory of contribution slices.
 
-Previously in \cref{sec:JoinTypesTheory}, I stated how slices could be joined. To implement this, first any contextual code slices required to place the branches within a common context are wrapped onto the branch slices. Then the slices are joined, unioning the incremental code slices of branches.
+For basic type slices, when the same type information is available from multiple branches, highlighting only one branch is required, but both for contribution slices. See that the 1 in \cref{fig:TypeJoins} is not highlighted (in green). However, we did still need some information from the left (the 0).
 
-For basic synthesis and analysis slices, I decide to take the code slices for each atomic type in the joined type from only \textit{one} branch. This retains a complete explanation of \textit{why} the joined type is synthesised/checked, but does \textit{not} constitute a valid contribution slice.
-
-This slicing is not as easy as just taking the slice of a single branch, as the most specific sub-parts of the joined type may come from differing branches. For example in \cref{fig:TypeSliceJoinExample}, the \textit{then} branch has a type $\code{Int} \to (\dyn,\code{Int})$ and the \textit{else} branch has type $\code{Int} \to (\code{Int}, \dyn)$ meaning the joined type is $\code{Int} \to (\code{Int}, \code{Int})$. We can omit one\footnote{The figure, and my implementation, omits the left branches.} of the redundant annotations on the argument but still must retain a slice of the 0 term in both branches to get the \code{(Int, Int)} slice.
 \begin{figure}[h]
-\textit{if ? then fun x : Int -> (?, 0) else fun x : Int -> (0, ?)}
-\caption{Type Slice Join}
-\label{fig:TypeSliceJoinExample}
+\centering
+\includegraphics[width=0.5\textwidth]{Media/Figures/typejoin}
+\caption{Type Slice Joins}
+\label{fig:TypeJoins}
 \end{figure}
 
-The unstructured nature of code slices also allows the type constructors to select only \textit{one} branch to take the slice from. The given figure would \textit{not} highlight the function constructor in the \textit{then} branch. However, this is not be a valid expression slice in the theoretic sense and could be confusing for the user \textbf{(discuss in evaluation, missing info)}.
+This gets complex, requiring tracking all the data relating to which branches should be highlighted, and accumulating the inconsistent parts of failed joins for use in minimised error slices (demonstrated in \cref{sec:ErrorSlices}). I make use of custom OCaml let bindings \textbf{(cite)} to retain clarity while automatically combining branches in successful joins and combining inconsistencies in failed joins. For example, see \cref{fig:ArrowJoin}, where comments describe the logic abstracted by the custom bindings; note that all join-able type combinations use this same parallel binding logic to combine branches and inconsistencies.
 
-\subsubsection{Contribution Slices}
-\label{sec:ContributionSliceImplementation}
-To create a \textit{contribution slice} (definition and correctness reasoning in \cref{sec:ContributionSlices}) we will need to combine analysis and synthesis slices on the same term that:
-\begin{itemize}
-\item Matches compound type constructor slice tags are combined.
-\item Atomic \textit{dynamic} type parts of the \textit{analysis slice} are retained in preference to the synthesis slice part. 
-\item Other atomic type constructors have slices combined.
-\end{itemize} 
-We get a type slice whose type is equivalent to the analysis slice, but includes relevant parts of the synthesis slice.
 \begin{figure}[h]
-\textbf{Use same example here as in theory}
-\caption{Contribution Slice}
-\label{fig:ContributionSliceExample}
+\small
+\begin{minted}{reason}
+...
+| (Arrow(s1, s2), Arrow(s1', s2')) =>
+      let+ s1j = join'(s1, s1') // If successful: binds the join to s1j and
+                                // propagates the branch used joining s1, s1'
+                                // Else: Propagates inconsistencies in s1, s1'
+      and+ s2j = join'(s2, s2') // If both successful: binds the join to s2j and
+                                // combines previously used branches joining s1, s2' 
+                                // with those used joining s2 and s2'
+                                // Else: propagates inconsistency in s1, s2' (if any)
+                                // alongside new inconsistencies in s2, s2' (if any)
+      and! branches_used = ();  // If both successful: Binds combined branches
+                                // Else: propagates inconsistencies
+      ( // If nothing failed, Returns the successful join.
+        `SliceIncr((
+          Slice(Arrow(s1_join, s2_join)), // The successful join
+          choose_branch(branches_used, slice_incr1, slice_incr2),
+        )) // Wrap with only one slice: the left if both branches used
+        |> temp,
+        branches_used, // combined branches used
+      );
+...
+\end{minted}
+\caption{Joining function types}
+\label{fig:ArrowJoin}
 \end{figure}
-
-\subsubsection{Weak Head Normalisation}
-Describe where this is used and how slices do this. This subsection could be elided.
 
 \subsection{Static Type Checking}\label{sec:TypeChecking}
-The Hazel implementation is \textit{bidirectionally typed}. During type checking, the typing \textit{mode} in which to check the term is specified with \code{Mode.t} type: \textit{synthesising}\footnote{Additionally split into synthesising functions and type functions, but this detail is elided here.} (\code{Syn}) or \textit{analysing} (\code{Ana(Typ.t)}).
-
-The type checker associates each term with a type information object \code{Info.t}, stored in a map by term id with efficient access. The \textit{type information} stores the following info:
-\begin{itemize}
-\item The term itself and it's ancestors.
-\item \textbf{Mode}: Typing expectations enforced by the context.
-\item \textbf{Self}: Information derived independent from the \textit{mode}, e.g. synthesised type, or type errors arising from inconsistent branch types, syntax errors.
-\item \textbf{Typing context and co-context}. A co-context
-\item Status: Is it an error, what type of error? For example, inconsistency between type expectations and synthesised/actual type.
-\item \textbf{Type}: The \textit{actual} type of the expression after \textit{accounting for errors}. Errors are placed in holes, so synthesise the dynamic type. 
-\item Constraints: Patterns also store constraints to determine redundant branches and inexhaustive match statements, in the sense of \cite[ch. 13]{PracticalFoundationsEd1}\footnote{Only present in the \textit{first} edition.}. Hazel-specific details in \cite{LivePatternMatching}.
-\end{itemize}
-
-As suggested by my slicing theory, I augment the four bolded fields to refer to type slices, returning type slices from synthesis and analysing directly against type slices. This results in wide-changing code, but I only detail the general workings here.
-
-\subsubsection{Self}
-The \textit{self} data-structure now returns \textit{types slices} instead of \textit{types}. Every expression construct which can be synthesised has a corresponding function in \code{Self.re} to construct the slice from it's sub-derivations (slices of synthesised types of sub-expressions). Hence, the synthesis slicing behaviour for each type of expression can be easily configured uniformly via editing these functions.
-
-For example, the slice of a pattern matching statement, given slices of all it's branches (\code{tys}) is the join of it's branches wrapped in an incremental slice consisting of the ids of the match statement itself. Otherwise if the branches are inconsistent it returns a failure tagging the branch slices with ids of the branches:
+Hazel is \textit{bidirectionally typed}, where the \textit{mode} (synthesis, analysis) is specified by the \code{Mode.t} type. Type checking calculates a type information object \code{Info.t} for each term, stored efficiently in a map from ID keys. \code{Info.t} is demonstrated in \cref{fig:Info} with arrows representing dependencies (e.g. a term's type depends on it's mode, self, typing context, and status).
 \begin{figure}[h]
-\begin{minted}[fontsize=\footnotesize]{reason}
-let of_match =
-    (ids: list(Id.t), ctx: Ctx.t, tys: list(TypSlice.t), 
-    c_ids: list(Id.t)): t =>
-  switch (
-    TypSlice.join_all(
-      ~empty=`Typ(Unknown(Internal)) |> TypSlice.fresh,
-      ctx,
-      tys,
-    )
-  ) {
-  | None => NoJoin(Id, add_source(c_ids, tys))
-  | Some(ty) => Just(ty |> TypSlice.(wrap_incr(slice_of_ids(ids))))
-  };
-\end{minted}
-\caption{Match Statement \code{Self.t}}
+\includegraphics[width=1\textwidth, trim={8cm 5cm 8cm 5cm}, clip]{Media/Figures/info}
+\caption{\code{Info.t} data-structure}
+\label{fig:Info}
 \end{figure}
 
-This stage also included factoring out some expectation-independent code from the type checking function which had been missed by others.
-
-\subsubsection{Mode}
-The \textit{mode} now analyses against \textit{type slices} instead of \textit{types}. Again, each construct which could deconstruct an analysing type has a corresponding function in \code{Mode.re} which outputs the mode(s) to check the inner expressions. The inner analysis slices are tagged with a \textit{global}\footnote{Being part of the analysis slice, relevant to all sub-slices.} slice tag describing \textit{why} the slice was deconstructed. As mentioned before \textbf{(ref)}, deconstructing types retains the contextual (global) parts of the analysis slice.
-
-For example, I can deconstruct a list slice with a list matching function \code{matched_list}. Using this, the mode to check a term inside a \textit{list literal} is the matched inner list slice wrapped (globally) in the ids of list literal itself (\code{ids}) which enforced this matching. We use this mode to check each element in the list literal.
-
-\begin{figure}
-\begin{minted}[fontsize=\footnotesize]{reason}
-let of_list = (ids: list(Id.t), ctx: Ctx.t, mode: t): t =>
-  switch (mode) {
-  | Syn
-  | SynFun
-  | SynTypFun => Syn
-  | Ana(ty) =>
-    Ana(TypSlice.(matched_list(ctx, ty) 
-    |> wrap_global(slice_of_ids(ids))))
-  };
-\end{minted}
-\caption{List Literal \code{Mode.t}}
-\end{figure}
+\subsubsection{Self and Mode}
+Slicing logic relating to synthesis slices and analysis slices is factored into \code{Self.t} and \code{Mode.t} respectively, cleanly segregated from the type checking code. Although, doing this still required full understanding of the type checker implementation, ensuring the correct IDs are sliced. Two examples of the slicing logic are shown in \cref{sec:slicingstaticsexamples}.
 
 \subsubsection{Typing (Co-)Context}
-The typing context and co-contexts are modified to use type slices, given that we now always have a slice to accompany a type in any situation. 
-
-\Cref{sec:TypeSliceContext} discusses one major consequence of allowing this. Slices for variables may now include the slice binding it's type. 
-
-This \textit{deviates} from the theoretical notion of an expression slice: the structural context in which the variable is used is untracked when passing through the context. But, it is easy to implement using \textit{unstructured} code slices and is a useful addition conceptually (\textbf{discuss in evaluation}).
-
-\subsubsection{Type}
-The \textit{type} field is extended to a \textit{type slice}. This has special behaviour for contribution slices and errors.
-\paragraph{Basic Slices} 
-If there are no errors, just use the analysed type slice, or if in synthesis mode use the synthesis slice. 
-\paragraph{Contribution Slices: IMPL TODO}
-When synthesis and analysis slices exist, they can be combined here. \Cref{sec:ContributionSliceImplementation} defines and explains this combination.
-
-\paragraph{Error Slices: IMPL TODO}
-Type inconsistency error checking can be extended to type slices via using type slice joins. The analysed and synthesised type slices are inconsistent if and only if a join exists. We can show both conflicting slices in this situation to explain the error \textbf{(Implement)}. Additionally, syntax errors could have a slicing mechanism implemented here.\footnote{Not within the scope of this project. Empty slices are given instead.}
-
-\subsection{Sum Types}
-\textbf{Sum types are the hardest to work with, describe general design and difficulties in all the previous parts.}
-
-\subsection{User Interface}
-Type slice of selected expression is shown.
-Show figures.
-
-\section{Cast Slicing Implementation}\label{sec:CastSlicingImplementation}
-To implement cast slicing, I replace casts between \textit{types} by casts between \textit{type slices}. The required type-indexed nature of type slices is already implemented, allowing these casts the be decomposed.
-
-\subsection{Elaboration}\label{sec:Elaboration}
-Cast insertion recursively traverses the unelaborated term, inserting casts to the term's statically determined type as stored in the \code{Info} data-structure and from the type as can be determined directly from the term. 
-
-For example, for list literals we can recursively elaborate the list's terms and join their static slices into \code{inner_type}. Then, intuitively we would know during dynamics from these elaborated sub-terms that the list has a list type of \code{List(inner_type)}:
+The typing context and co-contexts are modified to use type slices. This deviates from the theoretical notion of an expression slice: the structural context in which the variable is used is untracked when passing through the context. Therefore, it requires using \textit{unstructured} code slices. It is useful in practice allowing slices calculated during binding to be retrieved usage, see \cref{fig:VarSlice}.
 \begin{figure}[h]
-Maybe a more diagrammatic option here
-\caption{List Literal Elaboration}
+\centering
+\includegraphics[width=0.3\textwidth]{Media/Figures/var_slice}
+\caption{Type slice for variable \code{x}: includes it's binding and slice.}
+\label{fig:VarSlice}
 \end{figure}
 
-We can therefore construct the source type slices in these casts directly form the term during this traversal. \textbf{(TODO impl for atomic types like ints)}
+\subsubsection{Status and Type}
+The status, mode, and self are combined to determine a term's actual type, being dynamic if there is an error. When the expectations (mode, self) are inconsistent, the inconsistent slice information parts are tagged to the error status; \cref{sec:SlicingAnalysis} retrospectively considers what slice information to be extracted here. Additionally, contribution slices can extract the static parts of synthesis slices here. 
 
-Ensuring that all the type slice information from the \code{Info} map is retained and/or reconstructed during elaboration was a meticulous and error-prone process.
+\subsection{Integration}
+To support the full Hazel language, type slices needed to implement many functions, for example: type substitution\footnote{Note: this is the only feature which does not currently retain type slices fully.}, type normalisation, weak-head normalisation, tracking sum types, various structural matching functions etc. Additionally almost every usage of types in the codebase had to be refactored to use type slices (which are so easily pattern matched upon) while ensuring slices correctly maintained.
+
+\subsection{User Interface \& Examples}
+The type slices of the expression at the cursor (in red) are highlighted, see \cref{fig:SliceExamples}. Error slices distinguish between the synthesis and analysis parts with blue and red, see the evaluation examples \cref{sec:EvalExamples}.
+
+\begin{figure}[h]
+\centering
+\begin{subfigure}[t]{0.45\textwidth}
+\centering
+\includegraphics[width=1\textwidth]{Media/Figures/none_syn}
+\caption{\code{None} synthesises \code{IntOption} due to it's type definition.}
+\end{subfigure}$\qquad$
+\begin{subfigure}[t]{0.45\textwidth}
+\centering
+\includegraphics[width=1\textwidth]{Media/Figures/fun_syn}
+\caption{The function synthesises \code{[Int]}$\to$ \code{IntOption} due to it's \code{[Int]} annotation and that the match branches synthesis \code{IntOption}. Both branches provide the same type information, only one branch (the last) is highlighted.}
+\end{subfigure}
+\begin{subfigure}[t]{0.45\textwidth}
+\centering
+\includegraphics[width=1\textwidth]{Media/Figures/hd_syn}
+\caption{The variable usage of \code{hd} synthesises \code{[Int]}$\to$ \code{IntOption} similarly, whose slice is retrieved from the typing context.}
+\end{subfigure}$\qquad$
+\begin{subfigure}[t]{0.45\textwidth}
+\centering
+\includegraphics[width=1\textwidth]{Media/Figures/list_ana}
+\caption{The list input is expected to be an \code{[Int]} as it is applied to \code{hd} which is a function annotated with input type \code{[Int]}.}
+\end{subfigure}
+\caption{Type Slices}
+\label{fig:SliceExamples}
+\end{figure}
+
+\section{Cast Slicing Implementation}\label{sec:CastSlicingImplementation}
+To implement cast slicing, replace casts between \textit{types} by casts between \textit{type slices}. Type slices are already type-indexed and retain all type information so can be used equivalently.
+
+\subsection{Elaboration}\label{sec:Elaboration}
+Cast insertion recursively traverses the unelaborated term, inserting casts to the term's statically determined type as stored in the \code{Info} data-structure. For example, a list literal recursively elaborate it's terms and joins their slices, casting to the join. Ensuring all the type slice information is retained and/or reconstructed during elaboration was a meticulous and error-prone process.
 
 \subsection{Cast Transitions}
 \Cref{sec:HazelDynamics} gave an intuitive overview of how casts are treated at runtime. Type-indexed slices allows cast slices to be decomposed in exactly the same way. 
 
-However, as Hazel only checks consistency between casts between \textit{ground types} (\cref{fig:groundtypes}), there are two rules where new\footnote{As opposed to being derived from decomposition.} casts are \textit{inserted} ITGround, ITExpand (\cref{fig:instructions}). The new types are both created via a \textit{ground matching} relation (\cref{fig:groundmatch}) which takes the topmost compound constructor. 
+However, as Hazel only checks consistency between casts between \textit{ground types}, there are two rules where new\footnote{As opposed to being derived from decomposition.} casts are \textit{inserted} (ITGround, ITExpand). The new types are created via a \textit{ground matching} relation taking the topmost compound constructor of types, e.g. ground functions \cref{fig:GroundFunction}. Relevant portions of the appendix are \cref{fig:groundtypes}, \cref{fig:instructions}, \cref{fig:groundmatch}.
 
-As we already store type slices incrementally, the part of the slice which corresponds \textit{only} to the outer type constructor is just the outer slice tag.
+As we store type slices incrementally, the part of the slice corresponding \textit{only} to the outer type constructor is the outer slice tag.
 
 \begin{figure}
-list example
-\caption{Ground Matching List}
+\[\tau_1 \to \tau_2 \match{\text{ground}} \dyn \to \dyn\]
+\caption{Ground Matching Functions}
+\label{fig:GroundFunction}
 \end{figure}
 
 \subsection{Unboxing}
-When a final form (\cref{sec:HazelFinalForms}) has a type, Hazel often needs to extract parts according to this type during evaluation. But due to casts and holes, this is not trivial \cite{LivePatternMatching}.
+When we know a final form's (\cref{sec:HazelFinalForms}) type, we may need to extract parts of the term according to the type during evaluation. For example, extracting the elements of a tuple. But due to casts and holes, this is not trivial \cite{LivePatternMatching}.
 
-For example, if a term is a final form of type list, then it could be either:
-\begin{itemize}
-\item A list literal.
-\item A list with casts wrapped around it.
-\item A list cons with indeterminate tail, e.g. \code{1::2::?}.
-\end{itemize}
-Additionally, when the input is not a list at all, it can return \code{DoesNotMatch}. Hence, allowing dynamic errors to be caught and also for use in pattern matching. 
+Slicing does not concern unboxing, but indeterminate evaluation (\cref{sec:IndetEval}) unveiled bugs within which had to be fixed. I raised and fixed these, eventually being merged into the main branch. \Cref{sec:UnboxingBugs} details this, after covering the required context on the unboxing implementation.
 
-To allow for the varying outputs to unboxing depending on different patterns to match by, GADTs are used \textbf{(cite and explain)}.
-
-Various helper functions for unpacking type slices into it's sub-slices to significantly simplify pattern matching.\footnote{These differ from matching functions, which also match the dynamic type to functions, lists etc.} A uniform function for this could be implemented with a GADT, in a similar way to unboxing, but is not required.
-
-\subsubsection{Hazel Unboxing Bug}
-While writing the search procedure I found an unboxing \textit{bug} which would always \textit{indeterminately match} a cons with indeterminate tail with \textit{any} list literal pattern (of \textit{any} length), even when it is known that it could never match. For example a list cons \code{1::2::?} represents lists with length $\geq 2$, but even when matching a list literal of length 0 or 1 it would indeterminately match rather than explicitly \textit{not} match. 
-
-Pattern matching checks if each pattern matches the scrutinee with the following behaviour, starting from the first branch:
-\begin{itemize}
-\item \textit{Branch matches?} Execute the branch.
-\item \textit{Branch does not match?} Try the next branch.
-\item \textit{Branch indeterminately matches?} Hazel cannot assume the branch doesn't match so cannot move on and must safely stop evaluation here classifying the entire match as an indeterminate term.
-\end{itemize}
-\Cref{fig:PatternMatchingBug} demonstrates a concrete example which would get stuck in Hazel, but does \textit{not} need to.
-
+\subsection{User Interface \& Examples}
+Type slices within casts can be selected from the evaluation result and displayed. This require reworking some of the dependencies of Hazel's model-view-update architecture to make sure the cursor has access to the code editor cell when inside the evaluation result cell.
 \begin{figure}[h]
-See PR example
-\caption{Pattern Matching Bug}
-\label{fig:PatternMatchingBug}
+\centering
+\begin{subfigure}{0.45\textwidth}
+\centering
+\includegraphics[width=1\textwidth]{Media/Figures/simple_cast_error}
+\caption{A simple cast error blaming the plus operator for requiring the integer cast.}
+\end{subfigure}
+\begin{subfigure}{0.45\textwidth}
+\centering
+\includegraphics[width=1\textwidth]{Media/Figures/map_cast}
+\caption{A hole cast to \code{Int} due to a mapped function annotated with an \code{Int} input.}
+\end{subfigure}
+\begin{subfigure}{0.65\textwidth}
+\centering
+\includegraphics[width=1\textwidth]{Media/Figures/decompose_casts}
+\caption{A decomposed cast. The input of the function takes only slice for the argument part \code{Int} of the function type $\code{Int} \to \code{Float}$.}
+\end{subfigure}
+\caption{Cast Slicing Examples}
 \end{figure}
-
-I reported and fixed this bug and added additional tests to ensure the bug never reappears. A PR was merged into the dev branch \textbf{(pending)}.
-\subsection{User Interface}
-Mainly talk about the Model-view architecture and passing the cursor into the evaluator view to allow clicking on casts in evaluation result/stepper.
-
-Difficulties in ensuring id tags for slices are not subtly aliased during elaboration and evaluation. This caused problems in selecting slices with UI. Look through commits to give example
-
-\section{EV\_MODE Evaluation Abstraction}
-\label{sec:EVMode}
-This section describes in detail the evaluator abstraction present in hazel, which allows ...
-
-\textbf{Note: Very complex!!! I probably need to ask whoever made it what the terminology means/to give a simple explanation. The reader could skip this section, it is purely technical. In fact, given word count might be removed entirely, even though it is interesting technically.}
-
 \section{Indeterminate Evaluation}\label{sec:IndetEval}
-Dynamic type errors may only occur when an expression is given \textit{specific} inputs. However, a dynamic error is accompanied by an evaluation trace, which is often a \textit{useful debugging aid} \cite{TraceVisualisation}. When debugging static type errors, traces leading to a corresponding dynamic error are normally \textit{unavailable}.\footnote{As an ill-typed program will not run.} This section concerns the building blocks leading up to a search procedure that finds inputs which lead to dynamic errors \textit{automatically}.
+Dynamic errors include evaluation traces, which can aid in debugging \cite{TraceVisualisation}, yet static type errors lack such traces. Seidel et al. \cite{SearchProc} offer an algorithm  to search for these traces for static errors in OCaml by lazily, non-deterministically narrowing input holes to least specific values based on their usage context. 
 
-Seidel et al. \cite{SearchProc} provides an algorithm for this in OCaml and provides evidence for the usefulness of traces via a \textit{user study}. This algorithm \textit{lazily} narrows hole terms non-deterministically to a \textit{least specific} value based on it's expected type in the context it was used. For example, if a hole is used within the \code{(+)} operator, it is non-deterministically instantiated to an integer. \textbf{(give better example with lists)}
-
-In Hazel, we already have a notion of hole terms and can already run program with static errors, with runtime type information being maintained by runtime casts. This section introduces \textit{indeterminate evaluation} as a natural analogue to Seidel's idea: to \textit{lazily} narrow holes during evaluation to \textit{least specific} values by exploiting the runtime type information available within Hazel's runtime casts. My implementation extends Seidel's to consider more classes of expressions\footnote{Notably, sum types.} and differs mechanically in many ways due to language differences and fundamental design differences.\footnote{Differences, and Hazel-specific challenges are noted throughout. \textbf{(ENSURE THIS!)}} Notably, indeterminate evaluation is a \textit{generic} evaluation method, not specifically relating only to searching for cast errors, which is covered in \cref{sec:SearchProcedure}.
-
-This section covers the following, answering each question:
-\begin{enumerate}
-\item[\ref{sec:ResolvingNondeterminism}] How should we resolve the non-determinism in instantiating holes \textit{fairly}? How can the search order be abstracted? Unlike Seidel's approach, my implementation is \textit{fair}: exhaustively considering all possibilities\footnote{For countable types.}, and allows search methods that avoid non-termination\footnote{For example, if one particular instantiation leads to an infinite loop in code.}.
-\item[\ref{sec:IndetEvalAlgorithm}] Describes an algorithm for indeterminate evaluation. Is every possibility explored fairly?
-\item[\ref{sec:ThreadingState}] How can \textit{per-solution} state be maintained irrespective of evaluation order?
-\item[\ref{sec:HoleInstantiation}] Discusses hole instantiation and substitution. What does lazy instantiation actually entail, when exactly should a hole be instantiated? Which hole\footnote{There may be multiple.} should be instantiated in order to continue evaluation to make progress? How should holes be substituted with their narrowed values; the same hole may exist in multiple locations within the expression?
-\item[\ref{sec:OneStepEvaluator}] How to use the evaluation abstraction (\cref{sec:EVMODE}) to perform just one evaluation step?
-\item[\ref{sec:TypesForHoles}] Finally, I consider Hazel-specific problems. Once we know which hole to instantiate, how can we get it's \textit{expected type}? Hazel's lazy treatment of pushing casts into compound data types means not all such holes will be wrapped directly in casts. Additionally, the case of pattern matching is difficult, allowing holes to be \textit{non-uniformly} cast to \textit{differing types}. How can holes be instantiated in these situations?
-\end{enumerate}
-As always, a UI is implemented in \cref{sec:UIIndetEval}.
+This section creates a framework for non-deterministic evaluation of indeterminate expressions by lazily performing hole substitutions using type information from dynamic casts. Unlike Seidel, this supports more language features (all of Hazel), any number of inputs (holes), and exhaustive generation of these inputs. It is a general evaluation method, not limited to cast error searches. Specifics relating to cast errors and implementing search orderings, are covered in \cref{sec:SearchProcedure}.
 
 \subsection{Resolving Non-determinism}
 \label{sec:ResolvingNondeterminism}
-To model infinite non-determinism I decide to use a \textit{monadic} high-level representation, and represent infinite solutions with sequences from Jane Street's \code{Base.Sequence}. I choose this due to it's \textit{uniform}\footnote{Many other types use the monadic return/bind interface. Lists and Options for example.} and familiar workings for other developers in the codebase. 
+To model infinite non-determinism I create a monadic DSL with an explicitly tree/forest-based representation. The forest model allows for varying low level search traversals. The module type of combinators is in \code{Nondeterminism.Search}; it's underlying parametric type is \code{t('a)} with \code{'a} being the type of the solutions. \Cref{sec:SearchMethods} discusses the actual implementations of this interface, giving four searching procedures.
 
-This sections describes an abstract DSL which abstracts the notion of non-determinism and the concrete search ordering. It's \textit{module type} of combinators is \code{Nondeterminism.Search}. \Cref{sec:SearchMethods} discusses the actual implementations of this interface, giving three different searching procedures.
 
-\subsubsection{Alternatives}
-\Cref{sec:Nondeterminism} considered multiple ways to represent non-determinism. The other options were:
-\paragraph{Direct implementation:} This would not allow for easily abstracting the search order and would obfuscate the workings of the indeterminate evaluation and instantiation algorithms. 
-\paragraph{Effect handlers:} Multiple continuation effect handlers were not supported by JSOO\footnote{An important dependency of Hazel.} \textbf{(cite)}, \paragraph{Continuations:} Directly writing continuations is difficult and generally unfamiliar to OCaml developers \textbf{(cite)}.
-\paragraph{Optimised DSL}: Introducing a formal DSL including optimisations, such as the proposed Tagless-Final DSL \cite{TaglessFinalDSL, NondetDSL}, is very complex.
+In addition the functions from \Cref{sec:Nondeterminism}, I add standard \code{map} and \code{join} functions, and various other functions, e.g. \code{ifte} modelled after Mercury's if-then-else construct \cite{Mercury}.
 
-\subsubsection{Monadic Non-determinism}
-To recap, in a monadic model of non-determinism we have three operations on monads \code{m('a)}:
-\begin{itemize} 
-\item \code{return : 'a => m('a)}, injects a single solution into it's non-deterministic monadic representation.
-\item \code{bind : m('a) => ('a => m('b)) => m('b)}, corresponding to a conjunction of choice. Given possibilities from \code{m('a)}, each leading to more possibilities in \code{m('b)}: \code{bind} conjoins all the non-deterministic possibilities from \code{m('b)}.
-\item \code{fail : 'a => m('a)}, representing no solution, no choices are possible.
-\item \code{choice : m('a) => m('a) => m('a)}, a disjunction of choice: either solutions are possible. Represented infix by \texttt{<||>}.
-\end{itemize}
-These satisfy the before mentioned laws (\cref{sec:Nondeterminism}). And we can define a host of other useful constructs from these:
-\begin{itemize}
-\item \code{map : m('a) => ('a => 'b) => m('b)}. Represented infix by \code{>>|}. Where \code{m >>| f = m >>= (x => return(f(x))}. Mapping represents performing a transformation on all possible solutions.
-\item \code{join : m(m('a)) => m('a)}, where \code{join(m) = m >>= (x => x)}. (\textbf{todo, give intuition for join)}.
-\item \code{once : m('a) => option('a)}, extracts any one solution, if one exists. This can be used to efficiently model \textit{don't care} non-determinism, where if one possibility fails, then we know all others fail also.
-\item \code{run : m('a) => Sequence.t('a)} produces a lazy list of all solutions.
-\item \code{guard : bool => m(unit)}, represents success, defined by \code{code(false) = fail} and \code{code(true) = return(())}. When chaining binds, if any guard bind fails, then the whole computation fails.
-\item \code{ifte : m('a) => ('a => m('b)) => m('b)}. This corresponds to Mercury's interpretation of an if-then-else construct \cite{Mercury}. Where \code{ifte(c)(thn)(els)} executes the \code{els} only if the conditional \code{c} fails initially. Otherwise it binds the results of the in the \code{thn} branch. Importantly, if the conditional fails on backtracking, the \code{els} branch is \textit{not} computed. Hence, it is put to good use for explaining failure of the conditional.
-\end{itemize}
+\subsubsection{Abstracting Search Order: Forest Model}
+Typical stream-based models of non-determinism \cite{ListOfSuccess} only admit the possibility of depth-first search (DFS). Stream concatenation provides no way of remembering choice points and backtracking before finishing a computation. 
 
-\subsubsection{Abstracting Search Order: Tree Model}
-Typical stream-based models of non-determinism \cite{ListOfSuccess} only admit the possibility of depth-first search (DFS). Streams provide no way of remembering choice points and backtracking before finishing a computation. 
+Instead, we can use a model based on forests (lists of trees) \cite{Bunches}. Choice, similarly to streams, is performed by concatenating forests. Finally, to build tree structures, a \code{wrap} combinator wraps every tree up into a single tree with a new root, see \cref{fig:Wrap}. Effectively, this encodes a  notion of cost for search paths.
 
 \begin{figure}[h]
-Stream model here, see \cite{BFSCombinators}?
-Use arrows to indicate DFS.
-\caption{Streams require Depth-First Search}
+\centering
+\begin{subfigure}{0.45\textwidth}
+\centering
+\[\left[\ 1\quad ; \quad 2 \quad ; \quad 3\ \right]\]
+\caption{\code{let x = return(1) <||>} \code{return(2)} \code{         <||> return(3)}}
+\end{subfigure}
+\begin{subfigure}{0.45\textwidth}
+\centering
+\[\left[\vcenter{\hbox{\begin{forest}
+[$\cdot$ [4] [5]]
+\end{forest}}}\right]\]
+\caption{\code{let y = wrap(return(4) <||> return(5))}}
+\end{subfigure}
+\begin{subfigure}{0.45\textwidth}
+\centering
+\[\left[\vcenter{\hbox{\begin{forest}[$\cdot$ [1] [2] [3]]\end{forest}}} \quad ; \quad\vcenter{\hbox{\begin{forest}[$\cdot$ [4] [5]]\end{forest}}}\right]\]
+\caption{\code{let z = wrap(x) <||> y}}
+\end{subfigure}
+\begin{subfigure}{0.45\textwidth}
+\centering
+\[\left[\vcenter{\hbox{\begin{forest}[$\cdot$ [$\cdot$ [1] [2] [3]][$\cdot$ [4] [5]]]\end{forest}}}\right]\]
+\caption{\code{wrap(z)}}
+\end{subfigure}
+\caption{Forests Defined Using \code{wrap}}
+\label{fig:Wrap}
 \end{figure}
 
-Instead, a model of non-determinism using \textit{trees} allows for nested choices. These trees can be traversed in various orders, such as breadth-first search  (BFS)\cite{BFSCombinators}. 
-
-\begin{figure}[h]
-Tree of choices, use arrows to indicate breadth first search.
-\caption{Tree of Choices with Breadth-First Search}
-\end{figure}
-
-To retain the possibility of failure, forests (lists of trees) can be used, with the empty list being failure.
-
-\begin{figure}[h]
-Use same example as BFS above (pairs/choose function, i.e. instantiating tuples).
-\caption{Forest Defined Using \code{wrap}}
-\end{figure}
-
-A combinator, \code{wrap}, allows for the programmer to control directly what constitutes a \textit{fork} in the tree as suggested by Spivey \cite{Bunches}. Previous models would uniformly take each use of the choice operator as a fork, permitting less control. In essence, this allows for some notion of \textit{cost}\footnote{The depth of the node in the tree.} for each solution to be directly encoded in the algorithm.
-
-Implementations for DFS, BFS, and bounded DFS are given in \cref{sec:SearchMethods}. In each case, the stream of solutions produced by \code{run} will return in the corresponding search order.
-
-\subsubsection{Fairness in Infinite Choice \& Conjunction}
-Previously
-\paragraph{Fair Choice:} Consider the choice \code{m <||> n}, if \code{m} has infinite solutions. When using \textit{append} to represent choice for sequences \textbf{cite}, then \code{m <||> n = m}\footnote{\code{m} never ends to start appending \code{n}.}. No solutions of \code{n} will be encountered upon running through this choice. But append is a perfectly valid definition of choice as according to the specified laws.
-
-To ensure each possible solution is returned in finite time, it is useful to introduce fair choice. A fair choice computation will always return \textit{every} possible answer. For the append example above, any form of \textit{interleaving} can represent fair choice. \textbf{Cite fair choice, e.g. kiselyov?}
-
-\begin{figure}
-
-\caption{Unfair vs Fair Choice}
-\label{fig:FairChoice}
-\end{figure}
-
-Fair choice is denoted by \code{<|>}. Figure \cref{fig:FairChoice}, shows how two infinite choice trees for non-negative and negative integers respectively would be appended vs interleaved fairly.
-
-\paragraph{Fair Conjunction:} 
-Similarly, conjunction is not fair. For a computation \code{(m <||> n) >>= f}, if \code{m >>= f} is infinite, then only these might be returned. For example, binding sequences is typically defined via concatenating and mapping: \code{m >>= f = concat(m >>| f)}. 
-
-The use of unfair choice (\code{append}) leads to unfairness in bind. A fair conjunction would use fair choice instead.
-
-Fair conjunction is denoted by \code{>>-}. \Cref{fig:FairConjunction} demonstrates how \textit{pairs} of natural numbers can be generated fairly using \textit{fair conjunction}.
-
-\begin{figure}
-1 -> (1, 1), (1, 2), ...
-2 -> (2, 1), (2, 2), ...
-\caption{Unfair vs Fair Conjunction}
-\label{fig:FairConjunction}
-\end{figure}
-
-\ \\
-These fair combinators satisfies the original non-determinism and monad laws up to the ordering of results. \textbf{Spivey says \texttt{>>-} is not associative? Not sure I agree?}
+The DSL is extended with a \code{wrap : t('a) => t('a)} combinator. As \code{wrap} is abstract, the underlying implementation does not actually need to use a forest data structure.\footnote{Therefore, DFS is still implemented with regular streams.} 
+Finally, a \code{run} function produces a lazy list of solutions in the tree with ordering specified by the search method.
 
 \subsubsection{Recursive Functions}
-As OCaml is strict, to allow for easier I define a shorthand lazy application function \code{apply(f, x)} defined by \code{return(x) >>= f}. This is equivalent to regular application up to laziness. Represented infix by \code{|>-}. This allows the writing of recursive functions directly resulting in infinite choices without OCaml's strictness leading to infinite recursion.
-
-\textbf{TODO: Do I need a fixed point operator? it seems hard to get this working for BFS!}
+As OCaml is strict, defining infinite choices via recursion can lead to non-termination during definition. I define a shorthand lazy application function \code{apply(f, x)} by \code{return(x) >>= f}, represented infix by \code{|>-}. Provided that bind lazily applies \code{f},\footnote{Which it usually does, consider streams as an example.} recursive functions can be written directly resulting in infinite choices without OCaml's strictness leading to infinite recursion.
 
 \subsection{A Non-Deterministic Evaluation Algorithm}
 \label{sec:IndetEvalAlgorithm}
-In Hazel, for any term $d$, we have four situations, for which indeterminate evaluation performs the following rules:
-\begin{itemize}
-\item $d$ is a final value.
+This section demonstrates one indeterminate evaluation algorithm evaluating terms to concrete values in \cref{fig:IndetEvalBlock} with an accompanying code extract \cref{fig:IndetEval}.
 
-Return the value as a possible result.
-\item $d$ is an indeterminate final term.
+\begin{figure}[h]
+\centering
+\begin{tikzpicture}[
+  node distance=1.8cm and 2.5cm,
+  every node/.style={font=\small},
+  startstop/.style={rectangle, rounded corners, draw, minimum width=3.5cm, minimum height=1cm, text centered, fill=blue!10},
+  process/.style={rectangle, draw, minimum width=3.5cm, minimum height=1cm, text centered, fill=orange!20},
+  decision/.style={diamond, draw, aspect=2, text centered, inner sep=1pt, fill=yellow!20},
+  arrow/.style={-Latex}
+]
 
-Some of these terms contain holes.\footnote{Not all, indeterminate terms also arise from static or dynamic errors.} Non-deterministically instantiate these holes lazily and \textit{fairly} try indeterminately evaluating each resulting term.
+% Nodes
+\node (start) [startstop] {Bind input to $d$};
 
+\node (classify) [process, below=of start] {\texttt{take\_step}(d)};
 
-\item $d$ is not final. Therefore a (deterministic) step is possible.
+\node (isValue) [decision, left=of classify] {Final value?};
+\node (isIndet) [decision, below=of classify] {Indeterminate?};
+\node (isStep) [decision, below right=of classify] {Can step?};
 
-Step to the new term $d'$. Indeterminately evaluate $d'$.
+\node (retVal) [startstop, below=of isValue] {Return $d$ as result};
 
-\item There was an \textit{evaluator exception}.
+\node (instantiate) [process, below=of isIndet] {\texttt{instantiate}(d)};
 
-Fail.
-\end{itemize}
+\node (inst1) [process, left= of instantiate] {Instantiation 1};
+\node (inst2) [process, below=of inst1] {Instantiation 2};
+\node (instN) [below=of inst2] {$\vdots$};
 
-Instantiation can be represented by a \textit{non-deterministic} function \code{instantiate}, discussed in detail in \cref{sec:HoleInstantiation}: \[\code{Instantiation.instantiate : Exp.t => m(Exp.t)}\footnote{Details \& types relating to state and environment threaded through evaluation are omitted here for clarity. Therefore, these signatures differ from the code.}\]
+\node (evalNext) [process, below=of isStep] {Step to $d'$};
 
-Classifying the term $d$, into values, indeterminate terms, and expressions with a possible step is done by a \textit{deterministic} function \code{take_step}, discussed in \cref{sec:OneStepEvaluator}: \[\code{OneStepEvaluator.take_step : Exp.t => TryStep.t}\] 
+\node (fail) [startstop, right=of classify] {Exception: \texttt{fail}};
 
-Recursively performing the search is wrapped up as a new level in the search tree. This means that the tree never has an unbounded branching factor, as would occur by not wrapping evaluation steps if the evaluation went into an infinite loop.
+% Arrows
+\draw [arrow] (start) -- (classify);
 
-To allow for multiple searching methods, the algorithm is placed within a \textit{functor} \textbf{(cite)}, which takes a searching method, \code{S : Search}, with the previously described signature (\cref{sec:ResolvingNondeterminism}). Using \code{S}, the algorithm is defined in \cref{fig:IndetEval}.
+\draw [arrow] (classify) -- (isValue);
+\draw [arrow] (classify) -- (isIndet);
+\draw [arrow] (classify) -- (isStep);
+\draw [arrow] (classify) -- (fail);
+
+\draw [arrow] (isValue) -- node[right] {Yes} (retVal);
+\draw [arrow] (isIndet) -- node[right] {Yes} (instantiate);
+\draw [arrow] (isStep) -- node[right] {Yes} (evalNext);
+
+% Recursive loop from evalNext to start
+\draw [arrow] (evalNext.south) |- ++(4,-1) |- (start.east);
+
+% Instantiate forks
+\draw [arrow] (instantiate.west) |- (inst1.east);
+\draw [arrow] (instantiate.south) |- (inst2.east);
+\draw [arrow] (instantiate.south) |- (instN.east);
+
+% Loop back from each instantiation to start
+\draw [arrow] (inst1.west) -- ++(-1,0) |- (start.west);
+\draw [arrow] (inst2.west) -- ++(-1,0) |- (start.west);
+\draw [arrow] (instN.west) -| ($(inst2.west)+(-1,0)$) |- (start.west);
+\end{tikzpicture}
+\caption{Block diagram of indeterminate evaluation to values}
+\label{fig:IndetEvalBlock}
+\end{figure}
+
+Instantiation is implemented by a \textit{non-deterministic} function \code{instantiate}, discussed in detail in \cref{sec:HoleInstantiation}: \[\code{Instantiation.instantiate : Exp.t => S.t(Exp.t)}\]
+
+Evaluation steps are performed by a (deterministic) function \code{take_step}, classifing it's input as either (concrete) values, indeterminate values, steppable expressions. The step evaluator re-uses the Hazel stepper logic, which had existing bugs to be fixed: causing non-termination of fixed points\footnote{Due to incorrect management of closures; the main branch stepper is still broken as of May 9th.} and misclassifying concrete values as indeterminate values: 
+\[\code{OneStepEvaluator.take_step : Exp.t => TryStep.t}\] 
+
+To ensure that the search tree has finite branching factor, possibly infinite choices must be wrapped, e.g. evaluation steps. The actual implementation additionally threads state tracking number of instantiations and trace length throughout the algorithm.
 
 \begin{figure}[h]
 \begin{minted}{reason}
@@ -962,8 +658,8 @@ module Make = (S: Search) => {
     switch (step) {
     | BoxedValue => return(d)
     | Indet => 
-      d |>- wrap(Instantiation.instantiate
-        >>- values);
+      d |>- Instantiation.instantiate
+        >>= values;
     | Step(d') => wrap(d' |>- values);
     | exception (EvaluatorError.Exception(_)) => fail
     };
@@ -974,335 +670,369 @@ module Make = (S: Search) => {
 \label{fig:IndetEval}
 \end{figure} 
 
-\subsection{Threading Evaluation State}
-In order to track statistics for use in the evaluation, state must be threaded through indeterminate evaluation. State tracked includes, on a \textit{per-solution} basis:\footnote{Hazel also uses the state to track other interesting features: \textit{Probes} and \textit{Tests}. These are complex, making use of mutability, but are outside the scope of this project. However, my code still maintains this state correctly \textbf{TODO}.}
-\begin{itemize}
-\item Trace length: number of steps performed to get to this solution.
-\item Number of instantiations performed to get to this solution.
-\end{itemize}
-
-So instead of threading only the solutions, \code{DHExp.t}, I also thread the state, \\\code{(DHExp.t, IndetEvaluatorState.t)}, updating according depending on the branch taken.
-
-Additionally, Hazel evaluates expressions in an global environment (\code{env : Environment.t}) which must also be passed down, but does not change after performing a step.
+The generalised indeterminate evaluation takes a higher-order \code{logic} function which determines the return logic (e.g. returning only results with cast errors).
 
 \subsection{Hole Instantiation \& Substitution}\label{sec:HoleInstantiation}
-There are three key problems to solve in order to instantiate terms.
+This section details the semantics of hole instantiations, including Hazel-specific issues.
 
 \subsubsection{Choosing which Hole to Instantiate}
 \label{sec:ChooseHole}
 An indeterminate term may contain \textit{multiple} holes or even \textit{no} holes. Which hole needs to be instantiated in order to \textit{make progress}?
 
-A term is concluded to be indeterminate if some part of it is indeterminate, as according to the rules in \ref{sec:HazelFinalForms}. If those corresponding sub-parts were instead a value, then the whole term would be a value. Recursively applying this logic, there will be a collection of terms where indeterminateness \textit{originates}. These will either be holes or erroneous terms. If they are holes, then instantiating these may will either allow evaluation to continue or directly turn the overall term into a concrete value. \Cref{fig:IndetOrigination} demonstrates some examples of the possible situations.
+When attempting to evaluate the indeterminate term some transitions rules require a sub-term to be concrete (e.g. a function during application). We chose to instantiate the hole that blocks the \textit{first} blocked transition rule. If latter holes were instantiated, the term might \textit{still} be unevaluable due to this first hole.
 
-\begin{figure}
-One example with a cast error. One example with one holes. An example with multiple holes. An example where the holes don't matter.
-\caption{Where Does Indeterminateness Originate?}
-\label{fig:IndetOrigination}
-\end{figure}
-
-Hazel's transition semantics specifies these rules, and careful use of the evaluation abstraction allows propagating the terms where indeterminateness originate (those which output the rule \code{Indet} in \code{transition}). To simplify, I consider and instantiate only the \textit{first} hole where indeterminateness originates at a time. Should multiple need to be instantiated to progress, it will simply instantiate one hole, then fail to evaluate, then instantiate another, then try evaluate again, etc.
+This is implemented using Hazel's evaluator abstraction (\code{EV_MODE}), separating this logic from the transition semantics. Therefore, hole choosing logic will automatically update to future changes in the transition semantics.
 
 \subsubsection{Synthesising Terms for Types}
-Suppose we know which hole to instantiate and to which type (\cref{sec:TypesForHoles}). How do we refine these holes \textit{fairly} and lazily, to their \textit{least specific} value that allows evaluation to continue?
+Suppose we know which hole to instantiate and to which type (\cref{sec:TypesForHoles}). How do we refine these holes fairly and lazily, to the \textit{least specific} value that allows evaluation to continue?
 
-Some types are \textit{atomic} and must be instantiated to (possibly infinite set) of concrete types; again, we must be careful to ensure that the branching factor of the search tree remains finite:
-
-\paragraph{Booleans:} Simple binary choice: \code{return(true) <||> return(false)}.
-\paragraph{Integers:} Integers are countable, so can be enumerated, for example, by constructing the tree in \cref{fig:Integers}, which wraps each integer and it's negative in each level of the tree. Of course, OCaml integers are not arbitrary precision, so not every mathematical integer is represented here; in the future, Hazel might use arbitrary precision integers.
+Base types must be instantiated directly to their (possibly infinite set of) values, for example:
+\paragraph{Booleans} \code{return(true) <||> return(false)}.
+\paragraph{Integers} A recursive definition using lazy application \code{|>-}, see \cref{fig:Integers}:
 \begin{figure}[h]
 \begin{minted}{reason}
 let rec ints_from = n => return(n) <||> wrap(n + 1 |>- ints_from)
 let nats = ints_from(0)
 let negs = ints_from(1) >>| n => -n
-let ints = nats <|> wrap(negs) 
+let ints = nats <||> wrap(negs) 
 \end{minted}
-SHOW TREE HERE
+\begin{subfigure}{0.45\textwidth}
+\centering
+\[\left[\ n \quad ; \quad \vcenter{\hbox{\begin{forest}
+[$\cdot$ [$n+1$] [$\cdot$ [$n + 2$] [$\cdot$ [$n+3$] [...]]]]
+\end{forest}}}\right]\]
+\caption{\code{ints_from(n)}}
+\end{subfigure}
+\begin{subfigure}{0.45\textwidth}
+\centering
+\[\left[\ 0 \quad ; \quad \vcenter{\hbox{\begin{forest}
+[$\cdot$ [$1$] [$\cdot$ [$2$] [$\cdot$ [$3$] [...]]]]
+\end{forest}}} \quad ; \quad \vcenter{\hbox{\begin{forest}
+[$\cdot$ [$-1$] [$\cdot$ [$-2$] [$\cdot$ [$-3$] [...]]]]
+\end{forest}}}\right]\]
+\caption{\code{ints}}
+\end{subfigure}
 \caption{Enumerating Integers}
 \label{fig:Integers}
 \end{figure}
  
-\paragraph{Strings:} A string is either \textit{empty} or is a string with a first character from a finite set. We can recursively wrap all strings, prefixed by each character. See \cref{fig:Strings}:
+\paragraph{Strings} A string is either \textit{empty} or is a string with a first character from a finite set. We can recursively wrap all strings, prefixed by each character. See \cref{fig:Strings}:
 \begin{figure}[h]
 \begin{minted}{reason}
-let chars = // Every single letter string considered
+let chars = ... // Choice every single letter string to be considered
 let rec strings = () => return("") 
   <||> wrap(chars >>= chr => 
-            (() |>- strings) >>- str => 
+            (() |>- strings) >>= str => 
             chr ++ str)) 
 \end{minted}
-SHOW TREE HERE, also check impl
 \caption{Enumerating Strings}
 \label{fig:Strings}
 \end{figure}
+\
 
-\paragraph{Floats:} Every float can be represented by a (or multiple) rational number(s). Therefore, generating every rational number will then performing float division, will generate every float. Again, this does not actually generate every rational due to OCaml's fixed-precision integers, and hence will not generate every float. See \cref{sec:EvalHoleInstantiation} for further discussion.
- \\
+Other types are \textit{inductive}, these can be represented indirectly by lazily instantiating only their \textit{outermost} constructors: 
  
-Other types are \textit{inductive}, these can be represented indirectly by lazily instantiating only their \textit{outermost} constructor: 
- 
-\paragraph{Lists:} Any list can be directly represented as either the empty list, $[\ ]$ or a cons $\dyn :: \dyn$. We do not need to generate every list directly.
-\paragraph{Sum Types:} Enumerate each of the sum's constructors with their least specific value.
-\paragraph{Functions:} A function can be represented with it's least specific value by $\lambda \dyn.\ \dyn$. However, to allow functions to be used it is useful to instantiate the pattern to the wildcard pattern `\code{_}'. The function may then be applied to any value. This therefore only generates \textit{constant} functions, which is all that is required to find cast errors. But, extensions to program synthesis (\cref{sec:LogicProgramming}) would require more sophisticated function instantiation.
+\paragraph{Lists} A list is either the empty list, $[\ ]$ or a cons $\dyn_1 :: \dyn_2$. To retain the correct dynamic type information, $\dyn_2$ must be cast back to the list type. 
+\paragraph{Sum Types} Enumerate each of the sum's constructors with their least specific value.
+\paragraph{Functions} Constant functions have least specific values $\lambda \_.\ \dyn$. The function may then be applied to any value, and it's result synthesised after application. This can synthesise any return value, hence errors in the usage of the function will be detected. But, when the \textit{input} has an erroneous type but is not yet caught,\footnote{Due to partial annotations.} these will be lost.\footnote{This is rare, and could be mitigated by generating the identity function where possible.}
 
-\ \\
-
-One might state that atomic types could be represented inductively. For example, every string of prefix \texttt{s} could be represented by \codeE{s ++ |\dyn|}. However, Hazel does not currently treat these inductively; there is no way to destructure such a string, without first fully evaluating to a concrete value. The evaluation (\cref{sec:EvalHoleInstantiation}), discusses the implications of this in detail.
-
-
-\subsubsection{Maintaining Correct Casts}
-Every hole instantiated must have originally been of the dynamic type. Therefore, that hole's context would have \textit{expected} it to be of the dynamic type. In order to maintain correct casts, from \textit{actual} type to \textit{expected} type, we must cast the every instantiation back to the dynamic type.
+\paragraph{Maintaining Correct Casts}
+Holes have a dynamic type at runtime. Therefore, the hole's context \textit{expects} a dynamic expression. Therefore, we must cast every instantiation back to the dynamic type.
 
 \subsubsection{Substituting Holes}\label{sec:HoleSubstitutionImplementation}
-Hole's can be evaluated, and may also be duplicated, or be added to closures, before they are required to be instantiated. How can we consistently substitute these holes for their instantiations?
+Holes can be bound to variables in the execution environment, and may also be duplicated, before they are required to be instantiated, see \cref{fig:HoleDuplication}. Every occurrence must be substituted.
 
-\Cref{fig:HoleDuplication} shows how a hole $\dyn_1$ can duplicated during evaluation and also bound within an closure.
 \begin{figure}[h]
-Bbbb
+\centering
+\includegraphics[width=0.4\textwidth]{Media/Figures/duplicate_hole}
 \caption{Duplicated Holes}
 \label{fig:HoleDuplication}
 \end{figure}
 
-Hole substitution was described as part of the Hazel. Unexpectedly, the main Hazel branch did not yet implement it. Full implementation of \textit{metavariables} and \textit{delayed closures} is complex. Therefore, I instead use the existing term ids to represent metavariables, and ensure these ids are propagated correctly throughout statics, elaboration, and evaluation.\footnote{A huge portion of the code-base required checks.}
+Hole substitution was described as part of the Hazel calculus \cref{sec:HoleSubstitution}. But, unexpectedly, the main Hazel branch does not yet implement it. A full implementation of metavariables and delayed closures is complex. Therefore, as hole closures are not required for hole instantiation,\footnote{Instantiations do not contain variable references.} I use existing term ids identify holes, ensuring these are maintained and propagated correctly, so that duplicated holes retain the same ID.\footnote{All of elaboration and dynamics required these checks.}
 
-By matching these ids, we can substitute terms for holes consistently throughout the entire expressions. This \textit{included} substituting the holes eagerly inside closures, followed by evaluating the closure bindings to values, a required invariant. 
+Substitutions must also be performed within closures, eagerly evaluating the results to ensure that closures bind variables to values. 
 
-\subsection{One Step Evaluator}\label{sec:OneStepEvaluator}
-The step evaluator uses the evaluation abstraction to create an \textit{evaluation context} from a term. \textbf{REF} Decomposing it into an object containing:
-\begin{itemize}
-\item An evaluation context, with a \textit{mark} inserted in place of the sub-term which is evaluated according to the transition rules.
-\item The environment under which the sub-term is evaluated.
-\item The kind of rule that was used (e.g. substitution, addition, etc.).
-\end{itemize}
-
-\begin{figure}
-An example step leading to a specific eval obj.
-\caption{\code{EvalObj.t} Example}
-\label{fig:EvalObjExample)}
-\end{figure}
-
-Maintaining this information allows the indeterminate evaluation method to treat different steps differently. For example a search procedure might wish to extract only the steps which were substitutions, in order to produce a compressed execution trace.
-
-\subsection{Determining the Types for Holes}
+\subsection{Determining the Types for Hole Substitutions}
 \label{sec:TypesForHoles}
-If we know which hole to instantiate, how do we know which type to instantiate it to?
+If we know which hole to instantiate, how do we know which type to instantiate it to? This logic is highly specific to Hazel's cast semantics, with many Hazel-specific issues arising.
 
 For efficiency, my implementation both determines \textit{which hole}, and it's \textit{type information} during the same pass.
 
-\subsubsection{Directly from Casts}
+\paragraph{Directly from Casts}
 Most of the time, a hole is directly surrounded by a cast, whose type information can be used to perform an instantiation.
 
-\subsubsection{Cast Laziness}\label{sec:CastLaziness}
-However, it is \textit{not} always the case that a hole which needs to be instantiated is surrounded by a cast. For efficiency reasons, Hazel treats casts over compound data-types lazily, for example, casts around a tuple will only by pushed inside upon usage of a component of the tuple.
-
-Therefore, in order to actually instantiate these into values directly, casts must be pushed inside compound data \textit{eagerly}. However, this is a significant change to the Hazel semantics, so was opted against. \Cref{sec:EvalCastLaziness} discussed the consequence of this choice. 
+\paragraph{Cast Laziness}\label{sec:CastLaziness}
+However, this is \textit{not} always the case. For efficiency reasons, Hazel treats casts over compound data lazily, e.g. casts around tuples will only by pushed inside upon usage of a component of the tuple. Treating casts eagerly is a significant change to the Hazel semantics, so was opted against. \Cref{sec:EvalCastLaziness} evaluates the consequence of this choice. 
 
 
 \subsubsection{Pattern Matching}
 \label{sec:PatternMatching}
-Does a hole even have only one possible type?
-
-The introduction of (dynamic) pattern matching actually allows terms to be matched against \textit{non-uniform} types if the scrutinee is dynamic. In \cref{fig:DynamicPatternMatching}, if \code{term} is an integer 0 then it returns 0, but if it's the string "one" then it returns 1. Hence instantiating \code{code} to either an int or string might allow progress.
+Does a hole even have only one possible type? Dynamic pattern matching actually allows terms to be matched against \textit{non-uniform} types. See \cref{fig:DynamicPatternMatching}, having patterns of multiple types. Hence instantiating to any of the types might allow progress.
 
 \begin{figure}[h]
-let term : ? =   in
-case term 
-  | x::xs => x
-  | 0 => 0
-| "one" => 1 end 
+\centering
+\includegraphics[width=0.25\textwidth]{Media/Figures/dynmatch}
+\caption{Dynamic/Type-case Match Statement}
 \label{fig:DynamicPatternMatching}
 \end{figure}
+We can collect each of these possible types from the elaborated casts inserted on the \textit{branches}, non-deterministically rewrapping them around the scrutinee.
 
-Hazel implements this by placing casts on the \textit{branches}, rather than the scrutinee. Therefore, we can collect each of these possible types from the casts, and wrap them around the scrutinee, continuing evaluation accordingly.
-
-
-\begin{figure}
-Show how indeterminate matches cause a list to try increasing lengths by repeatedly instantiating it's tail...
-\caption{Instantiating a Scrutinee}
-\end{figure}
-
-\subsubsection{Extended Match Expression Instantiation}
+\subsubsection{Extended Match Expression Instantiation (Pattern Instantiation)}
 \label{sec:ExtendedPatternMatching}
-An interesting extension was attempted to improve code coverage of the instantiations \textbf{ref branch}. Given patterns are known, it is possible to instantiate holes according to not only the types, but also the \textit{structure} of each pattern. This allows the instantiation to prioritise searching along each branch.
-
-Hence, we could try instantiating the match scrutinee with least specific versions which match the patterns on each branch, e.g. \code{?::?} for \code{x::xs}. i.e. 
-
-\begin{figure}[H]
-\texttt{case ?::? | [] => [] | x::xs => xs}
-\caption{Branch-Directed Instantiation}
-\end{figure}
-
-To implement this, \textbf{(TODO)} the scrutinee needs to be matched against a pattern \textit{and} instantiated at the same time. Crucially, instead of just giving up during indeterminate matches, the indeterminate part can be instantiated until it matches.
-
-\begin{figure}[H]
-\caption{Combining Matching and Instantiation}
-\end{figure}
-
-However, this is not always enough to actually \textit{allow} destructuring using that branch in a match statement. The possibility that \textit{more specific} patterns could be present above the current branch means the resulting instantiation might still be result in an indeterminate match. For example, the following would be an indeterminate match:
-
-\begin{figure}[H]
-\texttt{case ?::? | [] => [] | x::y::[] => [] | x::xs => xs}
-
-\caption{More Specific Matches}
-\end{figure}
-
-To solve this, we can introduce least specific instantiations that do \textit{not} match a pattern. These will generally not be representable by only \textit{one} term. For example:
-\begin{figure}
-NOT x::xs is []
-NOT [?] is [] or ?::?::? 
-Not 1 is the integers excepting 1
-etc.
-\caption{Not Instantiations}
-\end{figure}
-
-The use of inequalities here can become inefficient, and representing cases like \textit{not 1} result in infinite search-spaces. Extending this to a full-blown SMT solver would be beneficial, see \cref{sec:SMTSolvers}.
+An interesting extension was partially implemented which improves code coverage and additionally detects errors within patterns. It instantiates holes in a match expression according also to the \textit{structure} of each pattern, allowing the instantiation to prioritise searching along each branch. We instantiate the scrutinee with the least specific versions which match the patterns on each branch, e.g. \dyn\code{::}\dyn\ for \code{x::xs}. However, difficulties come when the scrutinee is a compound term, or when least specific matches only indeterminately matching earlier branches. Further details addressing these issues can be found in \cref{sec:extendedmatching}.
 
 \subsection{User Interface}\label{sec:UIIndetEval}
+The default evaluation method returns all indeterminate or concrete values. The results can be cycled through via some arrows buttons.
 
 \section{Search Procedure}\label{sec:SearchProcedure}
-Now that an framework for indeterminate evaluation has been specified, the following problems can be addressed:
-\begin{itemize}
-\item[\ref{AbstractSearch}] How can indeterminate evaluation be abstracted into a generic search procedure?
-\item[\ref{CastFailureDetection}] What exactly are cast errors? How can they be detected? Which ones are actually \textit{relevant}, causing evaluation to get stuck?\footnote{Some cast errors are known, e.g. from static type checking, but don't actually relate to the evaluation path.}
-\item[\ref{SearchMethods}] How can different search methods be implemented: DFS, BFS, Iterative deepening DFS? 
-\end{itemize}
-
-\subsection{Abstract Indeterminate Evaluation}
-\label{sec:AbstractSearch}
-By making the search procedure take a higher-order \code{logic : Exp.t => TryStep.t => S.t('a)} function, which takes the an input expression $d$ and it's class (value, indet, step possible), and returns nondeterministic results of type \code{'a}.
-
-This allows defining search procedures returning other types, for example, the integer \textit{size} of values. Or those concerning specific types of expressions, for example only those with cast errors. 
-
-Additionally, an `expert' search abstract is given, which also allows the remaining search space to be defined. This allows, for example, customising the instantiation and evaluation methods.
+Now that an framework for indeterminate evaluation has been specified, the DSL implementations and cast error search logic can be addressed.
 
 \subsection{Detecting Relevant Cast Errors}
 \label{sec:CastFailureDetection}
-To search for cast errors, we must first define what one is. A reasonable definition is terms which contain \textit{cast failures}, in Hazel these are casts between \textit{inconsistent ground types}. However, this has some issues:
+To search for cast errors, we must first define what one is. A reasonable definition is terms which contain \textit{cast failures}; in Hazel, these are casts between \textit{inconsistent ground types}. However, this has some issues:
 
-\paragraph{Multiple Cast Failures:} Terms may have multiple cast failures, some of which discovered during static type checking and inserted via elaboration. The aim of this project was to allow give dynamic traces \textit{explaining} a static type error. Clearly these failure must be ignored.
-
-Additionally, the procedure has usage searching for errors in dynamic code. Situations which cause cast errors which don't actually stop evaluation should also be ignored. For example expressions which cannot be statically typed, but are safe, are within this class: \code{if true then "str" else 0}
-
-Therefore, we consider only the casts which are \textit{causing} a term to be indeterminate (therefore getting stuck), this is implemented similarly to choosing which hole to instantiate (\cref{sec:ChooseHole}).
+\paragraph{Multiple Cast Failures} Terms may have multiple cast failures, some of which discovered during static type checking and inserted via elaboration. But these failures won't stop evaluation until necessary. Therefore, we should consider only the casts which are directly \textit{causing} a term to get stuck, this is implemented similarly to choosing which hole to instantiate (\cref{sec:ChooseHole}).
 
 \paragraph{Cast Laziness}
 \label{sec:SearchCastLaziness}
-Only casts between \textit{ground} types are checked for consistency. Due to cast laziness (\cref{sec:CastLaziness}), some are cast between inconsistent types, but \textit{not} placed within a \textit{cast failure}.
+Only casts between \textit{ground} types are checked for consistency. Due to cast laziness (\cref{sec:CastLaziness}), some compound terms will be cast between inconsistent types, but \textit{not} placed within a \textit{cast failure}. As before, this issue is ignored due to requiring large changes to Hazel semantics, the evaluation finds it to be a rare occurrence.
 
-This can be fixed by performing eager cast transitions before checking for cast errors, or eagerly treating casts during indeterminate evaluation. However, it could be argued that this \textit{should not} constitute a cast error, after all, the part of the compound type with the error is yet to actually be \textit{used}.
-
-\paragraph{Dynamic Match Statements:} When matching dynamically on values with different types, the instantiations wrap the scrutinee in casts to each type. If any of these casts failed, they should not count as witnesses, as they were introduced entirely by the instantiation procedure. 
-
-\subsection{Explaining Cast Errors}
-\label{sec:StaticCastError}
-A static type error will place a term inside a cast error during elaboration. The id of this error can be tracked, and if it is the one at fault, associated with the static error. Additionally, the type slice enforcing the cast is tracked via cast slicing, and may be displayed as usual.
+\paragraph{Dynamic Match Statements} When matching dynamically on values with different types, the instantiations wrap the scrutinee in casts to each type. If any of these casts failed, they should not count as witnesses, as they were introduced entirely by the instantiation procedure. 
 
 \subsection{Searching Methods}\label{sec:SearchMethods}
-\textbf{Note: Should remove fair choice and conjunction, in favour of it just being an interleaved search method (see interleaved DFS below)}
-
 I implement \textit{four} different search methods, implementing the non-determinism signature specified in \cref{sec:ResolvingNondeterminism}.
 
-\subsubsection{Depth First Search}
-As mentioned previously \textbf{(REF)}, modelling lazy sequences by streams is a typical method, and implementing choice and conjunction via appending leads to depth-first search. In which case, \code{wrap} is just the identity function.
+\paragraph{Depth First Search (DFS)}
+Modelling DFS by streams is a typical method \cite{ListOfSuccess}: implementing choice and conjunction via appending, and \code{wrap} being identity function (no internal tree structure needed).
 
-\begin{figure}
-Show how streams \& append represent depth first search
-\caption{Depth First Search as Streams}
-\end{figure}
+\paragraph{Breadth First Search (BFS)}
+Breadth first search represents forests by sequences of sequences \cite{BFSCombinators}, with the $n$th inner sequences representing every solution in the $n$th level of the trees in the forest. Then, \code{choice} concatenates each level, and \code{wrap} conses the empty list, pushing every solution one level down.
 
-\subsubsection{Breadth First Search}
-Breadth first search needs to take specific account of the tree structure. Sequences of bags\footnote{Lists, but where ordering doesn't matter.} can be used to represent solutions at each \textit{level} of the tree \cite{BFSCombinators}. Therefore, forcing each element of the stream gives the solutions at successive depths, i.e. iterating through these bags returns the solutions in a breadth first order.
-
-Failure is the empty sequence as before, return injects a solution into a tree giving the solution in the first level. 
-
-Choice can be represented lazily merging of each level of the tree. The merged tree would produce all solutions of the first level of each choice at the same time, as the new first level. This is associative as required, when ignoring the ordering of each level, as is done with bags. 
+The other monadic operators are complex, but \code{join : t(t('a)) => t('a)} can be visualised  in \cref{fig:BFSJoin}: for simplicity showing joining trees of trees, which is extended to forests by choicing the trees in each inner forest.
 
 \begin{figure}[h]
-Merge trees, show that it maintains BFS.
-\caption{Breadth First Choice}
+\[\vcenter{\hbox{\begin{subfigure}{0.45\textwidth}
+\centering
+\begin{tikzpicture}[scale=0.8, transform shape,
+  main tree/.style={grow=right, sibling distance=3cm, level distance=3cm},
+  sub tree/.style={grow=right, sibling distance=1cm, level distance=1cm},
+  every node/.style={circle, draw, minimum size=6mm, inner sep=0pt},
+  main node/.style={draw=red, thick},
+  sub node/.style={draw=blue, fill=blue},
+  invisible/.style={draw=blue}
+  ]
+
+% Main tree in x–z plane
+\begin{scope}[canvas is xz plane at y=0, main tree]
+% Level 1 rectangle
+    \fill[cyan!40, fill opacity=0.5, rounded corners] (2.5,-2.8) rectangle (3.5,2.8);
+    % Level 2 rectangle
+    \fill[green!40, fill opacity=0.5,  rounded corners] (5.5,-4) rectangle (6.5,1);
+\node[main node] (root) {}
+  child {node[main node] (a) {}
+    child {node[main node] (a1) {}}
+    child {node[main node] (a2) {}}
+  }
+  child {node[main node] (b) {}
+  };
+\end{scope}
+
+% Subtrees with rectangles directly inside
+
+% Depth 3 subtrees
+\foreach \n in {root} {
+  \begin{scope}[shift={(\n)}, canvas is yz plane at x=0, sub tree]
+    % Level 1 rectangle
+    \fill[cyan!40, fill opacity=0.5, rounded corners] (0.4,-1.2) rectangle (1.5,1.2);
+    % Level 2 rectangle
+    \fill[green!40, fill opacity=0.5,  rounded corners] (1.5,-0.6) rectangle (2.6,1.6);
+    
+    \node[invisible] {}
+      child {node[sub node] {}}
+      child {node[invisible] {}
+        child {node[sub node] {}}
+        child {node[sub node] {}}
+      };
+  \end{scope}
+}
+
+% Depth 2 subtrees
+\foreach \n in {a, b} {
+  \begin{scope}[shift={(\n)}, canvas is yz plane at x=0, sub tree]
+    % Level 1 rectangle
+    \fill[green!40, fill opacity=0.5, rounded corners] (0.4,-1.2) rectangle (1.6,1.2);
+    
+    \node[invisible] {}
+      child {node[sub node] {}}
+      child {node[sub node] {}};
+  \end{scope}
+}
+
+\foreach \n in {a1, a2} {
+  \begin{scope}[shift={(\n)}, canvas is yz plane at x=0, sub tree]
+    \node[sub node] {};
+  \end{scope}
+}
+
+\end{tikzpicture}
+\caption{Before Join: Singleton forest of singleton forests (list of lists of lists of lists). Rectangles are the inner lists of the forests.}
+\end{subfigure}}}
+\quad\mapsto\quad
+\vcenter{\hbox{\begin{subfigure}{0.45\textwidth}
+\begin{tikzpicture}[scale=0.8, transform shape,
+  main tree/.style={grow=right, sibling distance=3cm, level distance=3cm},
+  level 2/.style={sibling distance=1cm},
+  sub tree/.style={grow=right, sibling distance=1cm, level distance=2cm},
+  every node/.style={circle, draw, minimum size=6mm, inner sep=0pt},
+  main node/.style={draw=red, thick},
+  sub node/.style={draw=blue, fill=blue},
+  invisible/.style={draw=blue}
+  ]
+
+% Main tree in x–z plane
+\begin{scope}[canvas is xz plane at y=0, main tree]
+% Level 1 rectangle
+    \fill[cyan!40, fill opacity=0.5, rounded corners] (2.5,-5.4) rectangle (3.5,5.4);
+    % Level 2 rectangle
+    \fill[green!40, fill opacity=0.5,  rounded corners] (5.5,-7) rectangle (6.5,6);
+\node[main node] (root) {}
+  child {node[main node] (a) {}
+    child {node[sub node] (a1) {}}
+    child {node[sub node] (a3) {}}
+    child {node[sub node] (a2) {}}
+    child {node[sub node] (a4) {}}
+  }
+  child {node[sub node] (c) {}
+  }
+  child {node[invisible] (d) {}
+    child {node[sub node] (d1) {}}
+    child {node[sub node] (d2) {}}
+  }
+  child {node[main node] (b) {}
+    child {node[sub node] (b1) {}}
+    child {node[sub node] (b2) {}}
+  };
+\end{scope}
+\end{tikzpicture}
+\caption{After Join: Flattened into a single forest (list of lists) by rotating vertical trees into horizontal plane. Solid circles are the solutions actually stored in the BFS lists.}
+\end{subfigure}}}
+\]
+\caption{BFS Join}
+\label{fig:BFSJoin}
 \end{figure}
+This join and mapping can be defined lazily; the standard definition for \code{bind} from the paper \cite{Bunches} does not work easily in OCaml due to its strictness.
 
-Wrapping a tree pushes every solution one level down in the tree, corresponding to prepending with the empty list. Essentially, this adds one cost to every solution.
+\paragraph{Bounded Depth First Search (BDFS)}
+BFS is fair, avoiding non-termination (for finite branching factor), but it has \textit{exponential} space complexity in the depth of the level being explored \cite{NorvigAI}. In comparison, DFS only requires space linear in the depth explored.
 
-For a bag \code{b} of elements \code{x1}, \code{x1} $\dots$, \code{xn}. The tree which produces these solutions in the first level, $[b]$\footnote{Using list notation also for sequences}, is equivalent to \code{return(x1) <||> return(x2) <||> ... <||> return(xn)}.
+Bounded DFS, performs successive depth-bounded depth first searches, retaining low space complexity of DFS while avoiding unfairness. Previous solutions are repeatedly explored, but this does not increase the already exponential time complexity of the search.
 
-A tree \code{b :: bs} is equivalent to \code{[b] <||> [] :: wrap(bs)}, and by the above, also equivalent to \code{return(x1) <||> ... <||> return(xn) <||> wrap(bs)}.
+Spivey \cite{Bunches} represent this by functions \code{Int => ['a, Int]}, calculating solutions within an integer depth bound. Solutions are tagged with their remaining depth budgets, which allows keeping only the fringe solutions (zero budget) upon each iteration, so the same solution will not appear twice.
 
-Therefore, as conjunction distributes over choice, and return is a left unit of conjunction then:
-\[\code{b :: bs >>= f     =    f(x1) <||> ... <||> f(xn) <||> wrap(bs >>= f)}\]
-Additionally, another law for non-determinism \code{fail >>= f = fail}, completes a recursive definition for bind.
+I augment this into an \code{Bound.t => (Bool, ['a, Bound.t])}, implemented as a functor allowing customised depth bound increases. The boolean is false only if no search path reaches the depth bound, in which case the trees have been fully searched and the algorithm can be terminated.
 
-As mapping and choice are associative, we get that conjunction is also. Additionally, it satisfies all the remaining monad and non-determinism laws. 
 
-However, as \code{f} is mapped to the entire bag \code{b}, it is difficult to maintain laziness in OCaml. We need partial applications for f... \textbf{TODO - can't actually work out how to do this in OCaml?!?!}
-
-\subsubsection{Iterative Deepening Depth First Search}
-While breadth first search is fair, avoiding non-termination (for finite branching factor), it has \textit{exponential} space complexity in the depth of the level being explored \cite{NorvigAI}. When binding a function \code{f}, it gets lazily and \textit{partially} instantiated at node of each level, tracking these partial instantiations is what causes the exponential complexity.
-
-\begin{figure}
-
-\caption{Monadic BFS Requires Exponential Space}
-\end{figure}
-
-In comparison, depth first search only requires space linear in the depth explored, that is, the number of choices encountered before reaching a certain depth.
-
-The use of iterative deepening, successive depth-bounded depth first searches, retains low space complexity of DFS while also avoiding non-termination (due to the depth bound). However, upper parts of the search tree will be repeatedly explored, but this does not reduce the already exponential time complexity of the search for branching factor greater than 1. But, the deterministic evaluation part does have a branching factor of 1, so it may be the case that the recalculation has a significant impact\textbf{(Ref evaluation)}. 
-
-To represent iterative deepening \cite{SearchAlgebra}, we can use functions \code{int => list(('a, int))}, calculating every\footnote{Again, relying on finite branching factor.} solution found within an integer depth bound \code{d}, alongside it's remaining depth budget \code{r}. Tracking the remaining depth budget simplifies \code{bind} and allows only solutions on the fringe (zero budget) to be output upon each iteration, so the same solution will not appear twice.
-
-Then, \code{return} represents a single solution with unused depth budget, \code{return(x)  =  (d => [(x, d)])}. \code{fail} gives the empty list \code{fail  =  d => []}. Choice appends all solutions at any given depth bound \code{m <||> n  =  d => m(d) @ n(d)}. Binding, \code{m >>= f} takes solutions in \code{m} who have depth budget to use, and applies \code{f} and calculates all solutions from \code{f} using the remaining budget, concatenating these results to form a single list.
-
-Then \code{wrap(m)} (the forest \code{m} wrapped up as a single tree) has solutions at depth incremented by 1, and none at depth 0: \code{wrap(m)(0) = []} and \code{wrap(m)(bound) = p(bound - 1)}.
-
-I implement this as a functor, with a custom bound incrementing function \code{inc : bound => bound} and initial bound \code{init : bound}. Then \code{run} will   search to depth \code{init}, produce all solutions, then search to depth \code{inc(init)} and produce all solutions with remaining depth budget \code{inc(init) - init}, other solution must have already been produced last iteration.
-
-\begin{figure}
-\begin{minted}{reason}
-((m >>= f) >>= g)(bound)
-= m(bound) 
-  |> map((x, rem_bound) => f(x, rem_bound))
-  |> concat
-  |> map((y, rem_bound2) => g(y, rem_bound2))
-  |> concat
-\end{minted}
-Vs.
-\begin{minted}{reason}
-(m >>= (x => f(x) >>= g))(bound)
-= m(bound)
-  |> map((x, rem_bound) => rem_bound |> (f(x) >>= g))
-  |> concat
-= m(bound)
-  |> map((x, rem_bound) => rem_bound |> (f(x) 
-  |> map((y, rem_bound2) => g(y, rem_bound2)) 
-  |> concat))
-  |> concat
-= m(bound)
-  |> map((x, rem_bound) => f(x, rem_bound) 
-  |> map((y, rem_bound2) => g(y, rem_bound2))
-  |> concat)
-  |> concat
-= m(bound)
-  |> map((x, rem_bound) => f(x, rem_bound)) 
-  |> concat
-  |> map((y, rem_bound2) => g(y, rem_bound2))
-  |> concat
-\end{minted}
-\caption{Associativity of Iterative DFS \code{bind}}
-\end{figure}
-
-\subsubsection{Interleaved Streams}
-\textbf{TODO: split code into a new option, remove fair operators, move fair conjunction and chocie section to here.}
-
-The use of streams, but with fair choice and conjunction via interleaved ordering ensures termination for every solution. This has the advantage of working even for trees with infinite branching factor. However, interleaving has a linear space complexity, leading to the undesirable exponential space complexity as with breadth-first search.
-
-\code{wrap} for this is the identity, same as DFS.
+\paragraph{Interleaved Streams (IDFS)}
+Streams, but with choice and conjunction via interleaving also ensures fairness. This works even for trees with infinite branching factor. However, interleaving has a linear space complexity, resulting in exponential space complexity as with BFS.
 
 \subsection{User Interface}
+The user can switch the search procedure on via a toggle in the settings.
 
 \section{Repository Overview}
 \subsection{Branches}
-Up to date with dev branch up to \textbf{DATE}
+The submitted code contains the three most important branches of this project (\texttt{Evaluation}, \texttt{witnesses-type-slicing}, \texttt{contribution-slices}). The \texttt{Evaluation} branch factors out a \code{Js_of_ocaml} \cite{JSOO} dependency from the Hazel core library, meaning evaluation code can be run natively and on the command line; however, the web interface is therefore unusable on this branch.
 
 \subsection{Hazel Architecture}
+The Hazel architecture demonstrates in \cref{fig:Architecture} with green files/directories added, orange files modified \textit{significantly}, and blue files modified \textit{insignificantly}\footnote{However, still needing to know how they work.} or unmodified. 97 files were added/edited, not all can fit, so anything omitted is considered insignificant to understanding this project.
+ \Cref{fig:Evaluation} shows the structure of the evaluation modules.
 
+\begin{figure}[h]
+ \tiny
+ \begin{tabular}{llp{10cm}}
+ Dir & Description\\
+ {\color{Green}\texttt{data/*}} & \multicolumn{2}{l}{Program corpus, pre-filtering}\\
+ {\color{Green}\texttt{results/*}} & \multicolumn{2}{l}{Results}\\
+ {\color{Green}\ \ \ \ \  $\vdash$}&{\color{Green}\texttt{./benchmarks.file}} & Results of search procedure benchmarks\\
+ {\color{Green}\ \ \ \ \  $\vdash$}&{\color{Green}\texttt{./results.file}} & Results of effectiveness analysis\\
+ {\color{Green}\ \ \ \ \  $\vdash$}&{\color{Green}\texttt{./failure\_classification.txt}} & Classification of failed searches in BDFS\\
+ {\color{Green}\ \ \ \ \  $\vdash$}&{\color{Green}\texttt{./log.file}} & Log from which results are derived\\
+ {\color{Green}\texttt{ParseData.ml}} & \multicolumn{2}{l}{Evaluation string data loaded into \texttt{.ml} file}\\
+ {\color{Green}\texttt{CastSliceUtil.ml}} & \multicolumn{2}{l}{Cast slice size calculation and errors classification}\\
+ {\color{Green}\texttt{SlicingUtil.ml}} & \multicolumn{2}{l}{Type slice size calculation and errors classification}\\
+ {\color{Green}\texttt{ResourceLimits.ml}} & \multicolumn{2}{l}{Unix alarm-based evaluation timeout}\\
+ {\color{Green}\texttt{Settings.ml}} & \multicolumn{2}{l}{Ctx to type check \& evaluate under}\\
+ {\color{Green}\texttt{Util.ml}} & \multicolumn{2}{l}{Maths utilities}\\
+ {\color{Green}\texttt{CastSliceUtil.ml}} & \multicolumn{2}{l}{Cast slice size calculation and errors classification}\\
+ {\color{Green}\texttt{Results.ml}} & \multicolumn{2}{l}{Calculates results log}\\
+ \end{tabular}
+ \caption{Evaluation Data, Results, and Modules}
+ \label{fig:Evaluation}
+\end{figure} 
+ 
+ \begin{figure}
+ \centering
+ \tiny
+ \begin{tabular}{lllllp{3.3cm}}
+ Dir & Description\\
+ {\color{orange}\texttt{src/*}} & \multicolumn{5}{l}{Hazel source code}\\
+ {\color{orange}\ \ \ $\vdash$}&{\color{orange}\texttt{./haz3lcore/*}} & \multicolumn{4}{l}{Core semantics library}\\
+ & {\color{orange}\ \ \ \ \ \ \ \ $\vdash$} & {\color{orange}\texttt{./dynamics/*}} & \multicolumn{3}{l}{Hazel dynamics}\\
+ & & {\color{Green}\ \ \ \ \ \ \ \ $\vdash$} & {\color{Green}\texttt{./indeteval/*}} & \multicolumn{2}{l}{Indeterminate Evaluation}\\
+ & & & {\color{Green}\ \ \ \  \ \ \ \ $\vdash$} & {\color{Green}\texttt{./Nondeterminism.re}} & Non-determinism DSL \& implementations\\
+ & & & {\color{Green}\ \ \ \  \ \ \ \ $\vdash$} & {\color{Green}\texttt{./Searching.re}} & Default search procedures (to values, full traces, to cast errors, etc.)\\
+ & & & {\color{Green}\ \ \ \  \ \ \ \ $\vdash$} & {\color{Green}\texttt{./RedexHoleType.re}} & Chooses hole to instantiate and its possible types\\
+ & & & {\color{Green}\ \ \ \  \ \ \ \ $\vdash$} & {\color{Green}\texttt{./CastErrorChecker.re}} & \\
+ & & & {\color{Green}\ \ \ \  \ \ \ \ $\vdash$} & {\color{Green}\texttt{./OneStepEvaluator.re}} & \\
+ & & & {\color{Green}\ \ \ \  \ \ \ \ $\vdash$} & {\color{Green}\texttt{./Instantiation.re}} & {\raggedright Instantiation Logic \& Hole Substitution}\\
+ & & & {\color{Green}\ \ \ \  \ \ \ \ $\vdash$} & {\color{Green}\texttt{./IndetEvaluation.re}} & Generic indeterminate evaluation algorithm\\
+ & & {\color{Green}\ \ \ \ \ \ \ \ $\vdash$} & {\color{Green}\texttt{./state/*}} & {\color{Green}\texttt{./IndetEvaluatorState.re}} & {\raggedright IndetEval State}\\
+ & & {\color{orange}\ \ \ \ \ \ \ \ $\vdash$} & {\color{orange}\texttt{./stepper/*}} & \multicolumn{2}{l}{Hazel stepper (Bug fixes required)}\\
+ & & {\color{blue}\ \ \ \ \ \ \ \ $\vdash$} & {\color{blue}\texttt{./evaluator.re}} & \multicolumn{2}{l}{Big-step semantics: evaluator stack machine}\\
+ & & {\color{orange}\ \ \ \ \ \ \ \ $\vdash$} & {\color{orange}\texttt{./transition/*}} & \multicolumn{2}{l}{Transition semantics \& Unboxing}\\
+ & & & {\color{orange}\ \ \ \  \ \ \ \ $\vdash$} & {\color{orange}\texttt{./Casts.re}} & Cast calculus: modified sum type semantics\\
+ & & & {\color{blue}\ \ \ \  \ \ \ \ $\vdash$} & {\color{blue}\texttt{./PatternMatch.re}} & Pattern matching\\
+ & & & {\color{blue}\ \ \ \  \ \ \ \ $\vdash$} & {\color{blue}\texttt{./Transition.re}} & Small-step semantics\\
+ & & & {\color{orange}\ \ \ \  \ \ \ \ $\vdash$} & {\color{orange}\texttt{./Unboxing.re}} & Unboxing: Various bug fixes\\
+ & {\color{orange}\ \ \ \ \ \ \ \ $\vdash$} & {\color{orange}\texttt{./lang/term/*}} & \multicolumn{3}{l}{Hazel AST definitions \& fundamental functions}\\
+ & & {\color{orange}\ \ \ \ \ \ \ \ $\vdash$} & {\color{orange}\texttt{./Grammar.re}} & \multicolumn{2}{l}{Adds type slices; replace types with slices}\\
+ & & {\color{blue}\ \ \ \ \ \ \ \ $\vdash$} & {\color{blue}\texttt{./IdTagged.re}} & \multicolumn{2}{l}{ID tagging terms}\\
+ & & {\color{Green}\ \ \ \ \ \ \ \ $\vdash$} & {\color{Green}\texttt{./TypSlice.re}} & \multicolumn{2}{l}{Type Slices (and its utility function)}\\
+ & & {\color{blue}\ \ \ \ \ \ \ \ $\vdash$} & {\color{blue}\texttt{./Exp.re}} & \multicolumn{2}{l}{Expressions}\\
+ & & {\color{orange}\ \ \ \ \ \ \ \ $\vdash$} & {\color{orange}\texttt{./Typ.re}} & \multicolumn{2}{l}{Types: Added branch tracking logic for joins}\\
+ & & {\color{blue}\ \ \ \ \ \ \ \ $\vdash$} & {\color{blue}\texttt{./Pat.re}} & \multicolumn{2}{l}{Patterns}\\
+ & & {\color{blue}\ \ \ \ \ \ \ \ $\vdash$} & {\color{blue}\texttt{./TPat.re}} & \multicolumn{2}{l}{Type Patterns}\\
+ & {\color{orange}\ \ \ \ \ \ \ \ $\vdash$} & {\color{blue}\texttt{./prog/*}} & \multicolumn{3}{l}{Settings \& Program results (now returning lists)}\\
+ & {\color{orange}\ \ \ \ \ \ \ \ $\vdash$} & {\color{orange}\texttt{./statics/*}} & \multicolumn{3}{l}{Hazel statics}\\
+ & & {\color{orange}\ \ \ \ \ \ \ \ $\vdash$} & {\color{orange}\scalebox{.8}{\texttt{./ConstructorMap.re}}} & \multicolumn{2}{l}{Sum constructors: Adds Constructor joining logic}\\
+ & & {\color{blue}\ \ \ \ \ \ \ \ $\vdash$} & {\color{blue}\texttt{./Ctx.re}} & \multicolumn{2}{l}{Typing assumptions context}\\
+ & & {\color{blue}\ \ \ \ \ \ \ \ $\vdash$} & {\color{blue}\texttt{./CoCtx.re}} & \multicolumn{2}{l}{Typing assumptions co-context}\\
+ & & {\color{blue}\ \ \ \ \ \ \ \ $\vdash$} & {\color{blue}\texttt{./Coverage.re}} & \multicolumn{2}{l}{Pattern matching exhaustivity \& redundancy checks}\\
+ & & {\color{orange}\ \ \ \ \ \ \ \ $\vdash$} & {\color{orange}\texttt{./Self.re}} & \multicolumn{2}{l}{Expectation independent type info: Synthesis slice logic}\\
+ & & {\color{orange}\ \ \ \ \ \ \ \ $\vdash$} & {\color{orange}\texttt{./Mode.re}} & \multicolumn{2}{l}{Expectation based type info: Analysis slice logic}\\
+ & & {\color{orange}\ \ \ \ \ \ \ \ $\vdash$} & {\color{orange}\texttt{./Info.re}} & \multicolumn{2}{l}{Statics information: Error slices}\\
+ & & {\color{orange}\ \ \ \ \ \ \ \ $\vdash$} & {\color{orange}\texttt{./Statics.re}} & \multicolumn{2}{l}{Type Checker: Bindings slicing logic}\\
+ & & {\color{orange}\ \ \ \ \ \ \ \ $\vdash$} & {\color{orange}\texttt{./Elaborator.re}} & \multicolumn{2}{l}{Elaboration: Casts are now between slices}\\
+ & {\color{blue}\ \ \ \ \ \ \ \ $\vdash$} & {\color{blue}\texttt{./tiles/*}} & \multicolumn{3}{l}{Structure editor tiles}\\
+ & {\color{blue}\ \ \ \ \ \ \ \ $\vdash$} & {\color{blue}\texttt{./zipper/*}} & \multicolumn{3}{l}{Structure editor zipper and parser}\\
+ & {\color{Green}\ \ \ \ \ \ \ \ $\vdash$} & {\color{Green}\texttt{./Joins.re}} & \multicolumn{3}{l}{Slice joins utilities}\\
+ {\color{blue}\ \ \ $\vdash$}&{\color{blue}\texttt{./haz3lmenhrir/*}} & \multicolumn{4}{l}{LR(1) Parser}\\
+ {\color{orange}\ \ \ $\vdash$}&{\color{orange}\texttt{./haz3lweb/*}} & \multicolumn{4}{l}{MVU Web Interface: see \texttt{docs/ui-architecture.md}}\\
+&{\color{orange}\ \ \ \ \ \ \ \  $\vdash$} & {\color{orange}\texttt{./app}} & {\color{orange}\texttt{./editors/*}} & \multicolumn{2}{l}{Threads cursor into \texttt{./result/*} editors}\\
+& & &{\color{orange}\ \ \ \ \ \ \ $\vdash$} & {\color{orange}\texttt{./decoration/Deco.re}} & {Adds UI for slices and error slices}\\
+&{\color{orange}\ \ \ \ \ \ \ \  $\vdash$} & {\color{orange}\texttt{./Settings.re}} & \multicolumn{3}{l}{Adds indet eval and search settings}\\
+&{\color{orange}\ \ \ \ \ \ \ \  $\vdash$} & {\color{orange}\texttt{./www/*}} & \multicolumn{3}{l}{\texttt{.css} files: Adds slice colourings}\\
+&{\color{orange}\ \ \ \ \ \ \ \  $\vdash$} & {\color{orange}\texttt{./util/*}} & {\color{orange}\scalebox{.8}{\texttt{./WorkerServer.re}}} & \multicolumn{2}{l}{Live evaluator: Now uses BDFS indet eval.}\\
+ {\color{blue}\ \ \ $\vdash$}&{\color{blue}\texttt{./pretty/*}} & \multicolumn{4}{l}{Formatting for Hazel code}\\
+ {\color{blue}\ \ \ $\vdash$}&{\color{blue}\texttt{./util/*}} & \multicolumn{4}{l}{Utility modules (adds \code{Base.Sequence})}\\
+{\color{orange}\texttt{test/*}} & \multicolumn{5}{l}{Test cases: Updates to use type slices}\\
+{\color{Green}\ \ \ $\vdash$} & {\color{Green}\texttt{./Test\_Unboxing.re}} & \multicolumn{4}{l}{Adds list unboxing tests (also merged into \code{dev} branch) }
+ \end{tabular}\ 
+ \vspace{12pt}
+ 
+\textbf{Key:} {\color{Green} Additions}, {\color{orange} Significant Modifications}, {\color{blue} Insignificant or No Modifications}
+ \caption{Hazel Architecture \& Additions}
+ \label{fig:Architecture}
+\end{figure}
 
 

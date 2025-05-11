@@ -1,0 +1,35 @@
+\chapter{Associativity of Bounded DFS bind}
+\label{sec:BDFSbindassoc}
+\begin{figure}
+\begin{minted}{reason}
+((m >>= f) >>= g)(bound)
+= m(bound) 
+  |> map((x, rem_bound) => f(x, rem_bound))
+  |> concat
+  |> map((y, rem_bound2) => g(y, rem_bound2))
+  |> concat
+\end{minted}
+Vs.
+\begin{minted}{reason}
+(m >>= (x => f(x) >>= g))(bound)
+= m(bound)
+  |> map((x, rem_bound) => rem_bound |> (f(x) >>= g))
+  |> concat
+= m(bound)
+  |> map((x, rem_bound) => rem_bound |> (f(x) 
+  |> map((y, rem_bound2) => g(y, rem_bound2)) 
+  |> concat))
+  |> concat
+= m(bound)
+  |> map((x, rem_bound) => f(x, rem_bound) 
+  |> map((y, rem_bound2) => g(y, rem_bound2))
+  |> concat)
+  |> concat
+= m(bound)
+  |> map((x, rem_bound) => f(x, rem_bound)) 
+  |> concat
+  |> map((y, rem_bound2) => g(y, rem_bound2))
+  |> concat
+\end{minted}
+\caption{Associativity of Iterative DFS \code{bind}}
+\end{figure}

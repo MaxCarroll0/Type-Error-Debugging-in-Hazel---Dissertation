@@ -1,0 +1,44 @@
+\chapter{Overview of Semantics and Type Systems}
+
+
+\subsubsection{Syntax}
+Expression-based language syntax are the core foundation behind formal reasoning of programming language semantics and type systems. Typically languages are split into expressions $e$, constants $c$, variables $x$, and types $\tau$. Hazel additionally defines patterns $p$.
+
+A typical lambda calculus can recursively define it's grammar in the following form:
+\[b ::= \text{A set of base types}\]
+\[\tau ::= \tau \to \tau \mid b\]
+\[c ::= \text{A set of constants of base types}\]
+\[x ::= \text{A set of variable names}\]
+\[e ::= c \mid x \mid \lambda x : \tau. e \mid e(e)\]
+
+\subsubsection{Judgements \& Inference Rules}\label{sec:Judgements}
+A \textit{judgement}, $J$, is an assertion about \textit{expressions} in a language \cite{PracticalFoundations}. For example: \begin{itemize}
+\item $\mathrm{Exp\ e}$ -- $e$ is an \textit{expression} 
+\item $n : \code{int}$ -- $n$ has type \code{int}
+\item $e \Downarrow v$ -- $e$ evaluates to \textit{value} $v$ 
+\end{itemize}
+While an \textit{inference rule} is a collection of judgements $J, J_1, \dots, J_n$:
+\[\inference{J_1 & J_2 & \dots & J_n}{J}\]
+Representing the \textit{rule} that if the \textit{premises}, $J_1, \dots, J_n$ are true then the conclusion, $J$, is true. When the collection of premises is empty, it is an \textit{axiom} stating that the judgement is \textit{always} true. Truth of a judgement $J$ can be assessed by constructing a \textit{derivation}, a tree of rules where it's leaves are axioms. It is then possible to use rules to define a judgement by taking the largest judgement that is \textit{closed} under a collection of rules. This gives the result that a judgement $J$ is true \textit{if and only if} it has a derivation.
+
+Properties on expressions can be proved using \textit{rule induction}, if a property is \textit{preserved} by every rule for a judgement, and true for it's axioms, then the property holds whenever the judgement is derivable.
+
+A \textit{hypothetical judgement} is a judgement written as: 
+\[J_1, \dots, J_n \vdash J\]
+is true if $J$ is derivable when additionally assuming each $J_i$ are axioms. Often written $\Gamma \vdash J$ and read \textit{$J$ holds under context $\Gamma$}. Hypothetical judgements can be similarly defined inductively via \textit{rules}.
+
+\subsubsection{Defining a Type System}\label{sec:TypingJudgements}
+A typical type system can be expressed by defining the following hypothetical judgement form $\Gamma \vdash e : \tau$ read as \textit{the expression $e$ has type $\tau$ under typing context $\Gamma$} and referred as a \textit{typing judgement}. Here, $e : \tau$ means that expression $e$ has type $\tau$.  The \textit{typing assumptions}, $\Gamma$, is a \textit{partial function}\footnote{A function, which may be \textit{undefined} for some inputs, notated $f(x) = \bot$.} \cite{PartialFunctions} from variables to types for variables, notated $x_1 : \tau_1, \dots, x_n : \tau_2$. For example the SLTC\footnote{Simply typed lambda calculus.} \cite[ch. 9]{TAPL} has a typing rule for lambda expression and application as follows:
+\[\inference{\Gamma, x : \tau_1 \vdash e : \tau_2}{\Gamma \vdash \lambda x.\ e : \tau_1 \to \tau_2} \qquad \inference{\Gamma \vdash e_1 : \tau_1 \to \tau_2\\ \Gamma \vdash e_2 : \tau_1}{\Gamma \vdash e_1(e_2) : \tau_2}\]
+Meaning, $\lambda x. e$ has type $\tau_1 \to \tau_2$ if $e$ has type $\tau_2$ under the extended context additionally assuming that $x$ has type $\tau_1$.
+And, $e_1(e_2)$ has type $\tau_2$ if $e_1$ is a function of type $\tau_1 \to \tau_2$ and its argument $e_2$ has type $\tau_1$.
+
+\subsubsection{Small Step Operational Semantics}
+A relation $e_1 \to e_2$ can be defined via judgement rules to determine the evaluation semantics of the language. It's multi-step (transitive closure) analogue is notated $e_1 \to^{*} e_2$, meaning $e_1 = e_2$ or there exists a sequence of steps $e_1 \to e_1' \to ... \to e_2$.
+
+\[\inference{}{e \to^{*} e}\qquad \inference{e_1 \to e_2 & e_2 \to^{*} e_3}{e_1 \to^{*} e_3}\]
+
+Evaluation order can be controlled by considering classifying terms into \textit{normal forms} (values). A call by value language would consider normal forms $v$ as either constants or functions:
+\[v ::= c \mid \lambda x : \tau. e\]
+Hazel evaluations around holes by treating them as normal forms (final forms). A call by value semantics for the lambda calculus would include, where $[v/x]e$ is capture avoiding substitution of value $v$ for variable $x$ in expression $e$:
+\[\inference{}{(\lambda x :\tau.\ e)v \to [v/x]e} \qquad \inference{e_2 \to e_2'}{e_1(e_2) \to e_1(e_2')}\]

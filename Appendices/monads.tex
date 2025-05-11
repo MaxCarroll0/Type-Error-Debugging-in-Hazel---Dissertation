@@ -1,0 +1,22 @@
+\chapter{Monads}
+\label{sec:Monads}
+A monad is a parametric type $m(\alpha)$ equipped with two operations, \texttt{return} and \texttt{bind}, where \texttt{bind} is associative and \texttt{return} acts as an identity with respect to \texttt{bind}:
+\begin{figure}[H]
+A monad $m$, is a parameterised type with operations:
+\[\texttt{bind} : \forall \alpha, \beta.\ m(\alpha) \to (a \to m(\beta)) \to m(\beta)\]
+\[\texttt{return} : \forall \alpha.\ a \to m(\alpha)\]
+Satisfying the monad laws:
+\[\texttt{bind}(\texttt{return}(x))(f) = f(x)\]
+\[\texttt{bind}(m)(\texttt{return}) = m\]
+\[\texttt{bind}(\texttt{bind}(m)(f))(g) = \texttt{bind}(m)(\texttt{fun } x \to \texttt{bind}(f(x))(g))\]
+\caption{Monad Definition}
+\end{figure}
+
+\paragraph{Non-Determinism}: 
+Choice and failure can be additionally defined on monads:
+\[\texttt{choice} : \forall \alpha.\ m(\alpha) \to m(\alpha) \to m(\alpha)\]
+\[\texttt{fail} : \forall \alpha.\ m(\alpha)\]
+
+Where \texttt{bind} distributes over \texttt{choice}, and \texttt{fail} is a left-identity for \texttt{bind}.
+\[\texttt{bind}(m_1 \texttt{ <||> } m_2)(f) = \texttt{bind}(m_1)(f) \texttt{ <||> } \texttt{bind}(m_2)(f)\]
+\[\texttt{bind}(\texttt{fail})(f) = \texttt{fail}\]

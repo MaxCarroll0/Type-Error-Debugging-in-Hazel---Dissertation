@@ -1,59 +1,30 @@
 \chapter{Preparation}
 \label{chap:Preparation}
-In this chapter I present the technical background knowledge for this project: an introduction to the type theory for understanding Hazel's core semantics, an overview of Hazel implementation, and notes on non-determinism (as the type witness search procedure is non-deterministic). Following this, I present my software engineering methodology.
+In this chapter I present the technical background knowledge for this project: an introduction to the type theory for understanding Hazel's core semantics, an overview of Hazel implementation, and notes on non-determinism. Following this, I present my software engineering methodology.
 
 \section{Background Knowledge}\label{sec:BackgroundKnowledge}
 \subsection{Static Type Systems}\label{sec:TypeSystems}
-A \textit{type system} is a lightweight formal mathematical method which categorises values into \textit{types} and expressions into types that evaluate to values of the same type. It is effectively a static \textit{approximation} to the runtime behaviour of a language. 
+A \textit{type system} is a lightweight formal mathematical method which categorises values into \textit{types} and expressions into types that evaluate to values of the same type. It is effectively a static \textit{approximation} to the runtime behaviour of a language. The following sections expect basic knowledge formal methods of type systems in terms of judgements (\cref{sec:Judgements} reviews this). Note that I will use \textit{partial functions} to represent typing assumption contexts. 
 
-\subsubsection{Syntax}
-Trivial, probably not needed? Cite BNF grammars etc. All Ib stuff.
-Maybe briefly show examples of Lambda calculus-like syntax?
-\subsubsection{Judgements \& Inference Rules}\label{sec:Judgements}
-A \textit{judgement}, $J$, is an assertion about \textit{expressions} in a language \cite{PracticalFoundations}. For example: \begin{itemize}
-\item $\mathrm{Exp\ e}$ -- $e$ is an \textit{expression} 
-\item $n : \code{int}$ -- $n$ has type \code{int}
-\item $e \Downarrow v$ -- $e$ evaluates to \textit{value} $v$ 
-\end{itemize}
-While an \textit{inference rule} is a collection of judgements $J, J_1, \dots, J_n$:
-\[\inference{J_1 & J_2 & \dots & J_n}{J}\]
-Representing the \textit{rule} that if the \textit{premises}, $J_1, \dots, J_n$ are true then the conclusion, $J$, is true. When the collection of premises is empty, it is an \textit{axiom} stating that the judgement is \textit{always} true. Truth of a judgement $J$ can be assessed by constructing a \textit{derivation}, a tree of rules where it's leaves are axioms. It is then possible to define a judgement as the largest judgement that is \textit{closed} under a collection of rules. This gives the result that a judgement $J$ is true \textit{if and only if} it has a derivation.
-
-Properties on expressions can be proved using \textit{rule induction}, if a property is \textit{preserved} by every rule for a judgement, and true for it's axioms, then the property holds whenever the judgement is derivable.
-
-A \textit{hypothetical judgement} is a judgement written as: 
-\[J_1, \dots, J_n \vdash J\]
-is true if $J$ is derivable when additionally assuming each $J_i$ are axioms. Often written $\Gamma \vdash J$ and read \textit{$J$ holds under context $\Gamma$}. Hypothetical judgements can be similarly defined inductively via \textit{rules}.
-
-\subsubsection{Defining a Type System}\label{sec:TypingJudgements}
-A typical type system can be expressed by defining the following hypothetical judgement form $\Gamma \vdash e : \tau$ read as \textit{the expression $e$ has type $\tau$ under typing context $\Gamma$} and referred as a \textit{typing judgement}. Here, $e : \tau$ means that expression $e$ has type $\tau$.  The \textit{typing assumptions}, $\Gamma$, is a \textit{partial function}\footnote{A function, which may be \textit{undefined} for some inputs, notated $f(x) = \bot$.} \cite{PartialFunctions} from variables to types for variables, notated $x_1 : \tau_1, \dots, x_n : \tau_2$. For example the SLTC\footnote{Simply typed lambda calculus.} \cite[ch. 9]{TAPL} has a typing rule for lambda expression and application as follows:
-\[\inference{\Gamma, x : \tau_1 \vdash e : \tau_2}{\Gamma \vdash \lambda x.\ e : \tau_1 \to \tau_2} \qquad \inference{\Gamma \vdash e_1 : \tau_1 \to \tau_2\\ \Gamma \vdash e_2 : \tau_1}{\Gamma \vdash e_1(e_2) : \tau_2}\]
-Meaning, $\lambda x. e$ has type $\tau_1 \to \tau_2$ if $e$ has type $\tau_2$ under the extended context additionally assuming that $x$ has type $\tau_1$.
-And, $e_1(e_2)$ has type $\tau_2$ if $e_1$ is a function of type $\tau_1 \to \tau_2$ and it's argument $e_2$ has type $\tau_1$.
-
-\subsubsection{Product \& Labelled Sum Types}\label{sec:ADTs}
-Briefly demonstrate. Link to TAPL \textit{Variants} and products
 
 \subsubsection{Dynamic Type Systems}\label{sec:DynamicTypeSystem}
-\textit{Dynamic Typing} has purported strengths allowing rapid development and flexibility, evidenced by their popularity \cite{DynamicLangShift, TIOBE}. Of particular relevance to this project, execution traces are known to help provide insight to errors \cite{TraceVisualisation}, yet statically typed languages remove the ability to execute programs with type errors, whereas dynamically typed languages do not.\par 
+\textit{Dynamic typing} has purported strengths allowing rapid development and flexibility, evidenced by their popularity \cite{DynamicLangShift, TIOBE}. Of particular relevance to this project, execution traces are known to help provide insight to errors \cite{TraceVisualisation}, yet statically typed languages remove the ability to execute programs with type errors, whereas dynamically typed languages do not.\par 
 
 A \textit{dynamically typed system} can be implemented and represented semantically by use of dynamic \textit{type tags} and a \textit{dynamic type}\footnote{Not necessarily needed for implementation, but is useful when reasoning about dynamic types within a formal type system or when considering types within a \textit{static} context.} \cite{DynamicTyping}. Then, runtime values can have their type checked at runtime and \textit{cast} between types. This suggests a way to encode dynamic typing via \textit{first-class}\footnote{Directly represented in the language syntax as expressions.} cast expressions which maintain and enforce runtime type constraints alongside a dynamic type written \dyn.
 
 Cast expressions can be represented in the syntax of expression by $e\scast{\tau_1}{\tau_2}$ for expression $e$ and types $\tau_1, \tau_2$, encoding that $e$ has type $\tau_1$ and is cast to new type $\tau_2$. An intuitive way to think about these is to consider two classes of casts:
 \begin{itemize}
-\item \textit{Injections} -- Casts \textit{to} the dynamic type $e\scast{\tau}{?}$. These are effectively equivalent to type tags, they say that $e$ has type $\tau$ but that it should be treat dynamically.
+\item \textit{Injections} -- Casts \textit{to} the dynamic type $e\scast{\tau}{?}$. These are effectively equivalent to type tags, they say that $e$ has type $\tau$ but that it should be treated dynamically.
 \item \textit{Projections} -- Casts \textit{from} the dynamic type $e\scast{?}{\tau}$. These are type requirements, for example the add operator could require inputs to be of type \code{int}, and such a projection would force any dynamic value input to be cast to \code{int}. 
 \end{itemize}
-Then when \textit{injections} meet \textit{projections} meet, $v\scastcast{\tau_1}{\dyn}{\tau_2}$, representing an attempt to perform a cast $\scast{\tau_1}{\tau_2}$ on $v$. We check the cast is valid and perform if so:
+Then when \textit{injections} meet \textit{projections}, $v\scastcast{\tau_1}{\dyn}{\tau_2}$, representing an attempt to perform a cast $\scast{\tau_1}{\tau_2}$ on $v$. We check the cast is valid and perform if so:
 \[\inference{\tau_1 \text{ is castable to } \tau_2}{v\scastcast{\tau_1}{\dyn}{\tau_2} \mapsto v'} \qquad \inference{\tau_1  \text{ is {\color{red} not }castable to }  \tau_2}{v\scastcast{\tau_1}{\dyn}{\tau_2} \mapsto v\scasterror{\tau_1}{\tau_2}}\]
 
 
-Compound type casts can be broken down during evaluation upon usage of such constructs. For example, applying $v$ to a \textit{wrapped}\footnote{Wrapped in a cast between function types.} functions could decompose the cast to separately cast the applied argument and then the result. Inspired by, \textit{semantic casts} \cite{SemanticCasts} in \textit{contract} systems \cite{Contracts}:
+Compound type casts can be broken down during evaluation upon usage of such constructs. For example, applying $v$ to a \textit{wrapped}\footnote{Wrapped in a cast between function types.} functions decomposes the cast into casting the applied argument and then the result:
 \[(f\scast{\tau_1 \to \tau_2}{\tau_1' \to \tau_2'})(v) \mapsto (f(v \scast{\tau_1'}{\tau_1})\scast{\tau_2}{\tau_2'})\]
 Or if $f$ has the dynamic type:
 \[(f\scast{\dyn}{\tau_1' \to \tau_2'})(v) \mapsto (f(v \scast{\tau_1'}{\dyn})\scast{\dyn}{\tau_2'})\]
-Then direction of the casts reflects the \textit{contravariance} \cite[ch. 2]{BasicCatTheory} of functions\footnote{A bifunctor.} in their argument.
-See that the cast $\scast{\tau_1'}{\tau_1}$ on the argument is \textit{reversed} with respect to the original cast on $f$. This makes sense as we must first cast the applied input to match the actual input type of the function $f$.
 
 Hence, casts around functions (type information) will be moved to the actual arguments at runtime, meeting with casts casts on the argument, resulting in a cast error or a successful casts.
 
@@ -71,30 +42,25 @@ It does this by representing casts as expressed previously. The language is spli
 \item The \textit{external language} -- where static type checking is performed which allows annotating expressions with the dynamic type.
 \item The \textit{internal language} -- where evaluation and runtime type checking is performed via cast expressions.\footnote{i.e. the proposed \textit{dynamic type system} above.} The example above would reduce to a \textit{cast error}\footnote{Cast errors now represented with a strike-through and in red. From here-on they are considered as first-class constructs.}: \[10\scasterror{\code{int}}{\code{string}}\code{ ++ "str"}\]
 \end{itemize}
-For type checking, a \textit{consistency} relation $\tau_1 \sim \tau_2$ is introduced meaning \textit{types $\tau_1, \tau_2$ are consistent}. This is a weakening of the type equality requirements in normal static type checking, allowing consistent types to be used additionally.
-
-Consistency must satisfy a few properties: that the dynamic type is consistent with every type, $\tau \sim \dyn$ for all types $\tau$, that $\sim$ is reflexive and symmetric, and two concrete types\footnote{No sub-parts are dynamic.} are consistent iff they are equal\footnote{e.g. $\tau_1 \to \tau_2 \sim \tau_1' \to \tau_2'$ iff $\tau_1 = \tau_1'$ and $\tau_2 = \tau_2'$ when $\tau_1, \tau_1', \tau_2, \tau_2'$ don't contain $\dyn$.}. A typical definition would be like:
+For type checking, a \textit{consistency} relation $\tau_1 \sim \tau_2$ is introduced. This is a weakening of the type equality requirements in normal static type checking, allowing \textit{consistent} types to be used additionally. Where every type $\tau$ is consistent with the dynamic type $\dyn$.
 \[\inference{}{\tau \sim \dyn} \quad \inference{}{\tau \sim \tau} \quad \inference{\tau_1 \sim \tau_2}{\tau_2 \sim \tau_1} \quad \inference{\tau_1 \sim \tau_1' & \tau_2 \sim \tau_2}{\tau_1 \to \tau_2 \sim \tau_1' \to \tau_2'}\]
-This is very similar to the notion of \textit{subtyping} \cite[ch. 15]{TAPL} with a \textit{top} type $\top$, but with symmetry instead of transitivity.
 
 Then typing rules can be written to use consistency instead of equality. For example, application typing:
 \[\inference{\Gamma \vdash e_1 : \tau_1 & \Gamma \vdash e_2 : \tau_2'\\ \tau_1 \funmatch \tau_2 \to \tau & \tau_2 \sim \tau_2'}{\Gamma \vdash e_1(e_2) : \tau_2'}\]
-Where $\funmatch$ is a pattern matching function to extract the argument and return types from a function type.\footnote{This makes explicit the implicit pattern matching used normally.}
-Intuitively, $e_1(e_2)$ has type $\tau_2'$ if $e_1$ has type $\tau_1' \to \tau_2'$ or $\dyn$ and $e_2$ has type $\tau_1$ which is consistent with $\tau_1'$ and hence is assumed that it can be passed into the function.
+Where $\funmatch$ extracts the argument and return types from a function type, used to account for if $\Gamma \vdash e_1 : \dyn$, where we treat $\dyn$ then as a dynamic function $\dyn \funmatch \dyn \to \dyn$.
+Intuitively, $e_1(e_2)$ has type $\tau_2'$ if $e_1$ has type $\tau_1' \to \tau_2'$ or $\dyn$ (then treated as $\dyn \to \dyn$), and $e_2$ has type $\tau_1$ which is consistent with $\tau_1'$ and hence is assumed that it can be passed into the function.
 
-But, for evaluation to work the static type information needs to be encoded into casts to be used in the dynamic internal language, for which the evaluation semantics are defined. This is done via \textit{elaboration}, similarly to Harper and Stone's approach to defining (globally inferred) Standard ML \cite{StandardMLTypeTheory} by elaboration to an explicitly typed internal language XML \cite{CoreXML}. The \textit{elaboration judgement} $\Gamma \vdash e \leadsto e' : \tau$ read as: external expression $e$ is elaborated to internal expression $d$ with type $\tau$ under typing context $\Gamma$. For example we need to insert casts around function applications:
+But, for evaluation to work the static type information needs to be encoded into casts to be used in the dynamic internal language, for which the evaluation semantics are defined. This is done via \textit{elaboration}, similarly to Harper and Stone's approach to defining (globally inferred) Standard ML \cite{StandardMLTypeTheory} by elaboration to an explicitly typed internal language XML \cite{CoreXML}. The \textit{elaboration judgement} $\Gamma \vdash e \leadsto d : \tau$ read as: external expression $e$ is elaborated to internal expression $d$ with type $\tau$ under typing context $\Gamma$. For example to insert casts around function applications:
 \[\inference{\Gamma \vdash e_1 \leadsto d_1 : \tau_1 & \Gamma \vdash e_2 \leadsto d_2 : \tau_2' \\ \tau_1 \funmatch \tau_2 \to \tau  & \tau_2 \sim \tau_2'}{\Gamma \vdash e_1(e_2) : \tau \leadsto (d_1\scast{\tau_1}{\tau_2 \to \tau})(d_2\scast{\tau_2'}{\tau_2}) : \tau}\]
-If, $e_1$ elaborates to $d_1$ with type $\tau_1 \sim \tau_2 \to \tau$ and $e_2$ elaborates to $\tau_2'$ with $\tau_2 \sim \tau_2$ then we place a cast\footnote{This cast is required, as if $\tau_1 = \dyn$ then we need a cast to realise that it is even a function. Otherwise $\tau_1 = \tau_2 \to \tau$ and the cast is redundant.} on the function $d_1$ to $\tau_2 \to \tau$ and on the argument $d_2$ to the function's expected argument type $\tau_2$ to perform runtime type checking of arguments.
-Intuitively, casts must be inserted whenever type consistency is used, though the casts to insert are non-trivial \cite{Gradualizer}.
+If $e_1$ elaborates to $d_1$ with type $\tau_1 \sim \tau_2 \to \tau$ and $e_2$ elaborates to $\tau_2'$ with $\tau_2 \sim \tau_2$ then we place a cast\footnote{This cast is required, as if $\tau_1 = \dyn$ then we need a cast to realise that it is even a function. Otherwise $\tau_1 = \tau_2 \to \tau$ and the cast is redundant.} on the function $d_1$ to $\tau_2 \to \tau$ and on the argument $d_2$ to the function's expected argument type $\tau_2$ to perform runtime type checking of arguments.
+Intuitively, casts must be inserted whenever type consistency is used, but which casts to insert are non-trivial \cite{Gradualizer}.
 
 The runtime semantics of the internal expression is that of the \textit{dynamic type system} discussed above (\ref{sec:DynamicTypeSystem}). A cast is determined to succeed iff the types are \textit{consistent}.
 
-The \textit{refined criteria} for gradual typing \cite{GradualRefined} also provides an additional property for such systems to satisfy, the \textit{gradual guarantee}, formalising the intuition that adding and removing annotations should \textit{not} change the \textit{behaviour} of the program except for catching errors either dynamically or statically.
-
 \subsubsection{Bidirectional Type Systems}\label{sec:BidirectionalTypeSystem}
-A \textit{bidirectional type system} \cite{BidirectionalTypes} takes on a more algorithmic definition of typing judgements, being more intuitive to implement. They also allow some amount of local type inference \cite{LocalInference}, allowing programmers to omit \textit{type annotations}, instead type information. Global type inference systems \cite[ch. 22]{TAPL} can be \textit{difficult to implement}, often via constraint solving \cite[ch. 10]{ATTAPL}, and difficult or impossible to \textit{balance} with complex language features, for example global inference in System F (\ref{sec:System F}) is undecidable \cite{SystemFUndecidable}.
+A \textit{bidirectional type system} \cite{BidirectionalTypes} takes on a more algorithmic definition of typing judgements, being more intuitive to implement. They also allow some amount of local type inference \cite{LocalInference}.
 
-This is done in a similar way to annotating logic programming  \cite[123]{LogicProg}, by specifying the \textit{mode} of the type parameter in a typing judgement, distinguishing when it is an \textit{input} (type checking) and when it is an \textit{output} (type synthesis).
+This is done in a similar way to annotating logic programs \cite[123]{LogicProg}, by specifying the \textit{mode} of the type parameter in a typing judgement, distinguishing when it is an \textit{input} (type checking) and when it is an \textit{output} (type synthesis).
 
 We express this with two judgements:
 \[\synthesis{e}{\tau}\]
@@ -108,37 +74,21 @@ We try to \textit{check} $e_2$ with input ${\color{red}\tau_1}$\footnote{Highlig
 \[\inference{\synthesis{e_1}{\tau_1 \to \tau_2} & \analysis{e_2}{\tau_1}}{\analysis{e_1(e_2)}{\tau_2}}\]
 Where $\tau_1$ is now known, being \textit{synthesised} from the premise $\synthesis{e_1}{\tau_1 \to \tau_2}$. As before, $\tau_2$ is known as it is an input in the conclusion $\analysis{e_1(e_2)}{\tau_2}$.
 
-Such languages will typically have three obvious rules. First, we should have that variables can synthesise their type, after all it is accessible from the typing context $\Gamma$:
-\[\inference[Var]{x : \tau \in \Gamma}{\synthesis{x}{\tau}}\]
-And annotated terms can synthesise their type by just looking at the annotation $e : \tau$ and checking the annotation is valid:
-\[\inference[Annot]{\analysis{e}{\tau}}{\synthesis{e : \tau}{\tau}}\]
-
-Finally, when we check against a type that we can synthesise a type for, variables for example.
-It would make sense to be able to \textit{check} $e$ against this same type $\tau$; we can synthesise it, so must be able to check it. This leads to the subsumption rule:
-\[\inference[Subsumption]{\synthesis{e}{\tau'} & \tau = \tau'}{\analysis{e}{\tau}}\]
-
-\subsubsection{Contextual Modal Type Theory}\label{sec:CMTT}
-Not \textit{hugely} relevant really...
-
-\subsubsection{System F}\label{sec:System F}
-\textit{Very brief explanation with less/no maths}
-
-\subsubsection{Recursive Types}\label{sec:Recursive Types}
-\textit{Very brief explanation with less/no maths}
+Such languages will have three obvious rules. That variables can synthesise their type, being accessible from the typing assumptions. Annotated terms synthesise their type from the annotation (after checking the validity). Subsumption: a synthesising term successfully checks against that same type.
 
 \subsection{The Hazel Calculus}\label{sec:CoreHazel}
 \index{Hazel}
-Hazel is a language that allows the writing of incomplete programs, evaluating them, and evaluating around static \& dynamic errors.\footnote{Among other features, like an structure editor with syntactically meaningless states, and various learning aids.}
+Hazel is a language that allows the writing of incomplete programs, evaluating them, and evaluating around static and dynamic errors.\footnote{Among other features, like an structure editor with syntactically meaningless states, and various learning aids.}
 
-It does this via adding \textit{expression holes}, which can both be typed and have evaluation proceed around them seamlessly. This allows the evaluation around errors by placing them in holes.
+It does this via adding \textit{holes}, which can both be typed and have evaluation proceed around them seamlessly. Errors can be placed in holes allowing continued evaluation.
 
 The core calculus \cite{HazelLivePaper} is a gradually and bidirectionally typed lambda calculus. Therefore it has a locally inferred bidirectional \textit{external language} with the dynamic type $\dyn$ elaborated to an explicitly typed \textit{internal language} including cast expressions. 
 
-The full semantics are documented in the Hazel Formal Semantics appendix \ref{sec:HazelSemantics}, but only rules relevant to addition of \textit{holes} are  discussed in this section. The combination of gradual and bidirectional typing system is itself non-trivial, but only particularly notable consequences are mentioned here. The intuition should be clear from the previous gradual and bidirectional typing sections.\footnote{The difficulties combining gradual and bidirectional typing are largely orthogonal to adding holes.}
+The full semantics are documented in the Hazel Formal Semantics appendix \ref{sec:HazelSemantics}, with only rules relevant \textit{holes} discussed in this section. The combination of gradual and bidirectional typing system is itself non-trivial, but only particularly notable consequences are mentioned here. The intuition should be clear from the previous gradual and bidirectional typing sections.\footnote{The difficulties combining gradual and bidirectional typing are largely orthogonal to adding holes.}
 
 \subsubsection{Syntax}\label{sec:HazelSyntax}
 \index{\textbf{Core Hazel} syntax}
-\par The syntax, in Fig. \ref{fig:syntax}, consists of \textit{types} $\tau$ including the dynamic type $\dyn$, \textit{external expressions} $e$ including (optional) annotations, \textit{internal expressions} $d$ including cast expressions. The external language is \textit{bidirectionally typed}, and therefore is a locally inferred surface syntax for the language, and is statically elaborated to (explicitly typed) \textit{internal expressions}.
+\par The syntax, in Fig. \ref{fig:syntax}, consists of \textit{types} $\tau$ including the dynamic type $\dyn$, \textit{external expressions} $e$ including (optional) annotations, \textit{internal expressions} $d$ including cast expressions.
 
 Notating $\hole{}^u$ or $\hole[e]^u$ for empty and non-empty holes respectively, where $u$ is the \textit{metavariable} or name for a hole. Internal expression holes, $\hole{}^u_\sigma$ or $\hole[e]^u_\sigma$, also maintain an environment $\sigma$ mapping variables $x$ to internal expressions $d$. These internal holes act as \textit{closures}, recording which variables have been substituted during evaluation.\footnote{This is required, as holes may later be substituted, with variables then receiving their values from the closure environment.}
 \begin{figure}[h]
@@ -153,34 +103,21 @@ d &::= c \mid x \mid \lambda x : \tau d \mid d(d) \mid \hole^u_\sigma \mid \hole
 
 \subsubsection{External Language}\label{sec:HazelExternalLang}
 \index{External language type system}
-We have a bidirectionally static semantics for the \textit{external language}, giving the bidirectional typing judgements: $\synthesis{e}{\tau}$ and $\analysis{e}{\tau}$. Holes synthesise the \textit{dynamic type}, a natural choice made possible by the use of gradual types:
+Holes synthesise the \textit{dynamic type}, a natural choice made possible by the use of gradual types:
 \[\inference[\tiny SNEHole]{\synthesis{e}{\tau}}{\synthesis{\hole[e]^u}{\dyn}} \qquad \inference[\tiny SEHole]{}{\synthesis{\hole^u}{\dyn}}\] 
 One notable consequence of combining gradual and bidirectional typing is that the \textit{subsumption rule} in bidirectional typing is naturally extended to allow subsuming any terms of \textit{consistent} types:
 \[\inference[\tiny ASubsume]{\synthesis{e}{\tau'}& \tau \sim \tau'}{\analysis{e}{\tau}}\]
 Of course $e$ should type check against $\tau$ if it can synthesise a consistent type as the goal of type consistency is that we may type check terms as if they were of the consistent type.
 
-The remaining rules are detailed in Fig. \ref{fig:typing}, with \textit{consistency} relation $\sim$ in Fig. \ref{fig:consistency} and (fun) type matching relation, $\funmatch$ in Fig. \ref{fig:typematching}. 
 \subsubsection{Internal Language}\label{sec:HazelInternalLang}
-The internal language is non-bidirectionally typed and requires an extra \textit{hole context} $\Delta$ mapping each hole \textit{metavariables} $u$ to it's \textit{checked type} $\tau$ \footnote{Originally required when typing the external language expression. See Elaboration section.} and the type context $\Gamma$ under which the hole was typed. Each metavariable context notated as $u :: \tau[\Gamma]$, notation borrowed from contextual modal type theory (CMTT) \cite{CMTT}.\footnote{Hole contexts corresponding to \textit{modal contexts}, hole names with \textit{metavariables}, and holes with \textit{metavariable closures} (on environments $\sigma$).} 
+The internal language requires an extra \textit{hole context} $\Delta$ mapping each hole \textit{metavariable} $u$ to it's \textit{checked type} $\tau$\footnote{As originally required when typing the external language expression.} and it's type context $\Gamma$ under which the hole was typed.
 
-The type assignment judgement $\typeassignment{d}{\tau}$ means that $d$ has type $\tau$ under typing and hole contexts $\Gamma, \Delta$. The rules for holes take their types from the hole context and ensure that the hole environment substitutions $\sigma$ are well-typed\footnote{With respect to the original typing context captured by the hole.}:
-\[\inference[\tiny TAEHole]{u :: \tau[\Gamma'] \in \Delta & \typeassignment{\sigma}{\Gamma'}}{\typeassignment{\hole^u_\sigma}{\tau}}\]
+There is also a type assignment judgement, $\typeassignment{d}{\tau}$, for the internal language using hole contexts. Where a well-typed external expression elaborates to a well-typed internal expression consistent with the external type. Hence, there is no need for an algorithmic (bidirectional) definition of the internal language typing.
 
-Hazel is proven to preserve typing; a well-typed external expression will elaborate to a well-typed internal expression which is consistent to the external type. Hence, there is no need for an algorithmic definition of the internal language typing.
-
-Full rules in Fig. \ref{fig:typeassignment}. Formally speaking these define categorical judgements \cite{ModalJudgements}. Additionally, ground types and a matching function are defined in Figs. \ref{fig:groundtypes} \& \ref{fig:groundmatch}, and typing of hole environments/substitution in Fig. \ref{fig:substitutiontyping}
 \subsubsection{Elaboration}\label{sec:HazelElaboration}
-Cast insertion requires an elaboration to the \textit{internal language}, so must output an additional context for holes $\Delta$. The judgements are notated: \[\elaborationSynthesis{e}{\tau}{d}{\Delta}\]\textit{
-external expression $e$ which synthesises type $\tau$ under type context $\Gamma$ is elaborated to internal expression $d$ producing hole context $\Delta$. }
-\[\elaborationAnalysis{e}{\tau}{d}{\tau'}{\Delta}\]\textit{
-external expression $e$ which type checks against type $\tau$ under type context $\Gamma$ is elaborated to internal expression $d$ of consistent type $\tau'$ producing hole context $\Delta$.}
+Cast insertion is performed by elaborating to the \textit{internal language}, and must also output an additional context for holes: $\elaborationAnalysis{e}{\tau}{d}{\tau'}$ and $\elaborationSynthesis{e}{\tau}{d}$. Where $\tau'$ is the elaborated type of $d$ and must be consistent with $\tau$. 
 
-The elaboration judgements for holes must add the hole to the output hole context. And they will elaborate to holes with the default empty environment $\sigma = \\mathrm{id}(\Gamma)$, i.e. no substitutions.
-\[\inference[\tiny ESEHole]{}{\elaborationSynthesis{\hole^u}{\dyn}{\hole^u_{\mathrm{id}(\Gamma)}}{u :: \hole[] [\Gamma]}}\]
-\[\inference[\tiny EAEHole]{}{\elaborationAnalysis{\hole^u}{\tau}{\hole^u_{\mathrm{id}(\Gamma)}}{\tau}{u::\tau[\Gamma]}}\]
-When elaborating a \textit{type checked} hole, this checked type is used. Typing them instead as {\dyn} would imply type information being lost.\footnote{Potentially leading to incorrect cast insertion.}
-
-The remaining elaboration rules are stated in Fig. \ref{fig:elaboration}.
+The resulting hole context will record each hole's original \textit{analysing} type along with the typing assumptions for its hole closure. Recording them instead as {\dyn} would lose type information.
 
 \subsubsection{Final Forms}\label{sec:HazelFinalForms}
 The primary addition of Hazel is the addition of a new kind of \textit{final forms} and \textit{values}. This is what allows evaluation to proceed around holes and errors. There are three types of final forms:
@@ -191,34 +128,22 @@ The primary addition of Hazel is the addition of a new kind of \textit{final for
 \end{itemize}
  Importantly, \textit{any} final form can be treated as a value (in a \textit{call-by-value} context). For example, they can be passed inside a (determinate) function: $(\lambda x. x)(\hole^u)$ can evaluate to $\hole^u$.
 
-Full rules are present in Fig. \ref{fig:finalforms}.
-
 \subsubsection{Dynamics}\label{sec:HazelDynamics}
-A small-step contextual dynamics \cite[ch. 5]{PracticalFoundations} is defined on the internal expressions to define a \textit{call-by-value}\footnote{Values in this sense are \textit{final forms}.} \textbf{ENSURE THIS} evaluation order. 
+A small-step contextual dynamics \cite[ch. 5]{PracticalFoundations} is defined on the internal expressions to define a \textit{call-by-value} evaluation order, values in this sense are \textit{final forms}. 
 
-Like the \textit{refined criteria}  \cite{GradualRefined}, Hazel presents a rather different cast semantics designed around \textit{ground types}, that is \textit{base types}\footnote{Like \code{int} or \code{bool}.} and least specific\footnote{In the sense that $\dyn$ is more general than any concrete type.} compound types associated via a ground matching relation mapping compound types to their corresponding ground type, e.g. $\code{int} \to \code{int} \groundmatch \dyn \to \dyn$. This formalisation more closely represents common dynamically typed language implementations which only use generic type tags like \textit{fun}, corresponding to the ground type $\dyn \to \dyn$. However, the idea of type consistency checking when \textit{injections} meet \textit{projections} remains the same.\footnote{With projections/injections now being to/fro \textit{ground types}.}
-
-
-The cast calculus is more complex as discussed previously, due to being based around \textit{ground types}. However, the fundamental logic is similar to the dynamic type system described previously in \cref{sec:DynamicTypeSystem}.
-
-
-Evaluation proceeds by \textit{capture avoiding variable substitution} $[d'/x]d$ (substitute $d'$ for $x$ in $d$). Additionally, substitutions are recorded in each hole's environment $\sigma$ by substituting all occurences of $x$ for $d$ in each $\sigma$ \textbf{Add figure for this}. 
-
-The instruction transitions are in Fig. \ref{fig:instructions} and the contextual dynamics defining a small-step semantics in \ref{fig:dynamics}. \textbf{SWAP DYNAMICS BACK TO DETERMINISTIC}
-
-A contextual dynamics is defined via an Evaluation context... \textit{(TODO, explain evaluation contexts as will be relevant to the Stepper EV\_MODE explanation)}
+Like the \textit{refined criteria}  \cite{GradualRefined}, Hazel presents a rather different cast semantics designed around \textit{ground types}, that is, base types (\code{Int}, \code{Bool}) and least precise\footnote{In the sense that $\dyn$ is more general than any concrete type.} compound types associated via a ground matching relation mapping compound types to their corresponding ground type, e.g. $\code{int} \to \code{int} \groundmatch \dyn \to \dyn$. This formalisation more closely represents common dynamically typed language implementations which only use generic type tags like \textit{fun}, corresponding to the ground type $\dyn \to \dyn$. However, the idea of type consistency checking when \textit{injections} meet \textit{projections} remains the same.\footnote{With projections/injections now being to/fro \textit{ground types}.} 
 
 \subsubsection{Hole Substitutions}\label{sec:HoleSubstitution}
 Holes are indexed by \textit{metavariables} $u$, and can hence also be substituted. Hole substitution is a \textit{meta} action $\contextualsub d'$ meaning substituting each hole named $u$ for expression $d$ in some term $d'$ with the holes environment. Importantly, the substitutions $d$ can contain variables, whose values are found by checking the holes \textit{environment}, effectively making a \textit{delayed substitution}. See the following rule:
  \[\contextualsub \hole^u_\sigma = [\contextualsub \sigma]d\]
-When substituting a matching hole $u$, we replace it with $d$ and \textit{apply substitutions from the environment $\sigma$ of $u$} to $d$.\footnote{After first substituting any occurrences of $u$ in the environment $\sigma$} This corresponds to \textit{contextual substitution} in CMTT. The remaining rules can be found in \ref{fig:holesubstitution}
+When substituting a matching hole $u$, we replace it with $d$ and apply substitutions from the environment $\sigma$ of $u$ to $d$, after first substituting any occurrences of $u$ in the hole's environment $\sigma$. This corresponds to \textit{contextual substitution} in contextual modal type theory \cite{CMTT}.
  
- This can be thought of as a \textit{fill-and-resume} functionality, allowing incomplete program parts to be filled \textit{during evaluation} rather than only before evaluation.
+ This can be thought of as a \textit{fill-and-resume} functionality, allowing incomplete program parts to be filled during evaluation rather than only before evaluation.
 
-As Hazel is a \textit{pure language}\footnote{Having no side effects.} and as holes act as closures, then performing hole substitution is \textit{commutative} with respect to evaluation. That is, filling incomplete parts of a program \textit{before} evaluation gives the same result as filling \textit{after} evaluation then resuming evaluation. Formalised in \textbf{ref theorems}.
+As Hazel is a \textit{pure language}\footnote{Having no side effects.} and as holes act as closures, then performing hole substitution is \textit{commutative} with respect to evaluation. That is, filling incomplete parts of a program \textit{before} evaluation gives the same result as filling \textit{after} evaluation then resuming evaluation.
 
 \subsection{The Hazel Implementation}\label{sec:HazelImplementation}
-The Hazel implementation \cite{HazelCode} is written primarily in ReasonML and OCaml with approximately 65,000 lines of code. It implements the Hazel core calculus along with many additional features. 
+The Hazel implementation \cite{HazelCode} is written primarily in ReasonML and OCaml with approximately 65,000 lines of code. It is under very active development, with much of the code being undocumented; this dissertation summarises the implementation as of April 2025. It implements the Hazel core calculus along with many additional features below. 
 
 \subsubsection{Language Features}\label{sec:HazelAdditionalFeatures}
 The relevant additional language features not already discussed are:\footnote{Additionally, Hazel supports other features, which do not concern this project.}
@@ -232,24 +157,17 @@ The relevant additional language features not already discussed are:\footnote{Ad
 \item \textbf{Iso-Recursive Types} -- Types defined in terms of themselves, allowing the representation of data with potentially infinite or \textit{self-referential} shape \cite[ch. 22-23]{TAPL}, for example linked lists or trees.
 \end{itemize}
 
-\subsubsection{Monadic Evaluator}\label{sec:HazelEvaluator}
-\textbf{This is extremely hard to explain concisely!! or at all... Ask on Slack?}
-
-The Hazel implementation has an abstract monadic (\textbf{Is this actually monadic?}) evaluator abstraction, whose implementation details are discussed in \cref{sec:EVMode}. The results that the evaluator implementations `evaluate' to are abstract, they do not necessarily have to be terms, as demonstrated by the following uses of the evaluator abstraction:
+\subsubsection{Evaluator}\label{sec:HazelEvaluator}
+The Hazel implementation has a complex evaluator abstraction (module type \code{EV_MODE}) which is used extensively by the search procedure implementation. The evaluator implementations `evaluate' parametric values, not necessarily having to be terms, for example:
 \begin{itemize}
 \item \textbf{Final Form Checker} -- Returns whether a term is either: a evaluable expression, a value, or an indeterminate term. Using the evaluator abstraction with this means there is no need to maintain a separate syntactic value checker, instead it is derived directly from the evaluation transitions. Yet, it is still \textit{syntactic} as the implementation does not actually \textit{perform} any evaluation steps which the abstraction presents it with.
 \item \textbf{Evaluator} -- Maintains a stack machine to actually perform the reduction steps and fully evaluate terms.
 \item \textbf{Stepper} -- Returns a list of \textit{possible}\footnote{Of any evaluation order.} evaluation steps. This allows the evaluation order to be user-controlled in a stepper environment.
 \end{itemize}
-Each evaluation method is transformed into an evaluator by being applied to an OCaml \textit{functor} \cite[ch. 10]{RealWorldOCaml}. The resulting module produces a \code{transition} method that takes terms to evaluation results in an environment\footnote{Mapping variable bindings.}.
-
 
 \subsection{Bounded Non-Determinism}\label{sec:Nondeterminism}
-The search procedure \cite{SearchProc} is effectively a \textit{dynamic type-directed} test generator, attempting to find dynamic type errors. In Hazel, dynamic type errors will manifest themselves as \textit{cast errors}.
+Input generation for a witness search procedure \cite{SearchProc} a \textit{non-deterministic} algorithm \cite{NondeterministicAlgorithms}. 
 
-Type-directed generation of inputs and searching for one which manifests an error is a \textit{non-deterministic} algorithm \cite{NondeterministicAlgorithms}. 
-
-\subsubsection{High Level}
 At a high level, non-determinism can be represented declaratively by two ideas:
 \begin{itemize}
 \item \textit{Choice} (\texttt{<||>}): Determines the search space, flipping a coin will return heads \textit{or} tails.
@@ -262,74 +180,115 @@ Where \texttt{<||>} should be \textit{associative} and \texttt{fail} should be a
 \[x \texttt{ <||> } (y \texttt{ <||> } z) = (x \texttt{ <||> } y) \texttt{ <||> } z \qquad \texttt{fail} \texttt{ <||> } x = x = x \texttt{ <||> } \texttt{fail}\]
 That is, the order of making binary choices does not matter, and there is no reason to choose failure.
 
-There are many proposed ways to represent and manage non-deterministic programs: 
-\paragraph{Logic Programming:} Languages like Prolog \cite{Prolog} and Curry \cite{CurryLang} express non-determinism by directly implementing \textit{choice} via non-deterministic evaluation. Prolog searches via backtracking, while Curry abstracts the search procedure.
+There are many proposed ways to represent and manage non-deterministic programs which I considered, of which a monadic representation over a tree based state-space model was chosen as a good balance of flexibility, simplicity, and familiarity to other Hazel developers. \Cref{sec:NonDeterminismAppendix} reasons and details other options considered: continuations, effect handlers, tagless final DSLs, direct implementation.  
 
-There are ways to embed this within OCaml. Inspired by Curry, Kiselyov \cite{NondetDSL} created a tagless final style \cite{TaglessFinalDSL} domain specific language within OCaml. This approach fully abstracts the search procedure from the non-deterministic algorithm constructs.
-\paragraph{Delimited Continuations:} Delimited continuations \cite{DelimitedControl, ShiftReset} are a control flow construct that captures a portion of the program's execution context (up to a certain delimiter) as a first-class value, which can be resumed later (in OCaml, a function). This enables writing non-deterministic code by duplicating the continuations and running them on each possibility in a choice.
-
-\paragraph{Effect Handlers:} Effect handlers allow the description of effects and factors out the handling of those effects. Non-determinism can be represented by an effect consisting of the choice and fail operators \cite{EffectsExamples, HandlersInAction}, while handlers can flexibly define the search procedure and accounting logic, e.g. storing solutions in a list. As with delimited continuations, to try multiple solutions, the {continuations} must be cloned.
-
-\paragraph{Monadic:} The non-determinism effect can be expressed as a monad. A monad is a parametric type $m(\alpha)$ equipped with two operations, \texttt{return} and \texttt{bind}, where \texttt{bind} is associative and \texttt{return} acts as an identity with respect to \texttt{bind}:
-\begin{figure}[H]
-A monad $m$, is a parameterised type with operations:
-\[\texttt{bind} : \forall \alpha, \beta.\ m(\alpha) \to (a \to m(\beta)) \to m(\beta)\]
-\[\texttt{return} : \forall \alpha.\ a \to m(\alpha)\]
-Satisfying the monad laws:
-\[\texttt{bind}(\texttt{return}(x))(f) = f(x)\]
-\[\texttt{bind}(m)(\texttt{return}) = m\]
-\[\texttt{bind}(\texttt{bind}(m)(f))(g) = \texttt{bind}(m)(\texttt{fun } x \to \texttt{bind}(f(x))(g))\]
-\caption{Monad Definition}
-\end{figure}
-
-A monad can then be extended to represent nondeterminism by adding a \texttt{choice} and \texttt{fail} operator satisfying the usual laws:
-\[\texttt{choice} : \forall \alpha.\ m(\alpha) \to m(\alpha) \to m(\alpha)\]
-\[\texttt{fail} : \forall \alpha.\ m(\alpha)\]
-Where \texttt{bind} distributes over \texttt{choice}, and \texttt{fail} is a left-identity for \texttt{bind}.
+\paragraph{Monadic Non-determinism} Some monads can be extended to represent non-determinism by adding the \texttt{choice} and \texttt{fail} operators satisfying the usual laws.
+These operations interact by \texttt{bind} distributing over \texttt{choice}, and \texttt{fail} being a left-identity for \texttt{bind}.
 \[\texttt{bind}(m_1 \texttt{ <||> } m_2)(f) = \texttt{bind}(m_1)(f) \texttt{ <||> } \texttt{bind}(m_2)(f)\]
 \[\texttt{bind}(\texttt{fail})(f) = \texttt{fail}\]
 In this context, bind can be thought of as \textit{conjunction}: if we can map each guess to another set of choices, \texttt{bind} will conjoin all the choices from every guess. \Cref{fig:Conjunction} demonstrates how flipping a coin followed by rolling a dice can be conjoined, yielding the choice of all pairs of coin flip and dice roll.
 
-See how distributivity represents this interpretation:  guessing over a combined choice is the same as guessing over each individual choice and then combining the results. \texttt{fail} being the left identity of \texttt{bind} states that you cannot make any guesses from the no choice (\texttt{fail}). 
+Distributivity represents this interpretation:  guessing over a combined choice is the same as guessing over each individual choice and then combining the results. \texttt{fail} being the left identity of \texttt{bind} states that you cannot make any guesses from the no choice (\texttt{fail}). 
 \begin{figure}[h]\centering
-\begin{enumerate}
-\item Flip a coin.
-\item Roll a dice.
-\item Return \textit{both} results.
-\end{enumerate}
 \begin{minted}{reason}
 let coin = return(Heads) <||> return(Tails);
 let dice = return(1) <||> ... <||> return(6);
 let m = coin 
-    >>= flip => dice
-    >>= roll => return((flip, roll))
+    >>= flip => // Flip a coin
+        dice
+    >>= roll => // Roll a dice
+        return((flip, roll)) // Return conjunction
 \end{minted}
-\caption{Bind as Conjunction Example}
+\caption{Examples: Bind as Conjunction}
 \label{fig:Conjunction}
 \end{figure}
 
 While the \texttt{bind} and \texttt{return} operators are \textit{not} required to represent non-determinism, they are a \textit{familiar}\footnote{For OCaml developers and functional programmers.} way to represent a large class of effects in general way. 
 
-\subsubsection{Low Level}
-Computers are deterministic, therefore, the declarative specification abstracts over the low level implementation which will concretely try each choice, searching for solutions from the many choices. One way to resolve this non-determinism is by modelling choices as trees and searching the trees by a variety of either uninformed, or informed strategies.
 
 \section{Starting Point}\label{sec:StartingPoint}
 \subsubsection{Concepts}
-The foundations of most concepts in understanding Hazel from Part IB Semantics of Programming (and Part II Types later). The concept of gradual typing briefly appeared in Part IB Concepts of Programming Languages, but was not formalised. Dynamic typing, gradual typing, holes, and contextual modal type theory were not covered in Part IB, so were partially researched leading up to the project, then researched further in greater depth during the early stages. Similarly, Part IB Artificial Integlligence provided some context for search procedures. Primarily, the OCaml search procedure for ill-typed witnesses Seidel et al. \cite{SearchProc} and the Hazel core language \cite{HazelLivePaper} were researched over the preceding summer.
+Only the basic foundations of most concepts in understanding Hazel were covered in Part IB Semantics of Programming (and Part II Types later). The concept of gradual typing briefly appeared in Part IB Concepts of Programming Languages, but was not formalised. Monads and non-determinism were also present in this course, but not their intersection.
 
 \subsubsection{Tools and Source Code}
-My only experience in OCaml was from the Part IA Foundations of Computer Science course. The Hazel source code had not been inspected in any detail until after starting the project.
+My only experience in OCaml was from the Part IA Foundations of Computer Science course. This project builds directly upon the open-source Hazel language codebase \cite{HazelCode}. The type witness search procedure is inspired by Seidel et al. \cite{SearchProc}, however my implementation differs significantly, being applied to Hazel rather than OCaml. Three (DFS, BFS, BDFS) searching methods for monadic non-determinism are based on Spivey \cite{Bunches} with minor changes, due to OCaml being a strict language.
 
-\section{Requirement Analysis}\label{sec:RequirementAnalysis}
+\section{Requirements Analysis}\label{sec:RequirementAnalysis}
+At a high level, this project aimed to achieve three goals:
+\begin{enumerate}
+\item Create a more complete highlighting system for static type errors in Hazel.
+\item Create a (complete) source code highlighting system for dynamic errors in Hazel.
+\item Provide dynamic witnesses for static errors in Hazel. 
+\end{enumerate}
+At the time of writing the project proposal (\cref{sec:ProjectProposal}), the second aim was unexplored in existing research, so a concrete requirements were not yet known. Similarly, the first goal had not yet been considered, but naturally follows from the direction that the theorising of cast slicing took.
 
-\section{Software Engineering Methodology}\label{sec:EngineeringMethodology}
-Do the theory first. 
+Developing theories was high risk and took longer than expected. But, significant slack time was allocated to mitigate this, and the original goals were left open to simpler formalisations than the one eventually taken.\footnote{For example, a less complete highlighting based only upon traces.}
 
-Git. Merging from dev frequently (many of which were very difficult, as my code touches all of type checking and much of dynamics; and some massive changes, i.e. UI update). 
+After formalisation (phase 1), a set of goals and extensions were devised. This includes those for the witness search procedure taken from the project proposal. The goals should be achieved for a subset of Hazel; Hazel features are classified in \cref{fig:Classes} into: must implement, extensions, and won't implement\footnote{Those where the project is less applicable}. Most extensions relate to \textit{maintainability} of code, \textit{conciseness} of slices, witness \textit{coverage} improvements, and \textit{usability} (UI improvements), the latter two considered with lower priority.
 
-Talking with devs over slack.
+\begin{figure}[h]
+\begin{tabular}{lp{12cm}}
+Class & Features\\
+\hline
+{\color{red}Must Implement} & {Base types: their constants \& operations, lists, functions, bindings, type aliases, tuples, sum types \& constructors, holes, casts.}\\
+{\color{orange}Extensions} & Pattern matching, labelled tuples (*), type functions, recursive types.\\
+{\color{blue}Won't Implement} & Tests, deferrals, probes (*), filters, live literals.\\
+\end{tabular}
+\ \\
 
-Using existing unit tests \& tests in web documentation to ensure typing is not broken.
+(*) New features merged from main branch not present in Hazel when proposal was written. 
+\caption{Hazel Subsets to Implement for}
+\label{fig:Classes}
+\end{figure}
 
-\section{Legality}\label{sec:Legality}
-MIT licence for Hazel.
+\paragraph{{\color{red} Core Goals}} Create/translate a corpus of ill-typed Hazel programs for evaluation usage. The witness search procedure must have reasonable coverage ($>75\%$) in a time suitable for interactive debugging (30s) over the corpus. Implement synthesis and analysis type slice theory, and cast slice theory with a basic UI highlighting the source code.
+
+\paragraph{{\color{orange} Extensions}} Implement contribution slice theory. Customisable search procedure instantiation ordering. \textit{(Maintainability)} Segregate type slicing logic from type checking semantics. Segregate cast slicing logic from transition semantics. \textit{(Conciseness)} Error slices (*). Minimised error slices (**). 
+
+\paragraph{{\color{blue} Low-Priority Extensions}} \textit{(Coverage)} Extended pattern instantiation (**). \textit{(Usability)} Trace visualisation \& compression. Graphs for cast dependence. UI to select sub-parts of slices (*). 
+
+
+Extensions with (*) were added post-evaluation and (**) after re-evaluation.
+\section{Software Engineering Tools and Techniques}\label{sec:EngineeringMethodology}
+\paragraph{Methodology} A spiral development model was followed, with each iteration refining the implementation through defined milestones (see project proposal) and repeated evaluation (\cref{fig:Phases}). New extensions were added after each evaluation and prioritised based on their risk to not be fully implemented by a deadline (coverage improvements and usability extensions having higher risk).
+
+\begin{figure}
+\centering
+\tikzstyle{phase} = [rectangle, rounded corners, minimum width=3cm, minimum height=1cm, text centered, draw=black, fill=blue!20]
+\tikzstyle{evaluation} = [phase, fill=orange!30]
+\tikzstyle{implementation} = [phase, fill=green!30]
+\tikzstyle{arrow} = [thick, ->, >=Stealth]
+\begin{tikzpicture}[node distance=1.2cm and 0.8cm]
+
+\node (f1) [phase] {\parbox{3cm}{\small\raggedright Formalise slicing theories. Define evaluation criteria.}};
+\node (f2) [implementation, right=of f1] {\parbox{3cm}{\small\raggedright Implement core goals}};
+\node (f3a) [evaluation, right=of f2] {\parbox{3cm}{\small\raggedright Evaluate success. Core goals not met ($<75\%$ coverage).}};
+\node (f3b) [phase, right=of f3a] {\parbox{3cm}{\small\raggedright Plan new extensions, prioritised on risk. Refine evaluation criteria.}};
+\node (f4) [implementation, below=of f3b] {\parbox{3cm}{\small\raggedright Implement improvements}};
+\node (f5a) [evaluation, left=of f4] {\parbox{3cm}{\small\raggedright Re-evaluate with refined criteria. Core goals met.}};
+\node (f5b) [phase, left=of f5a] {\parbox{3cm}{\small\raggedright Plan improvements and further extensions, priotise on risk.}};
+\node (f6) [implementation, left=of f5b] {\parbox{3cm}{\small\raggedright Implement highest priority extensions}};
+\node (f7) [evaluation, below=of f6] {\parbox{3.3cm}{\small\raggedright Evaluate completed extensions}};
+
+\draw [arrow] (f1) -- (f2);
+\draw [arrow] (f2) -- (f3a);
+\draw [arrow] (f3a) -- (f3b);
+\draw [arrow] (f3b) -- (f4);
+\draw [arrow] (f4) -- (f5a);
+\draw [arrow] (f5a) -- (f5b);
+\draw [arrow] (f5b) -- (f6);
+\draw [arrow] (f6) -- (f7);
+
+\end{tikzpicture}
+\caption{Phases of development}
+\label{fig:Phases}
+\end{figure}
+\paragraph{Hazel Codebase \& Interaction} The Hazel codebase is extensive (65k lines), with much of it being undocumented. As such interaction with the Hazel development team was required to clarify workings. Equally, I found and raised issues on bugs throughout, some being fixed by myself and later merged into the main development branch. 
+\paragraph{Version Control \& Merges} Git and GitHub were used for version control and backups. My project had various extensions and alternate implementations and improvements, for which multiple branches were created.
+
+Hazel is a very active research project, so many bugfixes (and bugs introduced) and new features were added over the course of developing this project. These updates were regularly merged into my project, often requiring extensive conflict resolution (Slicing touches almost the entire codebase). Included in this were two major merges for labelled tuples and a UI architecture rewrite. See \cref{sec:Merges} for a list of merges.
+\paragraph{Continuous Integration \& Deployment} The main branch of this project is integrated with Hazel's continuous integration and deployment system (using GitHub actions). As such, unit tests and coverage are performed automatically, and the main branch of this project can be accessed at \url{https://hazel.org/build/witnesses-type-slicing/}.\footnote{This is continuously deployed. New functionality implemented \textit{after} the deadline may also be present.}
+\paragraph{Testing} Hazel performs it's testing by listing code samples with errors labelled by comments. Or, more recently, shifting towards unit regression tests using the \textit{Alcotest} package \cite{AlcoTest}. I reuse these to ensure type checking and evaluation is not broken by my additions. However, as slicing involves random term IDs, unit testing is more difficult. Therefore, I use the earlier method of testing directly within the editor, querying the slicing UI to test for calculation errors.
+\paragraph{Tools} No new dependencies were introduced into Hazel, instead existing dependencies were used, e.g. \code{Js_of_ocaml} \cite{JSOO} for regex matching, Jane Street \code{Base.Sequence} \cite{Base} for streams. However, micro benchmarking of the search procedure was performed using \textit{Bechamel} \cite{Bechamel}
+
+\paragraph{Licences} Hazel is open-source available under an MIT licence. The source OCaml corpus of ill-typed programs \cite{OCamlCorpus} translated into Hazel is freely available under a Creative Commons Zero (CC0) licence. We again license the project with an MIT licence and the translated Hazel corpus with a CC0 licence.
