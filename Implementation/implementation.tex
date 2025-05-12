@@ -2,14 +2,14 @@
 This section details the slicing theories developed and implementations of type slicing, cast slicing, and the search procedure.
 
 \section{Type Slicing Theory}\label{sec:TypeSlicingTheory}
-I develop a novel method, \textit{type slicing}, to aid programmers in understanding \textit{how} a bidirectional type system works. First I define typing slices. Then, three slicing criteria: synthesis, analysis, and contribution slices, each associate typing derivations with different explanatory slices. 
+I developed a novel method, \textit{type slicing}, to aid programmers in understanding \textit{how} a bidirectional type system works. First I define typing slices. Then, three slicing criteria: synthesis, analysis, and contribution slices, each associate typing derivations with different explanatory slices. 
 
 The first two criteria give insight on the synthesised and analysed type contributions. The third completes a picture of code regions contributing in any way to a term's type.
 
 The second and third criterion were \textit{very challenging} to formalise, requiring non-obvious mathematical machinery: \textit{context typing slices} (\cref{sec:ContextTypingSlices}), \textit{checking contexts} (\cref{sec:CheckingContexts}), and \textit{type-indexed slices} (\cref{sec:TypeIndexedSlices}). Only the basic definitions are given here, the full theory is found in \cref{sec:SlicingTheory}.
 
 \subsection{Expression Typing Slices}\label{sec:ExpressionTypingSlices}
-First, I introduce what \textit{slices} are in this context. The aim is to provide a formal representation of term \textit{highlighting}. 
+First, I introduce what \textit{slices} are in this context. The aim is to provide a formal representation of term highlighting. 
 
 \subsubsection{Term Slices}
 A \textit{term slice} is a term with some sub-terms omitted. The omitted terms are those that are \textit{not} highlighted. For example if my slicing criterion is to \textit{omit terms which are typed as} \code{Int}, then the following expressions highlights as:
@@ -23,12 +23,12 @@ Omitted sub-terms are replaced by a \textit{gap} term, notated $\gap$. Represent
 We can then define a \textit{precision} partial order \cite{PartialOrder} on term slices: $\varsigma_1 \sqsubseteq \varsigma_2$ meaning $\varsigma_1$ is less or equally precise than $\varsigma_2$. That is, $\varsigma_1$ matches $\varsigma_2$ structurally except that some sub-terms may be gaps. For example:
 \[\gap \sqsubseteq\gap + \gap\sqsubseteq 1 + \gap \sqsubseteq 1 + 2\]
 
-\paragraph{Lattice Structure}\label{sec:JoinTypesTheory} For any \textit{complete term} $t$ (having no gaps), the slices of $t$ form a \textit{bounded lattice structure} \cite{Lattice}. That is, every pair $\varsigma_1, \varsigma_2$ has a \textit{join} $\varsigma_1 \sqcup \varsigma_2$ and \textit{meet} $\varsigma_1 \sqcap \varsigma_2$. In general, not all slices slices have joins: $1 \centernot\sqcup\ 2$, but do have meets as $\gap \sqsubseteq \varsigma$ for all $\varsigma$.
+\paragraph{Lattice Structure}\label{sec:JoinTypesTheory} For any \textit{complete term} $t$ (having no gaps), the slices of $t$ form a \textit{bounded lattice structure} \cite{Lattice}. That is, every pair $\varsigma_1, \varsigma_2$ has a \textit{join} $\varsigma_1 \sqcup \varsigma_2$ and \textit{meet} $\varsigma_1 \sqcap \varsigma_2$. In general, not all slices slices have joins: $1 \centernot\sqcup 2$, but do have meets as $\gap \sqsubseteq \varsigma$ for all $\varsigma$.
  
 \subsubsection{Typing Assumption Slices}
 Expression typing is performed given a set of \textit{typing assumptions}. Therefore, in addition, we also desire a slice taking the \textit{relevant} assumptions. Typing assumptions are \textit{partial functions} mapping variables to types (see \cref{sec:TypingJudgements}). 
 
-Hence, their slices slices are partial functions to \textit{type slices}. Such that, a slice maps no more variables to no more precise types. This, and meets and joins, can be extended by extensionality \cite{Extensionality}:
+Hence, their slices are partial functions to \textit{type slices}. Such that, a slice maps no more variables to no more precise types. This, and meets and joins, can be extended by extensionality \cite{Extensionality}:
 
 \begin{definition}[Typing Assumption Slice Precision]
 For typing assumption slices $\gamma_1, \gamma_2$. Where $\mathrm{dom}(f)$ is the set of variables for which a partial function $f$ is \textit{defined}:
@@ -44,7 +44,7 @@ Again, slicing complete typing assumptions $\Gamma$ forms a bounded lattice. In 
 \subsubsection{Expression Typing Slices}
 Finally, an \textit{expression typing slice}, $\rho$, is a pair, $\varsigma^\gamma$, of a term slice and a typing slice. Precision, joins and meets, can be extended pointwise to term typing slices with all the same properties.
 
-\paragraph{Typing Checking} \textit{Expression slices} can be \textit{type checked} under the \textit{type assumption slices} by replacing gaps $\gap$ by: holes of arbitrary metavariable $\hole^u$ in \textit{expressions}, fresh variables in \textit{patterns}, and the dynamic type in \textit{types}. Notated by $\type{\cdot}$.
+\paragraph{Typing} \textit{Expression slices} can be \textit{type checked} under the \textit{type assumption slices} by replacing gaps $\gap$ by: holes of any metavariable $\hole^u$ in \textit{expressions}, fresh variables in \textit{patterns}, and the dynamic type in \textit{types}. Notated by $\type{\cdot}$.
 
 \begin{definition}[Expression Typing Slice Type Checking]
 For expression typing slice $\varsigma^{\gamma}$ and type $\tau$. $\synthesis[\gamma]{\varsigma}{\tau}$ iff $\synthesis[\type{\gamma}]{\type{\varsigma}}{\tau}$ and $\analysis[\gamma]{\varsigma}{\tau}$ iff $\analysis[\type{\gamma}]{\type{\varsigma}}{\tau}$.
@@ -55,12 +55,12 @@ Next, some of an expression's type might be enforced by the surrounding \textit{
 
 \subsubsection{Contexts and Their Slices}
 \renewcommand{\C}{\mathdcal{C}}
-We represent these surrounding contexts by a \textit{term context} $\mathdcal{C}$. Which marks \textit{exactly one} sub-term as $\cmark$. Where $\C\{t\}$ substitutes term $t$ for the mark $\cmark$ in $\C$, only allowed if the marked position expects a term of the same class as $t$ (pattern \code{Pat}, type \code{Typ}, or expression \code{Exp}). Notate the classes by $\C : \code{X} \to \code{Y}$. Contexts are \textit{composable}: $(\C_1 \circ \C_2)(t) = \C_1\{\C_2\{t\}\}$ when $\C_1 : \code{X} \to \code{Y}$ and $\C_2 : \code{Y} \to \code{Z}$. Composition is associative.
+We represent these surrounding contexts by a \textit{term context} $\mathdcal{C}$, which marks \textit{exactly one} sub-term as $\cmark$. Where $\C\{t\}$ substitutes term $t$ for the mark $\cmark$ in $\C$, only allowed if the marked position expects a term of the same class as $t$ (pattern \code{Pat}, type \code{Typ}, or expression \code{Exp}). Notate the classes by $\C : \code{X} \to \code{Y}$. Contexts are \textit{composable}: $(\C_1 \circ \C_2)(t) = \C_1\{\C_2\{t\}\}$ when $\C_1 : \code{X} \to \code{Y}$ and $\C_2 : \code{Y} \to \code{Z}$. Composition is associative.
 
 
 \newcommand{\Cs}{\mathdcal{c}}
 \newcommand{\p}{\mathdcal{p}}
-These extend to slices analogously to term slices. However, the precision relation $\sqsubseteq$ more restrictive, requiring the mark $\cmark$ to remain in the same structural position. For example: $\cmark(\gap) \sqsubseteq \cmark(1)$, but $\cmark \not \sqsubseteq \cmark(1)$. Concisely defined by \textit{extensionality}:
+These extend to context slices notated $\Cs$ analogously to term slices. However, the precision relation $\sqsubseteq$ is more restrictive, requiring the mark $\cmark$ to remain in the same structural position. For example: $\cmark(\gap) \sqsubseteq \cmark(1)$, but $\cmark \not \sqsubseteq \cmark(1)$. Concisely defined by \textit{extensionality}:
 
 \begin{definition}[Context Precision]\label{def:ContextPrecision}
 If $\Cs : \code{X} \to \code{Y}$ and $\Cs' : \code{X} \to \code{Y}$ are context slices, then $\Cs' \sqsubseteq \Cs$ if and only if, for all terms $t$ of class $\code{X}$, that $\Cs'\{t\} \sqsubseteq \Cs\{t\}$.
@@ -74,12 +74,12 @@ For context slice $\Cs : \code{X} \to \code{Y}$ and term slice $\varsigma$ of cl
 Joins and meets can be defined extensionally as before, still forming bounded lattices over complete contexts. The lattice bottom is the \textit{purely structural context}, consisting of only gaps with the mark in the correct position. In general, in addition to joins, not all contexts have meets: $\cmark\centernot \sqcap \cmark(\gap)$.
 
 \subsubsection{Typing Assumption Contexts and Their Slices}
-The accompanying notion typing notion can be represented by \textit{endomorphisms on typing assumption slices}. These functions represents which \textit{relevant} typing assumptions must be \textit{added}, and those safely \textit{removable} when typing an expression within a context slice.
+The accompanying typing notion can be represented by \textit{endomorphisms on typing assumption slices}. These functions represents which \textit{relevant} typing assumptions must be \textit{added}, and those safely \textit{removable} when typing an expression within a context slice.
 
 \renewcommand{\F}{\mathdcal{F}}
 \newcommand{\f}{\mathdcal{f}}
 
-Precision, joins, and meets can be defined via extensionality. As usual forming bounded lattices on complete functions, the bottom being the constant function to the empty typing assumptions. Again, such functions are monotone:
+Precision, joins, and meets can be defined via extensionality, forming bounded lattices on complete functions as usual. The bottom element being the constant function to the empty typing assumptions. Again, such functions are monotone:
 \begin{proposition}[Function Application Preserves Precision]
 For typing assumption slice $\gamma$ and typing assumption context slice $\f$. Then if we have slices $\gamma' \sqsubseteq \gamma$, $f' \sqsubseteq f$ then also $f'(\gamma') \sqsubseteq f(\gamma)$.
 \end{proposition}
@@ -116,18 +116,18 @@ If $\S = \p_1 * \S_1 \to \p_2 * \S_2$:
 \[\S \circ \S' = \p_1 * (\S_1 \circ \S') \to \p_2 * (\S_2 \circ \S')\]
 \end{definition}
 
-This definition stems from it representing regular context typing slice composition over it's full slices.
+This definition stems from it representing regular context typing slice composition over its full slices.
 \begin{proposition}[Type-Indexed Composition Preserves Full Slice Composition]
 For type-indexed slices $\S$ and $\S'$: 
 \[\overline{\S \circ \S'} = \overline{\S} \circ \overline{\S'}\]
 \end{proposition}
-Application, notated $\mid>$ be defined similarly, converting indexed context slices into valid indexed expression slices. The opposite direction is more difficult and can be found in appendix (\cref{def:Application}).
+Application, notated $\mid>$, can be defined similarly, converting indexed context slices into valid indexed expression slices. The opposite direction is more difficult and can be found in appendix (\cref{def:Application}).
 
 
 \subsection{Criterion 1: Synthesis Slices}
 \label{sec:SynthesisSlices}
 
-Synthesis slices aim to explain why an expression \textit{synthesises} a type. They omits all sub-terms which analyse against a type retrieved from synthesising some other part of the program. For example, the following term synthesises a $\code{Bool} \to \code{Bool}$ type, and the variable $x : \code{Int}$ and argument are irrelevant:
+Synthesis slices aim to explain why an expression \textit{synthesises} a type. They omit all sub-terms which analyse against a type retrieved from synthesising some other part of the program. For example, the following term synthesises a $\code{Bool} \to \code{Bool}$ type, and the variable $x : \code{Int}$ and argument are irrelevant:
 
 \[\hlcmaths[yellow!30]{(\lambda} x: \code{Int}\hlcmaths[yellow!30]{.\ \lambda y : \code{Bool}.\ y)(}1\hlcmaths[yellow!30]{)}\]
 
@@ -142,11 +142,11 @@ These slices can be calculated via a typing judgement $\synthesisslice{e}{\tau}{
 
 \subsection{Criterion 2: Analysis Slices}\label{sec:AnalysisSlices}
 A similar idea can be devised for type analysis, represented using \textit{context slices}. After all, it is the terms immediately \textit{around} the sub-term where the type checking is enforced. For example, when checking this annotated term:
-\[(\lambda x. \hole^u) : \code{Bool} \to \code{Int}\]
-The \textit{inner hole term} $\hole^u$ (underlined) is required to be consistent with \code{Int} due to the annotation and lambda constructor present in it's context. The analysis slice will be:
+\[(\lambda x. \underline{\hole^u}) : \code{Bool} \to \code{Int}\]
+The \textit{inner hole term} $\hole^u$ (underlined) is required to be consistent with \code{Int} due to the annotation and lambda constructor present in its context. The analysis slice will be:
 \[\hlcmaths[yellow!30]{(\lambda} x\hlcmaths[yellow!30]{.} \underline{\hole^u} \hlcmaths[yellow!30]{) : } \code{Bool} \hlcmaths[yellow!30]{\to \code{Int}}\]
 
-In other words, if the context slice was type checked, then the inner hole would \textit{still} required to analyse against \code{Int}. However, the overall synthesised type may differ, this sliced example would synthesis $\dyn \to \code{Int}$ vs. the unsliced $\code{Bool} \to \code{Int}$.
+In other words, if the context slice was type checked, then the inner hole would \textit{still} be required to analyse against \code{Int}. However, the overall synthesised type may differ, this sliced example would synthesis $\dyn \to \code{Int}$ vs. the unsliced $\code{Bool} \to \code{Int}$.
 
 
 \subsubsection{Checking Context}
@@ -213,7 +213,7 @@ Both contextual and synthetic parts (in dark yellow) contribute:
 \[\hlcmaths[yellow!30]{(\lambda} f\hlcmaths[yellow!30]{: \code{Int} \to \dyn}.\ f(1)\hlcmaths[yellow!30]{)}\underline{\hlcmaths[yellow!70]{(\lambda} x \hlcmaths[yellow!70]{: \code{Int}.}\ x\hlcmaths[yellow!70]{)}}\]
 Notice that the only sub-terms which do not contribute have their type changed without affecting the overall type must be dynamically annotated. Therefore, this criterion omits the dynamic code regions.
 
-These can be calculated mimicking the Hazel typing rules. During subsumption, remove synthesis slice sub-part which match with dynamic parts of the analysing type. Contextual parts are found by passing context slices directly as inputs to type analysis rules.
+These can be calculated mimicking the Hazel typing rules. During subsumption, remove the synthesis slice sub-part which match with dynamic parts of the analysing type. Contextual parts are found by passing context slices directly as inputs to type analysis rules.
 
 \section{Cast Slicing Theory}\label{sec:CastSlicingTheory}
 Cast slicing propagates type slice information during evaluation, by tagging casts types with type slices. A primary reason in formalising type-indexed slices was to make slices decomposable during evaluation, retaining only sub-slices relevant to the part of the type involved in the decomposed cast. This requires changing the syntax of casts to $\scast{\S}{\S}$ and inserting casts between slices during elaboration. The first two criteria work together during elaboration, analysis slices inserted when casting on a elaborated expression who had it's type \textit{analysed}, and the synthesised for synthesis slices. The rules are found in
@@ -223,7 +223,7 @@ Cast slicing propagates type slice information during evaluation, by tagging cas
 Here I detail how the theories above were adapted to produce an implementation for Hazel.
 \subsection{Hazel Terms}
 \label{sec:HazelTerms}
-Hazel represents its terms as a standard abstract syntax tree (AST) via mutual recursion. Every sub-term is tagged with an identifier (ID, \code{ID.t}). Terms are grouped similarly to the calculus (see \cref{sec:HazelSyntax}), but combining external and internal expressions, and adding patterns and environments, see \cref{fig:HazelTerms} \& \ref{fig:tupletermstructure}.
+Hazel represents its terms as a standard abstract syntax tree (AST) via mutual recursion. Every sub-term is tagged with an identifier (ID, \code{ID.t}). Terms are grouped similarly to the calculus (see \cref{sec:HazelSyntax}), but combining external and internal expressions, and adding patterns and environments, see \cref{fig:HazelTerms} and \ref{fig:tupletermstructure}.
 
 
 \begin{figure}
@@ -289,13 +289,13 @@ arrowEnv/.style={-{Latex[round]}, thick, draw={rgb,255:red,135;green,119;blue,76
 
 \subsubsection{Expression slices as ASTs}
 
-Directly storing expression slices directly as ASTs is both \textit{space and time inefficient}, even when accounting for the persistence \cite[ch. 2]{PurelyFunctionalDataStructures} of trees in OCaml. 
+Storing expression slices directly as ASTs is both \textit{space and time inefficient}, even when accounting for the persistence \cite[ch. 2]{PurelyFunctionalDataStructures} of trees in OCaml. 
 
-For highlighting purposes, there is no need to retain the structure (unlike the theory, we do not need to type check the results, instead just assuming correctness). 
+For highlighting purposes, there is no need to retain the structure (unlike the theory, we do not need to type-check the results, instead just assuming correctness). 
 
 \subsubsection{Unstructured Code Slices}
 \label{sec:UnstructuredSlices}
-With this in mind, I represent slices indirectly by their IDs with an \textit{unstructured} list, referred to now as a \textit{code slice}. Additionally, this allows more \textit{granular} control over slices, as they need not conform with the structure of expressions, which is taken advantage of in reducing slice sizes \cref{sec:SlicingAnalysis}.
+With this in mind, I represent slices indirectly by their IDs with an \textit{unstructured} list, referred to now as a \textit{code slice}. Additionally, this allows more \textit{granular} control over slices, as they need not conform with the structure of expressions, which is taken advantage of in reducing slice sizes (\cref{sec:SlicingAnalysis}).
 
 \subsubsection{Type-Indexed Slices}
 Cast slicing and contribution slices required \textit{type-indexed} slices. I therefore tag type constructors with slices recursively, i.e.:
@@ -317,7 +317,7 @@ However, this did not model the structure of type slices particularly well. Anal
 \subsubsection{Incremental Slices}
 Therefore, slices are represented incrementally. With \textit{incremental slices} for synthesis slice parts and \textit{global slices} for analysis slice parts.
 
-A \textit{global slice} is only tagged once, then \textit{lazily} tagged to sub-slices if used. That is, when de-constructing types, e.g. in function matching. We get the type in \cref{fig:SliceType}:
+A \textit{global slice} is only tagged once, then \textit{lazily} tagged to sub-slices if used. That is, when deconstructing types, e.g. in function matching. We get the type in \cref{fig:SliceType}:
 \begin{figure}[h]
 \centering
 \begin{minted}[fontsize=\small]{reason}
@@ -427,11 +427,11 @@ Hazel is \textit{bidirectionally typed}, where the \textit{mode} (synthesis, ana
 Slicing logic relating to synthesis slices and analysis slices is factored into \code{Self.t} and \code{Mode.t} respectively, cleanly segregated from the type checking code. Although, doing this still required full understanding of the type checker implementation, ensuring the correct IDs are sliced.
 
 \subsubsection{Typing (Co-)Context}
-The typing context and co-contexts are modified to use type slices. This deviates from the theoretical notion of an expression slice: the structural context in which the variable is used is untracked when passing through the context. Therefore, it requires using \textit{unstructured} code slices. It is useful in practice allowing slices calculated during binding to be retrieved usage, see \cref{fig:VarSlice}.
+The typing context and co-contexts are modified to use type slices. This deviates from the theoretical notion of an expression slice: the structural context in which the variable is used is untracked when passing through the context. Therefore, it requires using \textit{unstructured} code slices. It is useful in practice, allowing slices calculated during binding to be retrieved upon usage, see \cref{fig:VarSlice}.
 \begin{figure}[h]
 \centering
 \includegraphics[width=0.3\textwidth]{Media/Figures/var_slice}
-\caption{Type slice for variable \code{x}: includes it's binding and slice.}
+\caption{Type slice for variable \code{x}: includes its binding and slice.}
 \label{fig:VarSlice}
 \end{figure}
 
@@ -439,10 +439,10 @@ The typing context and co-contexts are modified to use type slices. This deviate
 The status, mode, and self are combined to determine a term's actual type, being dynamic if there is an error. When the expectations (mode, self) are inconsistent, the inconsistent slice information parts are tagged to the error status; \cref{sec:SlicingAnalysis} retrospectively considers what slice information to be extracted here. Additionally, contribution slices can extract the static parts of synthesis slices here. 
 
 \subsection{Integration}
-To support the full Hazel language, type slices needed to implement many functions, for example: type substitution, type normalisation, weak-head normalisation, tracking sum types, various structural matching functions etc. Additionally almost every usage of types in the codebase had to be refactored to use type slices (which are so easily pattern matched upon) while ensuring slices correctly maintained.
+To support the full Hazel language, type slices needed to implement many functions, for example: type substitution, type normalisation, weak-head normalisation, tracking sum types, various structural matching functions etc. Additionally, almost every usage of types in the codebase had to be refactored to use type slices (which are not so easily pattern matched upon) while ensuring slices were correctly maintained.
 
 \subsection{User Interface \& Examples}
-The type slices of the expression at the cursor (in red) are highlighted, see \cref{fig:SliceExamples}. Error slices distinguish between the synthesis and analysis parts with blue and red, see the evaluation examples \cref{sec:EvalExamples}.
+In \cref{fig:SliceExamples}, the type slices at the cursor (in red) are highlighted. Error slices distinguish between the synthesis and analysis parts with blue and red, see the evaluation examples \cref{sec:EvalExamples}.
 
 \begin{figure}[h]
 \centering
@@ -454,12 +454,12 @@ The type slices of the expression at the cursor (in red) are highlighted, see \c
 \begin{subfigure}[t]{0.45\textwidth}
 \centering
 \includegraphics[width=1\textwidth]{Media/Figures/fun_syn}
-\caption{The function synthesises \code{[Int]}$\to$ \code{IntOption} due to it's \code{[Int]} annotation and that the match branches synthesis \code{IntOption}. Both branches provide the same type information, only one branch (the last) is highlighted.}
+\caption{The function synthesises \code{[Int]}$\to$ \code{IntOption} due to its \code{[Int]} annotation and that the match branches synthesis \code{IntOption}. Both branches provide the same type information, only one branch (the last) is highlighted.}
 \end{subfigure}
 \begin{subfigure}[t]{0.45\textwidth}
 \centering
 \includegraphics[width=1\textwidth]{Media/Figures/hd_syn}
-\caption{The variable usage of \code{hd} synthesises \code{[Int]}$\to$ \code{IntOption} similarly, whose slice is retrieved from the typing context.}
+\caption{The variable usage of \code{hd} synthesise \code{[Int]}$\to$ \code{IntOption} similarly, whose slice is retrieved from the typing context.}
 \end{subfigure}$\qquad$
 \begin{subfigure}[t]{0.45\textwidth}
 \centering
@@ -474,7 +474,7 @@ The type slices of the expression at the cursor (in red) are highlighted, see \c
 To implement cast slicing, replace casts between \textit{types} by casts between \textit{type slices}. Type slices are already type-indexed and retain all type information so can be used equivalently.
 
 \subsection{Elaboration}\label{sec:Elaboration}
-Cast insertion recursively traverses the unelaborated term, inserting casts to the term's statically determined type as stored in the \code{Info} data-structure. For example, a list literal recursively elaborate it's terms and joins their slices, casting to the join. Ensuring all the type slice information is retained and/or reconstructed during elaboration was a meticulous and error-prone process.
+Cast insertion recursively traverses the unelaborated term, inserting casts to the term's statically determined type as stored in the \code{Info} data-structure. For example, a list literal recursively elaborates its terms and joins their slices, casting to the join. Ensuring all the type slice information is retained and/or reconstructed during elaboration was a meticulous and error-prone process.
 
 \subsection{Cast Transitions}
 \Cref{sec:HazelDynamics} gave an intuitive overview of how casts are treated at runtime. Type-indexed slices allows cast slices to be decomposed in exactly the same way. 
@@ -492,10 +492,10 @@ As we store type slices incrementally, the part of the slice corresponding \text
 \subsection{Unboxing}
 When we know a final form's (\cref{sec:HazelFinalForms}) type, we may need to extract parts of the term according to the type during evaluation. For example, extracting the elements of a tuple. But due to casts and holes, this is not trivial \cite{LivePatternMatching}.
 
-Slicing does not concern unboxing, but indeterminate evaluation (\cref{sec:IndetEval}) unveiled bugs within which had to be fixed. I raised and fixed these, eventually being merged into the main branch. \Cref{sec:UnboxingBugs} details this, after covering the required context on the unboxing implementation.
+Slicing does not concern unboxing, but indeterminate evaluation (\cref{sec:IndetEval}) unveiled bugs within which had to be fixed. I raised and fixed these, with my PR eventually being merged into the main branch. \Cref{sec:UnboxingBugs} details this, after covering the required context on the unboxing implementation.
 
 \subsection{User Interface \& Examples}
-Type slices within casts can be selected from the evaluation result and displayed. This require reworking some of the dependencies of Hazel's model-view-update architecture to make sure the cursor has access to the code editor cell when inside the evaluation result cell.
+Type slices within casts can be selected from the evaluation result and displayed. This requires reworking some of the dependencies of Hazel's model-view-update architecture to make sure the cursor has access to the code editor cell when inside the evaluation result cell.
 \begin{figure}[h]
 \centering
 \begin{subfigure}{0.45\textwidth}
@@ -522,10 +522,10 @@ This section creates a framework for non-deterministic evaluation of indetermina
 
 \subsection{Resolving Non-determinism}
 \label{sec:ResolvingNondeterminism}
-To model infinite non-determinism I create a monadic DSL with an explicitly tree/forest-based representation. The forest model allows for varying low level search traversals. The module type of combinators is in \code{Nondeterminism.Search}; it's underlying parametric type is \code{t('a)} with \code{'a} being the type of the solutions. \Cref{sec:SearchMethods} discusses the actual implementations of this interface, giving four searching procedures.
+To model infinite non-determinism I create a monadic DSL with an explicitly tree/forest-based representation. The forest model allows for varying low-level search traversals. The module type of combinators is in \code{Nondeterminism.Search}; its underlying parametric type is \code{t('a)} with \code{'a} being the type of the solutions. \Cref{sec:SearchMethods} discusses the actual implementations of this interface, giving four searching procedures.
 
 
-In addition the functions from \Cref{sec:Nondeterminism}, I add standard \code{map} and \code{join} functions, and various other functions, e.g. \code{ifte} modelled after Mercury's if-then-else construct \cite{Mercury}.
+In addition, the functions from \Cref{sec:Nondeterminism}, I add standard \code{map} and \code{join} functions, and various other functions, e.g. \code{ifte} modelled after Mercury's if-then-else construct \cite{Mercury}.
 
 \subsubsection{Abstracting Search Order: Forest Model}
 Typical stream-based models of non-determinism \cite{ListOfSuccess} only admit the possibility of depth-first search (DFS). Stream concatenation provides no way of remembering choice points and backtracking before finishing a computation. 
@@ -632,7 +632,7 @@ This section demonstrates one indeterminate evaluation algorithm evaluating term
 
 Instantiation is implemented by a \textit{non-deterministic} function \code{instantiate}, discussed in detail in \cref{sec:HoleInstantiation}: \[\code{Instantiation.instantiate : Exp.t => S.t(Exp.t)}\]
 
-Evaluation steps are performed by a (deterministic) function \code{take_step}, classifing it's input as either (concrete) values, indeterminate values, steppable expressions. The step evaluator re-uses the Hazel stepper logic, which had existing bugs to be fixed: causing non-termination of fixed points\footnote{Due to incorrect management of closures; the main branch stepper is still broken as of May 9th.} and misclassifying concrete values as indeterminate values: 
+Evaluation steps are performed by a (deterministic) function \code{take_step}, classifying its input as either (concrete) values, indeterminate values, or steppable expressions. The step evaluator re-uses the Hazel stepper logic, which had existing bugs to be fixed: causing non-termination of fixed points\footnote{Due to incorrect management of closures; the main branch stepper is still broken as of May 9th.} and misclassifying concrete values as indeterminate values: 
 \[\code{OneStepEvaluator.take_step : Exp.t => TryStep.t}\] 
 
 To ensure that the search tree has finite branching factor, possibly infinite choices must be wrapped, e.g. evaluation steps. The actual implementation additionally threads state tracking number of instantiations and trace length throughout the algorithm.
@@ -734,7 +734,7 @@ Holes have a dynamic type at runtime. Therefore, the hole's context \textit{expe
 \subsubsection{Substituting Holes}\label{sec:HoleSubstitutionImplementation}
 Holes can be bound to variables in the execution environment, and may also be duplicated, before they are required to be instantiated, see \cref{fig:HoleDuplication}. Every occurrence must be substituted.
 
-Hole substitution was described as part of the Hazel calculus \cref{sec:HoleSubstitution}. But, unexpectedly, the main Hazel branch does not yet implement it. A full implementation of metavariables and delayed closures is complex. Therefore, as hole closures are not required for hole instantiation,\footnote{Instantiations do not contain variable references.} I use existing term ids identify holes, ensuring these are maintained and propagated correctly, so that duplicated holes retain the same ID.\footnote{All of elaboration and dynamics required these checks.}
+Hole substitution was described as part of the Hazel calculus \cref{sec:HoleSubstitution}. But, unexpectedly, the main Hazel branch does not yet implement it. A full implementation of metavariables and delayed closures is complex. Therefore, as hole closures are not required for hole instantiation,\footnote{Instantiations do not contain variable references.} I use existing term IDs identify holes, ensuring these are maintained and propagated correctly, so that duplicated holes retain the same ID.\footnote{All of elaboration and dynamics required these checks.}
 
 Substitutions must also be performed within closures, eagerly evaluating the results to ensure that closures bind variables to values. 
 
@@ -742,7 +742,7 @@ Substitutions must also be performed within closures, eagerly evaluating the res
 \label{sec:TypesForHoles}
 If we know which hole to instantiate, how do we know which type to instantiate it to? This logic is highly specific to Hazel's cast semantics, with many Hazel-specific issues arising.
 
-For efficiency, my implementation both determines \textit{which hole}, and it's \textit{type information} during the same pass.
+For efficiency, my implementation both determines \textit{which hole}, and its \textit{type information} during the same pass.
 
 \paragraph{Directly from Casts}
 Most of the time, a hole is directly surrounded by a cast, whose type information can be used to perform an instantiation.
@@ -777,16 +777,16 @@ We can collect each of these possible types from the elaborated casts inserted o
 \par
 \subsubsection{Extended Match Expression Instantiation (Pattern Instantiation)}
 \label{sec:ExtendedPatternMatching}
-An interesting extension was partially implemented which improves code coverage and additionally detects errors within patterns. It instantiates holes in a match expression according also to the \textit{structure} of each pattern, allowing the instantiation to prioritise searching along each branch. We instantiate the scrutinee with the least specific versions which match the patterns on each branch, e.g. \dyn\code{::}\dyn\ for \code{x::xs}. However, difficulties come when the scrutinee is a compound term, or when least specific matches only indeterminately matching earlier branches. Further details addressing these issues can be found in \cref{sec:extendedmatching}.
+An interesting extension was partially implemented which improves code coverage and additionally detects errors within patterns. It instantiates holes in a match expression according also to the \textit{structure} of each pattern, allowing the instantiation to prioritise searching along each branch. We instantiate the scrutinee with the least specific versions which match the patterns on each branch, e.g. \dyn\code{::}\dyn\ for \code{x::xs}. However, difficulties come when the scrutinee is a compound term, or when least specific matches only indeterminately match earlier branches. Further details addressing these issues can be found in \cref{sec:extendedmatching}.
 
 \section{Search Procedure}\label{sec:SearchProcedure}
-Now that an framework for indeterminate evaluation has been specified, the DSL implementations and cast error search logic can be addressed. The search procedure can be switched on via a toggle in the settings.
+Now that a framework for indeterminate evaluation has been specified, the DSL implementations and cast error search logic can be addressed. The search procedure can be switched on via a toggle in the settings.
 
 \subsection{Detecting Relevant Cast Errors}
 \label{sec:CastFailureDetection}
-To search for cast errors, we must first define what one is. A reasonable definition is terms which contain \textit{cast failures}; in Hazel, these are casts between \textit{inconsistent ground types}. However, this has some issues:
+To search for cast errors, we must first define what one is. A reasonable definition is those terms which contain \textit{cast failures}; in Hazel, these are casts between \textit{inconsistent ground types}. However, this has some issues:
 
-\paragraph{Multiple Cast Failures} Terms may have multiple cast failures, some of which discovered during static type checking and inserted via elaboration. But these failures won't stop evaluation until necessary. Therefore, we should consider only the casts which are directly \textit{causing} a term to get stuck, this is implemented similarly to choosing which hole to instantiate (\cref{sec:ChooseHole}).
+\paragraph{Multiple Cast Failures} Terms may have multiple cast failures, some of which discovered during static type checking and inserted via elaboration. But these failures will not stop evaluation until necessary. Therefore, we should consider only the casts which are directly \textit{causing} a term to get stuck, this is implemented similarly to choosing which hole to instantiate (\cref{sec:ChooseHole}).
 
 \paragraph{Cast Laziness}
 \label{sec:SearchCastLaziness}
@@ -936,7 +936,7 @@ Streams, but with choice and conjunction via interleaving also ensures fairness.
 The submitted code contains the three most important branches of this project (\texttt{Evaluation}, \texttt{witnesses-type-slicing}, \texttt{contribution-slices}). The \texttt{Evaluation} branch factors out a \code{Js_of_ocaml} \cite{JSOO} dependency from the Hazel core library, meaning evaluation code can be run natively and on the command line; however, the web interface is therefore unusable on this branch.
 
 \paragraph{Hazel Architecture}
-The Hazel architecture demonstrates in \cref{fig:Architecture} with green files/directories added, orange files modified \textit{significantly}, and blue files modified \textit{insignificantly} (but still needing to know how they work) or unmodified. 97 files were added/edited, not all can fit, so anything omitted is considered insignificant to understanding this project.
+The Hazel architecture demonstrated in \cref{fig:Architecture} with green files/directories added, orange files modified \textit{significantly}, and blue files modified \textit{insignificantly} (but still needing to know how they work) or unmodified. 97 files were added/edited, not all can fit, so anything omitted is considered insignificant to understanding this project.
  \Cref{fig:Evaluation} shows the structure of the evaluation modules.
 \begin{figure}[h]
  \tiny

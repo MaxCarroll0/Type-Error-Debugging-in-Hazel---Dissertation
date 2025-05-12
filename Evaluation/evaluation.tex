@@ -9,14 +9,14 @@ These were all completed with respect to most must/should/could have Hazel featu
 \section{Goals}\label{sec:EvaluationGoals}
 This project devised and implemented three features: \textit{type slicing, cast slicing,} and a \textit{static type error witness search procedure}. Each of which had a clear intention for it's use:
 
-\paragraph{Type Slicing:} Expected to give a greater static context to expressions. Explaining why an expression was given a specific type.
+\paragraph{Type Slicing} Expected to give a greater static context to expressions. Explaining why an expression was given a specific type.
 
-\paragraph{Cast Slicing:} Expected to provide static context to runtime type casts and propagate this throughout evaluation. Explaining where a cast originated and why it was inserted.
+\paragraph{Cast Slicing} Expected to provide static context to runtime type casts and propagate this throughout evaluation. Explaining where a cast originated and why it was inserted.
 
-\paragraph{Search Procedure:} Finds dynamic type errors (cast errors) automatically, linked back to source code by their execution trace and \textit{cast slice}. Therefore, a static type error can be associated automatically with a concrete dynamic type error \textit{witness} to better explain.
+\paragraph{Search Procedure} Finds dynamic type errors (cast errors) automatically, linked back to source code by their execution trace and \textit{cast slice}. Therefore, a static type error can be associated automatically with a concrete dynamic type error \textit{witness} to better explain.
 
 \section{Methodology}\label{sec:EvaluationMethodology}
-I evaluate the features and their various implementations (where applicable) along \textit{four} axes. With quantitative measures were evaluated over a corpus of ill-typed and dynamically-typed Hazel programs (\cref{sec:CorpusCollection}):
+I evaluate the features and their various implementations (where applicable) along \textit{four} axes. Quantitative measures were evaluated over a corpus of ill-typed and dynamically-typed Hazel programs (\cref{sec:CorpusCollection}):
 
 \subsubsection{Quantitative Analysis}
 \paragraph{Performance} \textit{Are the features performant enough for use in interactive debugging? Which implementations perform best?}
@@ -41,23 +41,23 @@ Various program examples are given, demonstrating how all three features can be 
 
 
 \section{Hypotheses}
-Various hypotheses for properties of the results are expected. The evidence and implications of these are discussed in the \textit{critical evaluation}.
+I made several hypotheses and investigated each. The evidence and implications being discussed in the following sections.
 
-\paragraph{Search method space requirements: } The space requirements for DFS and Bounded DFS are expected to be lower than that of BFS and interleaved DFS.
+\paragraph{Search method space requirements} The space requirements for DFS and Bounded DFS are expected to be lower than that of BFS and interleaved DFS.
 
-\paragraph{Type Slices are larger than Cast Slices: } Casts are de-constructed during elaboration and evaluation, so cast slices are expected to be smaller than the original type slices, and therefore more directly explain why errors occur. 
+\paragraph{Type Slices are larger than Cast Slices} Casts are deconstructed during elaboration and evaluation, so cast slices are expected to be smaller than the original type slices, and therefore more directly explain why errors occur. 
 
-\paragraph{The Small Scope Hypothesis: }
+\paragraph{The Small Scope Hypothesis}
 \label{sec:SmallScopeHypothesis} This hypothesis \cite{SmallScopeHypothesisOrigination} states that a high proportion of errors can be found by generating only \textit{small} inputs. Evidence that this hypothesis holds has been provided for Java data-structures \cite{SmallScopeHypothesis} and answer-set programs \cite{SmallScopeHypothesisAnswerSet}. Does it also hold for finding dynamic type errors from small \textit{hole instantiations}?
 
-\paragraph{Smaller instantiations correlate with smaller traces: } As functional programs are often written recursively, destructuring compound data types on each step. If this and the small scope hypothesis hold, then most errors could be found with \textit{small execution traces}.
+\paragraph{Smaller instantiations correlate with smaller traces} As functional programs are often written recursively, destructuring compound data types on each step. If this and the small scope hypothesis hold, then most errors could be found with \textit{small execution traces}.
 
 \section{Program Corpus Collection}\label{sec:CorpusCollection}
 
-A corpus of small and mostly ill-typed programs was produced, containing both dynamic (unannotated) programs and annotated programs (containing statically caught errors). We have made this corpus available on GitHub \cite{HazelCorpus}.
+A corpus of small and mostly ill-typed programs were produced, containing both dynamic (unannotated) programs and annotated programs (containing statically caught errors). We have made this corpus available on GitHub \cite{HazelCorpus}.
 
 \subsection{Methodology}
-There are no extensive existing corpora of Hazel programs, nor ill-typed Hazel programs. Therefore, we opted to transpile parts of an existing OCaml corpus collected by Seidel and Jhala \cite{OCamlCorpus}. Which is freely available under a Creative Commons CC0 licence. 
+There are no extensive existing corpora of Hazel programs, nor ill-typed Hazel programs. Therefore, we opted to transpile parts of an existing OCaml corpus collected by Seidel and Jhala \cite{OCamlCorpus}, which is freely available under a Creative Commons CC0 licence. 
 
 I am grateful for my supervisor who created a best-effort OCaml to Hazel transpiler \cite{HazelOfOCaml}. This translates the OCaml examples into both a dynamic example, and a (possibly partially) statically typed version according to what type the OCaml type checker expects expression to be.
 
@@ -69,7 +69,7 @@ The program corpus contains \textbf{698} small programs, \textbf{294} were annot
 
 \section{Performance Analysis}\label{sec:PerformanceAnalysis}
 \subsection{Slicing}
-The type and cast slicing mechanisms don't increase the time complexity of the type checker nor evaluator. Hence, they are still as performant as the original, capable of interactive use to medium sized programs.
+The type and cast slicing mechanisms do not increase the time complexity of the type checker nor evaluator. Hence, they are still as performant as the original, capable of interactive use to medium sized programs.
 
 \subsection{Search Procedure}
 Only the annotated ill-typed corpus containing inconsistency errors are used in evaluating the search procedure. After all, any well-typed program cannot have a dynamic type error.
@@ -180,7 +180,7 @@ However, there was no linear correlation (Pearson correlation coefficient $= 0$)
 \section{Critical Analysis}\label{sec:CriticalAnalysis}
 This section discusses the implications of the previous results and delves deeper into the reasoning behind them. As a response to this analysis, many improvements were devised.
 \subsection{Slicing}\label{sec:SlicingAnalysis}
-Type slicing theory (\cref{sec:TypeSlicingTheory}) requires highlighted code to form valid expressions or contexts, though some highlighted parts, like unused or dynamic bindings, don't affect types and can be omitted. This motivated the use of unstructured (ad-hoc) slices (\cref{sec:UnstructuredSlices}).
+Type slicing theory (\cref{sec:TypeSlicingTheory}) requires highlighted code to form valid expressions or contexts, though some highlighted parts, like unused or dynamic bindings, do not affect types and can be omitted. This motivated the use of unstructured (ad-hoc) slices (\cref{sec:UnstructuredSlices}).
 
 In \cref{fig:LetSliceOmitted}, a bound integer \code{x} is only used in one branch. Since the other branch can already determine the type of the conditional, the $\code{x}$  and \code{let} are excluded from the slice. Though the whole program is selected (see the red cursor) the let expression is omitted. A contribution slice would include everything, making it even more verbose.
 \begin{figure}
@@ -311,7 +311,7 @@ When multiple holes are involved in searching, the search space increases expone
 Further, some errors only arise on very specific inputs, e.g. \code{(23, 31)} and \code{(31, 23)} in \cref{fig:SpecificInstantiations}. Directing instantiation to maximise code coverage earlier could find such errors attempting fewer instantiations.
 \begin{figure}\centering
 \includegraphics[width=0.6\textwidth]{Media/Figures/very_specific_error}
-\caption{Witness Requiring Very Specific Instantiations}
+\caption{Witness requiring very specific instantiations}
 \label{fig:SpecificInstantiations}
 \end{figure}
 

@@ -9,7 +9,7 @@ An indeterminate evaluation framework (\cref{sec:IndetEval}) was built, greatly 
 During the holistic evaluation, various usability and UI improvements were considered and added as low-priority extensions (\cref{sec:UIImprovements}). Once implemented, a user study could assess the real world effectiveness of type slicing and cast slicing in improving understanding of the type system, and locating errors.
 
 \subsection{Cast Slicing}
-Cast slicing propagates type slice information throughout evaluation. But, it provides no slicing on \textit{execution properties} of the program. Extended slicing methods could, for example, provide a minimal program which evaluates to the \textit{same} cast around the \textit{same} value. This could build on traditional \textit{dynamic slicing} methods \cite{DynProgSlice, FunctionalProgExplain}, and find use also in debugging \textit{semantic} errors.
+Cast slicing propagates type slice information throughout evaluation. But, it provide no slicing on \textit{execution properties} of the program. Extended slicing methods could, for example, provide a minimal program which evaluates to the \textit{same} cast around the \textit{same} value. This could build on traditional \textit{dynamic slicing} methods \cite{DynProgSlice, FunctionalProgExplain}, and find use also in debugging \textit{semantic} errors.
 
 \subsection{Property Testing}
 A framework similar to SmallCheck \cite{SmallCheck} or QuickCheck \cite{QuickCheck} could be implemented via indeterminate evaluation. Additionally, execution properties could also be tested.
