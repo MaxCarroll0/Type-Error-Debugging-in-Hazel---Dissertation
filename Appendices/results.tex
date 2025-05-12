@@ -1,7 +1,7 @@
 \chapter{Supplementary Results and Corpus Data}
 \label{sec:results}
 Statistics on the corpus are found in \cref{fig:CorpusStats}.
-\begin{figure}
+\begin{figure}[h]
 \centering
 \begin{tabular}{c|ccccc}
 & \textbf{Count} & \multicolumn{2}{c}{\textbf{Prog. Size}}& \multicolumn{2}{c}{\textbf{Trace Length}}\\
@@ -19,7 +19,7 @@ Statistics on the corpus are found in \cref{fig:CorpusStats}.
 
 The averages for each search method over their successful programs for each implementation are given in \cref{fig:SearchPerformance}. Note that each method succeeds on \textit{differing} sets of programs.
 
-\begin{figure}
+\begin{figure}[h]
   \centering
   \begin{tabular}{lc|cccc}
   & Averages & \multicolumn{4}{c}{\textbf{Implementations}}\\
@@ -73,9 +73,9 @@ Std. dev. & 35& 33&2.4& 5
 \label{fig:WitnessSize}
 \end{figure}
 
-Some examples of programs in the translated corpus are given in \cref{fig:}. All three were examples where BDFS did not terminate, and are accompanied with their failure classification.
+Some examples of programs in the translated corpus are given in \cref{fig:FailureExamples}. All three were examples where BDFS did not terminate, and are accompanied with their failure classification.
 
-\begin{figure}
+\begin{figure}[h]
 \centering
 \begin{subfigure}{1\textwidth}
 \includegraphics[width=1\textwidth]{Media/Figures/witness_exists}
