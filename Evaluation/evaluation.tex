@@ -248,10 +248,10 @@ Compound type inconsistencies necessarily differ at the outermost constructor (e
 \label{fig:MinimisedSlice}
 \end{figure}
 
-\subsection{Structure Editing}\label{sec:StructureEditing}
-Hazel uses a structure editor with an update calculus \cite{HazelStructureCalculus}, where statics are recalculated on edits, even cursor movement. While slice-based type checking is fast, it's less ideal for such interactive use in large programs.
+%\subsection{Structure Editing}\label{sec:StructureEditing}
+%Hazel uses a structure editor with an update calculus \cite{HazelStructureCalculus}, where statics are recalculated on edits, even cursor movement. While slice-based type checking is fast, it's less ideal for such interactive use in large programs.
 
-Hazel ensures efficient (constant time) edits via a zipper data structure \cite{Zipper, OneHoleContext}. Extending this to the AST and typing info could enable edits to only locally update the type  information. However, some edits (e.g. adding a binding) can cause non-local, more extensive, type recalculation, but, these are rare. Such a system would require a major rewrite of Hazel's statics, with benefits beyond just type slicing.
+%Hazel ensures efficient (constant time) edits via a zipper data structure \cite{Zipper, OneHoleContext}. Extending this to the AST and typing info could enable edits to only locally update the type  information. However, some edits (e.g. adding a binding) can cause non-local, more extensive, type recalculation, but, these are rare. Such a system would require a major rewrite of Hazel's statics, with benefits beyond just type slicing.
   
 \subsection{Static-Dynamic Error Correspondence}
 \label{sec:ErrorCorrespondence}
@@ -293,11 +293,6 @@ To address this, BDFS, BFS, and IDFS were implemented, with BDFS performing the 
 Errors within dead code cannot have a witness as they are not dynamically reachable. A significant portion (39/47) of failed programs for BDFS had trivial dead code which could easily be detected and returned explicitly as proving no witness exists.
 
 Additionally, code can become dead due to errors. 12 (32\%) of the dead code classified had a nested error within a branch that is unreachable due to a pattern error on the branch pattern. Even if witnesses are found for these branch errors, the nested errors remain hidden.
-
-\subsubsection{Dynamically Safe Code}
-Some static errors is inherently dynamically safe, having no witness, e.g. \code{if true then 0 else "str"}. The search procedure often proves this by running out of instantiations: BDFS proved no witness 12\% of the time. 
-
-However, in general, safe code may lead to non-terminating searches, endlessly generating witnesses. So, a timeout does not necessarily imply a witness was found, or that none exist.
 
 \subsubsection{Cast Laziness}\label{sec:EvalCastLaziness}
 Hazel treats casts lazily, deferring cast transitions on compound data until their elements are used (e.g., tuple elements). Hazel does not detect cast errors between these non-ground compound types (e.g., \code{[Int]} vs \code{[String]}) until elements are used. Therefore if such elements are unused in code, the error cannot be witnessed. These are uncommon, none appearing in the search corpus.

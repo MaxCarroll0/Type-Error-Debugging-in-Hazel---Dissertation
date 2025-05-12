@@ -32,13 +32,21 @@ This would provide an \textit{intuitive} concrete explanation for static type er
 
 Hazel \cite{Hazel} is a functional, locally inferred, and gradually typed research language that allows writing \textit{incomplete programs} under active development at the University of Michigan. Being gradually typed, it is a natural choice for this project, allowing both static and dynamic code to coexist. I successfully demonstrate the utility of these three features in improving understanding of \textit{both} static and dynamic errors as well as how the two classes of errors interact and may be linked automatically.
 
-\paragraph{Example} \Cref{fig:ErrorExample} shows an attempt at writing an int list concatenation function. But list cons (\code{::}) is used instead of list concatenation (\code{@}). Type slicing will automatically highlight the code that caused \code{x} to synthesise the \code{[Int]} type and the code that enforces the requirement that \code{x} is an \code{Int}. If the error is still not clear, the search procedure can be used to generate inputs which evaluate to cast errors, for example \code{concat([[], []])}, giving a concrete evaluation trace to an error. Finally, cast slicing will allow the cast errors to be selected, highlighting source code that enforced the cast, potentially giving a more concise slice than statically computed by type slicing. The results of this example among others are explored in the evaluation (\cref{sec:EvalExamples}).
+%\paragraph{Example} \Cref{fig:ErrorExample} shows an attempt at writing an int list concatenation function. But list cons (\code{::}) is used instead of list concatenation (\code{@}). Type slicing will automatically highlight the code that caused \code{x} to synthesise the \code{[Int]} type and the code that enforces the requirement that \code{x} is an \code{Int}. If the error is still not clear, the search procedure can be used to generate inputs which evaluate to cast errors, for example \code{concat([[], []])}, giving a concrete evaluation trace to an error. Finally, cast slicing will allow the cast errors to be selected, highlighting source code that enforced the cast, potentially giving a more concise slice than statically computed by type slicing. The results of this example among others are explored in the evaluation (\cref{sec:EvalExamples}).
 
-\begin{figure}[h]
+%\begin{figure}[h]
+%\centering
+%\includegraphics[width=0.7\textwidth]{Media/Figures/concat_error}
+%\caption{A Static Type Error from the Hazel Editor}
+%\label{fig:ErrorExample}
+%\end{figure}
+
+\begin{figure}
 \centering
-\includegraphics[width=0.7\textwidth]{Media/Figures/concat_error}
-\caption{A Static Type Error from the Hazel Editor}
-\label{fig:ErrorExample}
+\includegraphics[width=0.75\textwidth]{Media/Figures/map_example_intro}
+
+Note: \code{?} represents a hole, an \textit{incomplete} part of the program.
+\caption{\textbf{Example:} Concatenation \code{@} has been used instead of cons \code{::}, but \code{f(x)} is incorrectly localised as the error. Type slicing will give a full context highlighting the terms involved in the error (the annotation, \code{f(x)} and \code{@} operator). The search procedure could find a witness (e.g. \code{[0]}) concretely evaluating to a dynamic error. The cast in the dynamic error will contain a slice highlighting= the source code that makes \code{@} take lists as input.}
 \end{figure}
 
 \section{Related Work}

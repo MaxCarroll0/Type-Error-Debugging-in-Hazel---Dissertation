@@ -65,14 +65,13 @@
 \input{Declaration/declaration}
 \pdfbookmark[1]{Proforma}{Proforma}
 \input{Proforma/proforma}
-\input{Acknowledgements/acknowledgements}
 
 \chapterstyle{custom}
 
 
 \titlespacing*{\section}{0pt}{1.5ex plus .2ex minus .1ex}{1ex}
 \titlespacing*{\subsection}{0pt}{1.5ex plus .2ex minus .1ex}{1ex}
-\titlespacing*{\subsubsection}{0pt}{1.5ex plus .2ex minus .1ex}{1ex}
+\titlespacing*{\subsubsection}{0pt}{1.5ex plus .2ex minus .1ex}{0.5ex}
 \titlespacing*{\paragraph}{0pt}{1ex}{1em}
 
 % Section
@@ -108,7 +107,7 @@
 
 \pagestyle{myruled}
 \setlrmarginsandblock{2cm}{2cm}{*}
-\setulmarginsandblock{2cm}{1cm}{*}
+\setulmarginsandblock{2cm}{1.2cm}{*}
 \setheaderspaces{*}{4pt}{*}
 \checkandfixthelayout[fixed]
 %\DisableFootNotes
@@ -143,13 +142,13 @@
 \appendix
 \include{Appendices/typejudgements}
 \include{Appendices/formalsemantics}
-\include{Appendices/nondeterminismalternatives}
 \include{Appendices/slicing}
 \include{Appendices/unboxingbugs}
 \include{Appendices/extendedmatching}
-\include{Appendices/merges}
 \include{Appendices/results}
 \include{Appendices/usability}
+\include{Appendices/nondeterminismalternatives}
+\include{Appendices/merges}
 
 \backmatter
 \include{Proposal/proposal}

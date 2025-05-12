@@ -115,10 +115,6 @@
 %TC:group tabular 1 1
 %TC:group table 0 1
 %TC:macro \footnote [text]
-%TC:envir minted [ignore] displaymath
-%TC:envir lstlisting [ignore] displaymath
-%TC:envir code [ignore] displaymath
-%TC:envir figure [ignore] displaymath
 
 \immediate\write18{texcount -inc -sum=1,0,0,0,0,0,0 -0 \jobname.tex > wordcount.aux }
 \newcommand{\wordcount}{\input{wordcount.aux}}

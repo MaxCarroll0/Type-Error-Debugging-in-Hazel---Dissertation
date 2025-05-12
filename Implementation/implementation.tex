@@ -1,13 +1,7 @@
 \chapter{Implementation}\label{chap:Implementation}
-This project was conducted in \textit{two} major phases:
-\begin{enumerate}
-\item I devised a mathematical theory for \textit{type slicing} and \textit{cast slicing} and considered changes to the system of Seidel et al. \cite{SearchProc} for creating a \textit{type error witnesses search procedure} in Hazel.  
-
-\item I iteratively implement and evaluate the theories and search procedure, extending to the majority of Hazel. Suitable deviations from the theory, made upon critical evaluation, are detailed throughout.
-\end{enumerate}
+This section details the slicing theories developed and implementations of type slicing, cast slicing, and the search procedure.
 
 \section{Type Slicing Theory}\label{sec:TypeSlicingTheory}
-
 I develop a novel method, \textit{type slicing}, to aid programmers in understanding \textit{how} a bidirectional type system works. First I define typing slices. Then, three slicing criteria: synthesis, analysis, and contribution slices, each associate typing derivations with different explanatory slices. 
 
 The first two criteria give insight on the synthesised and analysed type contributions. The third completes a picture of code regions contributing in any way to a term's type.
@@ -386,11 +380,11 @@ For basic type slices, when the same type information is available from multiple
 \begin{figure}[h]
 \centering
 \includegraphics[width=0.5\textwidth]{Media/Figures/typejoin}
-\caption{Type Slice Joins}
+\caption{Type Slice Joins (note: Hazel syntax uses $\dyn$ also for expression holes)}
 \label{fig:TypeJoins}
 \end{figure}
 
-This gets complex, requiring tracking all the data relating to which branches should be highlighted, and accumulating the inconsistent parts of failed joins for use in minimised error slices (demonstrated in \cref{sec:ErrorSlices}). I make use of custom OCaml let bindings \textbf{(cite)} to retain clarity while automatically combining branches in successful joins and combining inconsistencies in failed joins. For example, see \cref{fig:ArrowJoin}, where comments describe the logic abstracted by the custom bindings; note that all join-able type combinations use this same parallel binding logic to combine branches and inconsistencies.
+This gets complex, requiring tracking all the data relating to which branches should be highlighted, and accumulating the inconsistent parts of failed joins for use in minimised error slices (demonstrated in \cref{sec:ErrorSlices}). I make use of custom OCaml let binding \cite{CustomLetOperators} to retain clarity while automatically combining branches in successful joins and combining inconsistencies in failed joins. For example, see \cref{fig:ArrowJoin}, where comments describe the logic abstracted by the custom bindings; note that all join-able type combinations use this same parallel binding logic to combine branches and inconsistencies.
 
 \begin{figure}[h]
 \small
@@ -430,7 +424,7 @@ Hazel is \textit{bidirectionally typed}, where the \textit{mode} (synthesis, ana
 \end{figure}
 
 \subsubsection{Self and Mode}
-Slicing logic relating to synthesis slices and analysis slices is factored into \code{Self.t} and \code{Mode.t} respectively, cleanly segregated from the type checking code. Although, doing this still required full understanding of the type checker implementation, ensuring the correct IDs are sliced. Two examples of the slicing logic are shown in \cref{sec:slicingstaticsexamples}.
+Slicing logic relating to synthesis slices and analysis slices is factored into \code{Self.t} and \code{Mode.t} respectively, cleanly segregated from the type checking code. Although, doing this still required full understanding of the type checker implementation, ensuring the correct IDs are sliced.
 
 \subsubsection{Typing (Co-)Context}
 The typing context and co-contexts are modified to use type slices. This deviates from the theoretical notion of an expression slice: the structural context in which the variable is used is untracked when passing through the context. Therefore, it requires using \textit{unstructured} code slices. It is useful in practice allowing slices calculated during binding to be retrieved usage, see \cref{fig:VarSlice}.
@@ -566,7 +560,7 @@ Instead, we can use a model based on forests (lists of trees) \cite{Bunches}. Ch
 \label{fig:Wrap}
 \end{figure}
 
-The DSL is extended with a \code{wrap : t('a) => t('a)} combinator. As \code{wrap} is abstract, the underlying implementation does not actually need to use a forest data structure. Therefore, DFS can still be efficiently implemented using regular streams. Finally, a \code{run} function produces a lazy list of solutions in the tree with ordering specified by the search method.
+The DSL is extended with a \code{wrap : t('a) => t('a)} combinator. As \code{wrap} is abstract, the underlying implementation does not actually need to use a forest data structure. Therefore, DFS can still be efficiently implemented using regular streams. Finally, a \code{run} function produces a lazy list of solutions with ordering specified by the search method; these can be cycled through with some arrows in the UI.
 
 \subsubsection{Recursive Functions}
 As OCaml is strict, defining infinite choices via recursion can lead to non-termination during definition. I define a shorthand lazy application function \code{apply(f, x)} by \code{return(x) >>= f}, represented infix by \code{|>-}. Provided that bind lazily applies \code{f}, recursive functions can be written directly resulting in infinite choices without OCaml's strictness leading to infinite recursion.
@@ -679,7 +673,7 @@ An indeterminate term may contain \textit{multiple} holes or even \textit{no} ho
 
 When attempting to evaluate the indeterminate term some transitions rules require a sub-term to be concrete (e.g. a function during application). We chose to instantiate the hole that blocks the \textit{first} blocked transition rule. If latter holes were instantiated, the term might \textit{still} be unevaluable due to this first hole.
 
-This is implemented using Hazel's evaluator abstraction (\code{EV_MODE}), separating this logic from the transition semantics. Therefore, hole choosing logic will automatically update to future changes in the transition semantics.
+This is implemented using Hazel's evaluator abstraction (\code{EV_MODE}), which (rather obscurely\footnote{Lacking documentations and using advanced custom let operators \cite{CustomLetOperators}. Understanding took considerable time.}) separates this logic from the transition semantics. Therefore, hole choosing logic will automatically update to future changes in the transition semantics.
 
 \subsubsection{Synthesising Terms for Types}
 Suppose we know which hole to instantiate and to which type (\cref{sec:TypesForHoles}). How do we refine these holes fairly and lazily, to the \textit{least specific} value that allows evaluation to continue?
@@ -696,18 +690,18 @@ let ints = nats <||> wrap(negs)
 \end{minted}
 \begin{subfigure}{0.45\textwidth}
 \centering
-\scalebox{0.8}{\[\left[\ n \quad ; \quad \vcenter{\hbox{\begin{forest}
+\scalebox{0.8}{$\left[\ n \quad ; \quad \vcenter{\hbox{\begin{forest}
 [$\cdot$ [$n+1$] [$\cdot$ [$n + 2$] [$\cdot$ [$n+3$] [...]]]]
-\end{forest}}}\right]\]}
+\end{forest}}}\right]$}
 \caption{\code{ints_from(n)}}
 \end{subfigure}
 \begin{subfigure}{0.45\textwidth}
 \centering
-\scalebox{0.8}{\[\left[\ 0 \quad ; \quad \vcenter{\hbox{\begin{forest}
+\scalebox{0.8}{$\left[\ 0 \quad ; \quad \vcenter{\hbox{\begin{forest}
 [$\cdot$ [$1$] [$\cdot$ [$2$] [$\cdot$ [$3$] [...]]]]
 \end{forest}}} \quad ; \quad \vcenter{\hbox{\begin{forest}
 [$\cdot$ [$-1$] [$\cdot$ [$-2$] [$\cdot$ [$-3$] [...]]]]
-\end{forest}}}\right]\]}
+\end{forest}}}\right]$}
 \caption{\code{ints}}
 \end{subfigure}
 \caption{Enumerating Integers}
@@ -785,11 +779,8 @@ We can collect each of these possible types from the elaborated casts inserted o
 \label{sec:ExtendedPatternMatching}
 An interesting extension was partially implemented which improves code coverage and additionally detects errors within patterns. It instantiates holes in a match expression according also to the \textit{structure} of each pattern, allowing the instantiation to prioritise searching along each branch. We instantiate the scrutinee with the least specific versions which match the patterns on each branch, e.g. \dyn\code{::}\dyn\ for \code{x::xs}. However, difficulties come when the scrutinee is a compound term, or when least specific matches only indeterminately matching earlier branches. Further details addressing these issues can be found in \cref{sec:extendedmatching}.
 
-\subsection{User Interface}\label{sec:UIIndetEval}
-The default evaluation method returns all indeterminate or concrete values. The results can be cycled through via some arrows buttons.
-
 \section{Search Procedure}\label{sec:SearchProcedure}
-Now that an framework for indeterminate evaluation has been specified, the DSL implementations and cast error search logic can be addressed.
+Now that an framework for indeterminate evaluation has been specified, the DSL implementations and cast error search logic can be addressed. The search procedure can be switched on via a toggle in the settings.
 
 \subsection{Detecting Relevant Cast Errors}
 \label{sec:CastFailureDetection}
@@ -940,9 +931,6 @@ I augment this into an \code{Bound.t => (Bool, ['a, Bound.t])}, implemented as a
 \paragraph{Interleaved Streams (IDFS)}
 Streams, but with choice and conjunction via interleaving also ensures fairness. This works even for trees with infinite branching factor. However, interleaving has a linear space complexity, resulting in exponential space complexity as with BFS.
 
-\subsection{User Interface}
-The user can switch the search procedure on via a toggle in the settings.
-
 \section{Repository Overview}
 \paragraph{Branches}
 The submitted code contains the three most important branches of this project (\texttt{Evaluation}, \texttt{witnesses-type-slicing}, \texttt{contribution-slices}). The \texttt{Evaluation} branch factors out a \code{Js_of_ocaml} \cite{JSOO} dependency from the Hazel core library, meaning evaluation code can be run natively and on the command line; however, the web interface is therefore unusable on this branch.
@@ -953,7 +941,7 @@ The Hazel architecture demonstrates in \cref{fig:Architecture} with green files/
 \begin{figure}[h]
  \tiny
  \centering
- \scalebox{0.95}{\begin{tabular}{llp{7cm}}
+ \scalebox{0.93}{\begin{tabular}{llp{7cm}}
  Dir & Description\\
  {\color{Green}\texttt{data/*}} & \multicolumn{2}{l}{Program corpus, pre-filtering}\\
  {\color{Green}\texttt{results/*}} & \multicolumn{2}{l}{Results}\\
@@ -976,7 +964,7 @@ The Hazel architecture demonstrates in \cref{fig:Architecture} with green files/
 \begin{figure}
  \centering
  \tiny
- \scalebox{0.95}{\begin{tabular}{lllllp{4cm}}
+ \scalebox{0.93}{\begin{tabular}{lllllp{4cm}}
  Dir & Description\\
  {\color{orange}\texttt{src/*}} & \multicolumn{5}{l}{Hazel source code}\\
  {\color{orange}\ \ \ $\vdash$}&{\color{orange}\texttt{./haz3lcore/*}} & \multicolumn{4}{l}{Core semantics library}\\
