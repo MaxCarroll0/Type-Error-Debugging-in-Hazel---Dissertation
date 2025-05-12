@@ -2,7 +2,9 @@
 This section evaluates how successfully and effectively the implemented features achieve the goals stated in the introduction.
 
 \section{Success}
-This evaluation is more ambitious than that presented in the project proposal goals. As demonstrated below, the type witness search procedure and cast slicing features exceeds all core goals\footnote{That is, reasonable coverage and performance.} presented in the project proposal, while type slicing had not been conceived, but naturally complements cast slicing. Some extension goals were reached: almost of Hazel was supported\footnote{Except the type slicing of two constructs: type functions and labelled tuples (which was a new feature merged by the Hazel dev team in February).}. The search procedure was not mathematically formalised, but the slicing mechanisms were.
+As demonstrated below, the type witness search procedure and slicing features exceeds all core goals (\cref{sec:RequirementAnalysis}). All extensions except for the \textit{usability} extensions were attempted, with extended pattern instantiation (\cref{sec:ExtendedPatternMatching}) only partially implemented.
+
+These were all completed with respect to most must/should/could have Hazel features, except for: type slicing of type functions and labelled tuples,\footnote{Labelled tuples were only merged late in the development cycle.} which remain only partially functional. 
 
 \section{Goals}\label{sec:EvaluationGoals}
 This project devised and implemented three features: \textit{type slicing, cast slicing,} and a \textit{static type error witness search procedure}. Each of which had a clear intention for it's use:
@@ -17,24 +19,24 @@ This project devised and implemented three features: \textit{type slicing, cast 
 I evaluate the features and their various implementations (where applicable) along \textit{four} axes. With quantitative measures were evaluated over a corpus of ill-typed and dynamically-typed Hazel programs (\cref{sec:CorpusCollection}):
 
 \subsubsection{Quantitative Analysis}
-\paragraph{Performance: } \textit{Are the features performant enough for use in interactive debugging? Which implementations perform best?}
+\paragraph{Performance} \textit{Are the features performant enough for use in interactive debugging? Which implementations perform best?}
 
 The time and space usage of the search procedure implementations were micro-benchmarked for each ill-typed program in the corpus. Up to 100 runs were taken per program with estimated time, major and minor heap allocations were estimated using an ordinary linear regression (OLS) via the \textit{bechamel} library \cite{Bechamel}.
 
-\paragraph{Effectiveness: } \textit{Do the features effectively solve the problems? Are the results easily interpretable by a user?}
+\paragraph{Effectiveness} \textit{Do the features effectively solve the problems? Are the results easily interpretable by a user?}
 
 The \textit{coverage},  what proportion of programs admit a witness, for each search procedure implementation was measured. The search procedure does not always terminate, a 30s time limit was chosen. The coverage was expected to be \textit{reasonable}, chosen at 75\%.
 
 Additionally, the \textit{size} of witnesses, evaluation traces, type slices, and cast slices were measured. The intention being that a smaller size implies that there is less information for a user to parse, and hence easier to interpret.\footnote{Not necessarily \textit{always} true, but a reasonable assumption.}
 
 \subsubsection{Qualitative Analysis}
-\paragraph{Critical: } \textit{What \textit{classes} of programs are missed by the search procedure? What are the implications of the \textit{quantitative} results? What improvements were, or could be made in response to these?}
+\paragraph{Critical} \textit{What \textit{classes} of programs are missed by the search procedure? What are the implications of the \textit{quantitative} results? What improvements were, or could be made in response to these?}
 
-This section provides \textit{critical} arguments on {usefulness} or {effectiveness}, which are \textit{evidenced} by quantitative data. Differing implementations and \textit{subsequent improvements}\footnote{Which were then implemented and analysed.} are compared. Additionally, further unimplemented improvements are proposed.
+This section provides \textit{critical} arguments on {usefulness} or {effectiveness}, which are \textit{evidenced} by quantitative data. Differing implementations and \textit{subsequent improvements} are compared. Additionally, further unimplemented improvements are proposed.
 
-\paragraph{Holistic: } \textit{Do the features work well together to provide a helpful debugging experience? Is the user interface intuitive?}
+\paragraph{Holistic} \textit{Do the features work well together to provide a helpful debugging experience? Is the user interface intuitive?}
 
-Various program examples are given, demonstrating how all three features can be used together to debug a type error. Improvements to the UI are discussed.\footnote{Improved UI being a low-priority extension.} 
+Various program examples are given, demonstrating how all three features can be used together to debug a type error.
 
 
 
@@ -57,31 +59,15 @@ A corpus of small and mostly ill-typed programs was produced, containing both dy
 \subsection{Methodology}
 There are no extensive existing corpora of Hazel programs, nor ill-typed Hazel programs. Therefore, we opted to transpile parts of an existing OCaml corpus collected by Seidel and Jhala \cite{OCamlCorpus}. Which is freely available under a Creative Commons CC0 licence. 
 
-I am grateful for my supervisor who created a best-effort OCaml to Hazel transpiler \cite{HazelOfOCaml}. This translates the OCaml examples into both a dynamic example, and a (possibly partially) statically typed version according to what type the OCaml type checker expects expression to be.\footnote{The annotations may be consistent, as we are translating ill-typed code.}
+I am grateful for my supervisor who created a best-effort OCaml to Hazel transpiler \cite{HazelOfOCaml}. This translates the OCaml examples into both a dynamic example, and a (possibly partially) statically typed version according to what type the OCaml type checker expects expression to be.
 
 This corpus contains both OCaml unification and constructor errors. When translated to Hazel, these may manifest as differing errors. The only errors that the search procedure is expected to detect are those which contain \textit{inconsistent expectations} errors. Hence, the search procedure is ran on the corpus of annotated programs filtering those without this class of errors. Additionally, the search procedure requires the erroneous functions to have holes applied to start the search, these are inserted automatically by the evaluation code after type checking the programs.
 
 
 \subsection{Statistics}
-The program corpus contains \textbf{698} programs of which \textbf{203} were applicable to performing the search procedure on. Averages and standard deviations in size and trace size\footnote{When using normal, deterministic, evaluation.} shown in \cref{fig:CorpusStats}.
-\begin{figure}
-\centering
-\begin{tabular}{c|ccccc}
-& \textbf{Count} & \multicolumn{2}{c}{\textbf{Prog. Size}}& \multicolumn{2}{c}{\textbf{Trace Length}}\\
-&  & Avg. & Std. dev. & Avg. & Std. dev.\\
-\hline
-\textbf{Unannotated} &404 &117 &81 &9&9\\
-\textbf{Annotated} &294 &117 &76 &9&9\\
-\textbf{Searched} &203 &120 &77 &10 &10\\
-\hline
-(Total)  &698 &117 &79 &9 &9\\
-\end{tabular}
-\caption{Hazel Program Corpus}
-\label{fig:CorpusStats}
-\end{figure}
+The program corpus contains \textbf{698} small programs, \textbf{294} were annotations, of which \textbf{203} were applicable to performing the search procedure on.
 
 \section{Performance Analysis}\label{sec:PerformanceAnalysis}
-
 \subsection{Slicing}
 The type and cast slicing mechanisms don't increase the time complexity of the type checker nor evaluator. Hence, they are still as performant as the original, capable of interactive use to medium sized programs.
 
@@ -192,11 +178,11 @@ However, there was no linear correlation (Pearson correlation coefficient $= 0$)
 
 
 \section{Critical Analysis}\label{sec:CriticalAnalysis}
-This section discusses the implications of the previous results and delves deeper into the reasoning behind them. As a response to this analysis, many improvements have been devised, some of which have been implemented.
+This section discusses the implications of the previous results and delves deeper into the reasoning behind them. As a response to this analysis, many improvements were devised.
 \subsection{Slicing}\label{sec:SlicingAnalysis}
 Type slicing theory (\cref{sec:TypeSlicingTheory}) requires highlighted code to form valid expressions or contexts, though some highlighted parts, like unused or dynamic bindings, don't affect types and can be omitted. This motivated the use of unstructured (ad-hoc) slices (\cref{sec:UnstructuredSlices}).
 
-In \cref{fig:LetSliceOmitted}, a bound integer \code{x} is only used in one branch. Since the other branch can already determine the type of the conditional, the $\code{x}$  and \code{let} are excluded from the slice. Though the whole program is selected,\footnote{See the red cursor.} the let expression is omitted. A contribution slice would include everything,\footnote{Both branches must be shown, as \code{x} needs to type-check.} making it even more verbose.
+In \cref{fig:LetSliceOmitted}, a bound integer \code{x} is only used in one branch. Since the other branch can already determine the type of the conditional, the $\code{x}$  and \code{let} are excluded from the slice. Though the whole program is selected (see the red cursor) the let expression is omitted. A contribution slice would include everything, making it even more verbose.
 \begin{figure}
 \centering
 \begin{subfigure}{0.45\textwidth}
@@ -241,17 +227,17 @@ Some type parts may agree, hence another form of type joining was introduced to 
 \label{fig:ErrorSlice}
 \end{figure}
 
-Compound type inconsistencies necessarily differ at the outermost constructor (e.g., \code{List} vs \code{Int}), being the \textit{primary} cause of the error. Deeper inconsistencies are not those causing the type error. Therefore, we could extract only the slice on the outermost constructor. These minimised slices (\cref{fig:MinimisedSlice}) are significantly (avg. 3x) smaller than full combined slices (\cref{fig:TypeSlicingEffectiveness}). This ratio may grow with program complexity.\footnote{The dataset had few partially inconsistent cases, where the biggest savings occur.}
+Compound type inconsistencies necessarily differ at the outermost constructor (e.g., \code{List} vs \code{Int}), being the \textit{primary} cause of the error. Deeper inconsistencies are not those causing the type error. Therefore, we could extract only the slice on the outermost constructor. These minimised slices (\cref{fig:MinimisedSlice}) are significantly (avg. 3x) smaller than full combined slices (\cref{fig:TypeSlicingEffectiveness}). This ratio may grow with program complexity, the corpus had few partially inconsistent cases.
 
 \begin{figure}[h]
 \centering
-\begin{subfigure}{0.3\textwidth}
+\begin{subfigure}[t]{0.5\textwidth}
 \centering
 
-\includegraphics[width=1\textwidth]{Media/Figures/partially_inconsistent_compound}
+\includegraphics[width=0.6\textwidth]{Media/Figures/partially_inconsistent_compound}
 \caption{Minimised Error Slice: Inner \code{Int} slice within list is omitted}
 \end{subfigure}$\qquad\qquad$
-\begin{subfigure}{0.3\textwidth}
+\begin{subfigure}[t]{0.3\textwidth}
 \centering
 
 \includegraphics[width=1\textwidth]{Media/Figures/partially_inconsistent_compound_ordinary}
@@ -265,14 +251,14 @@ Compound type inconsistencies necessarily differ at the outermost constructor (e
 \subsection{Structure Editing}\label{sec:StructureEditing}
 Hazel uses a structure editor with an update calculus \cite{HazelStructureCalculus}, where statics are recalculated on edits, even cursor movement. While slice-based type checking is fast, it's less ideal for such interactive use in large programs.
 
-Hazel ensures efficient edits\footnote{In constant time.} via a zipper data structure \cite{Zipper, OneHoleContext}. Extending this to the AST and typing info could enable edits to only locally update the type  information. However, some edits (e.g. adding a binding) can cause non-local, more extensive, type recalculation, but, these are rare. Such a system would require a major rewrite of Hazel's statics, with benefits beyond just type slicing.
+Hazel ensures efficient (constant time) edits via a zipper data structure \cite{Zipper, OneHoleContext}. Extending this to the AST and typing info could enable edits to only locally update the type  information. However, some edits (e.g. adding a binding) can cause non-local, more extensive, type recalculation, but, these are rare. Such a system would require a major rewrite of Hazel's statics, with benefits beyond just type slicing.
   
 \subsection{Static-Dynamic Error Correspondence}
 \label{sec:ErrorCorrespondence}
 
 A static type error will place a term inside a cast error during elaboration, which can be associated with a dynamic error whose cast error is dependent on (decomposed from) this original failed cast. This works well for \textit{inconsistent expectations} static type errors.
 
-However, for inconsistent branches, no direct cast failure occurs until both are evaluated in a shared static context. The search might find such cases, but linking them back to the static error is harder. Still, since elaboration adds casts to each branch, these can be tracked with the error.\footnote{But we cannot assume the inconsistent branches caused the error; it might instead be the context using the value that is incorrect.}
+However, for inconsistent branches, no direct cast failure occurs until a branch result is used in a static context. Still, since elaboration adds casts to each branch, these can be tracked with the error. But, we cannot distinguish if the error was caused by the branch or the use.
   
 \subsection{Categorising Programs Lacking Type Error Witnesses}
 47 programs which timed out under the BDFS search procedure were manually inspected and classified as either:
@@ -316,7 +302,7 @@ However, in general, safe code may lead to non-terminating searches, endlessly g
 \subsubsection{Cast Laziness}\label{sec:EvalCastLaziness}
 Hazel treats casts lazily, deferring cast transitions on compound data until their elements are used (e.g., tuple elements). Hazel does not detect cast errors between these non-ground compound types (e.g., \code{[Int]} vs \code{[String]}) until elements are used. Therefore if such elements are unused in code, the error cannot be witnessed. These are uncommon, none appearing in the search corpus.
 
-Addressing this would require eager cast semantics, as has been previously explored for dynamic and gradual type systems \cite{EagerCasts, GradualEagerCasts}.\footnote{Often referred to as coercions.} Additionally, they would catch dynamic errors earlier, for example, \cref{fig:LazyCastError} shows a cast inconsistency undetected (by lazy casts) at runtime until the tuple element is accessed.
+Addressing this would require eager cast semantics, as has been previously explored for dynamic and gradual type systems \cite{EagerCasts, GradualEagerCasts} (often referred to as coercions). Additionally, they would catch dynamic errors earlier, for example, \cref{fig:LazyCastError} shows a cast inconsistency undetected (by lazy casts) at runtime until the tuple element is accessed.
 \begin{figure}[h]
 \centering
 \includegraphics[width=0.4\textwidth]{Media/Figures/cast_laziness_no_error}
@@ -349,9 +335,9 @@ This section considers a number of examples of ill-typed Hazel programs, \textit
 
 
 \subsection{Interaction with Existing Hazel Type Error Localisation}
-Hazel has three error types addressed by this project:\footnote{Other errors: syntax errors, unbound variables, label errors etc. are out of scope} \textit{inconsistent expectations} (analytic and synthetic types are inconsistent), \textit{inconsistent branches }(branches or list element types are inconsistent), and \textit{inexhaustive matches}. 
+Hazel has three error types addressed by this project: \textit{inconsistent expectations} (analytic and synthetic types are inconsistent), \textit{inconsistent branches }(branches or list element types are inconsistent), and \textit{inexhaustive matches}. 
 
-\Cref{sec:ErrorCorrespondence} showed how witnesses can be associated to inconsistency errors. While indeterminate evaluation can give examples for pattern inexhaustivity, standard pattern matrix methods \cite{PatternMatchingWarnings} are more efficient.\footnote{The matrices also useful for directing pattern instantiation}
+\Cref{sec:ErrorCorrespondence} showed how witnesses can be associated to inconsistency errors. While indeterminate evaluation can give examples for pattern inexhaustivity, standard pattern matrix methods \cite{PatternMatchingWarnings} are more efficient. The matrices would also be useful for directing pattern instantiation.
 
 When errors arise from the programmer \textit{misunderstanding} the program types, error localisation can be inaccurate (due to assuming different types to the programmer's expectations). The context inspector (\cref{fig:ContextInspector}) clarifies what assumptions the system makes while slicing and witnesses can explain \textit{why}.
 
@@ -365,7 +351,20 @@ When the programmer and system agree on the types, bidirectional typing generall
 
 \subsection{Examples}
 \label{sec:EvalExamples}
-
+\ 
+\begin{figure}[H]
+\centering
+\begin{subfigure}{0.45\textwidth}
+\includegraphics[width=1\textwidth]{Media/Figures/dynamic_code_error}
+\caption{Error}
+\end{subfigure}
+\begin{subfigure}{0.45\textwidth}
+\includegraphics[width=1\textwidth]{Media/Figures/dynamic_code_error_cast_slice}
+\caption{Automated witness found with cast slice blaming \code{+} operator}
+\end{subfigure}
+\caption{Dynamic Code: An error is not statically found. Cast slicing still works even without the type annotations, blaming addition forcing ints.}
+\label{fig:DynamicExample}
+\end{figure}
 \begin{figure}[h]
 \centering
 \begin{subfigure}{0.49\textwidth}
@@ -442,18 +441,4 @@ When the programmer and system agree on the types, bidirectional typing generall
 \end{subfigure}
 \caption{A more subtle holistic example involving currying. Requires slice decomposition internally.}
 \label{fig:TastyCurry}
-\end{figure}
-
-\begin{figure}[h]
-\centering
-\begin{subfigure}{0.45\textwidth}
-\includegraphics[width=1\textwidth]{Media/Figures/dynamic_code_error}
-\caption{Error}
-\end{subfigure}
-\begin{subfigure}{0.45\textwidth}
-\includegraphics[width=1\textwidth]{Media/Figures/dynamic_code_error_cast_slice}
-\caption{Automated witness found with cast slice blaming \code{+} operator}
-\end{subfigure}
-\caption{Dynamic Code: An error is not statically found. Cast slicing still works even without the type annotations, blaming addition forcing ints.}
-\label{fig:DynamicExample}
 \end{figure}

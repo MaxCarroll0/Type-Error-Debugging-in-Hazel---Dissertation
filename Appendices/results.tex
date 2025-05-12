@@ -1,5 +1,22 @@
 \chapter{Supplementary Results and Corpus Data}
 \label{sec:results}
+Statistics on the corpus are found in \cref{fig:CorpusStats}.
+\begin{figure}
+\centering
+\begin{tabular}{c|ccccc}
+& \textbf{Count} & \multicolumn{2}{c}{\textbf{Prog. Size}}& \multicolumn{2}{c}{\textbf{Trace Length}}\\
+&  & Avg. & Std. dev. & Avg. & Std. dev.\\
+\hline
+\textbf{Unannotated} &404 &117 &81 &9&9\\
+\textbf{Annotated} &294 &117 &76 &9&9\\
+\textbf{Searched} &203 &120 &77 &10 &10\\
+\hline
+(Total)  &698 &117 &79 &9 &9\\
+\end{tabular}
+\caption{Hazel Program Corpus}
+\label{fig:CorpusStats}
+\end{figure}
+
 The averages for each search method over their successful programs for each implementation are given in \cref{fig:SearchPerformance}. Note that each method succeeds on \textit{differing} sets of programs.
 
 \begin{figure}
