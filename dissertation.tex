@@ -21,11 +21,41 @@
 }
 
 
+
 \makepagestyle{myruled}
 \makeheadrule{myruled}{\textwidth}{\normalrulethickness}
-\makeevenhead{myruled}{\scshape\thesection}{\thepage}{}
-\makeoddhead{myruled}{}{\thepage}{\thesection}
+\makeevenhead{myruled}{\bfseries\rightmark}{}{\hspace{1cm}\bfseries\thepage}
+\makeoddhead{myruled}{\bfseries\rightmark}{}{\hspace{1cm}\bfseries\thepage}
+\makefootrule{myruled}{\textwidth}{0pt}{0pt} % suppress bottom rule
+\makeevenfoot{myruled}{}{}{}
+\makeoddfoot{myruled}{}{}{}
 
+% Ensure section titles are marked for headers
+\makeatletter
+\renewcommand{\sectionmark}[1]{\markright{\thesection\quad #1}}
+\makeatother
+\makeatletter
+\renewcommand{\chaptermark}[1]{\markright{\thechapter\quad #1}}
+\makeatother
+
+
+\makechapterstyle{custom}{%
+  \chapterstyle{default}
+  \renewcommand*{\chapnamefont}{%
+    \normalfont\normalsize\raggedright}
+  \renewcommand*{\chaptitlefont}{%
+    \normalfont\Large\bfseries\raggedright}
+  \renewcommand*{\chapternamenum}{}
+  \setlength{\chapindent}{0in}
+  \setlength\midchapskip{0.5ex}\renewcommand*{\afterchapternum}{}
+  \renewcommand*{\printchapternum}{\space\chapnamefont\bfseries\thechapter}
+	\setlength{\beforechapskip}{-\baselineskip}       	\setlength{\afterchapskip}{1.5ex}
+  \renewcommand*{\printchaptertitle}[1]{
+      \hrulefill\ \thepage\vskip\midchapskip
+      \raggedleft \chaptitlefont ##1\par\nobreak}
+}
+
+\aliaspagestyle{chapter}{empty}
 \begin{document}
 %TC:ignore
 
@@ -37,58 +67,59 @@
 \input{Proforma/proforma}
 \input{Acknowledgements/acknowledgements}
 
-\chapterstyle{dash}
+\chapterstyle{custom}
 
-\setlength{\beforechapskip}{-35pt}\setlength{\afterchapskip}{15pt}
 
-\titlespacing*{\section}{0pt}{1.5ex plus .2ex minus .1ex}{1.5ex}
-\titlespacing*{\subsection}{0pt}{1.5ex plus .2ex minus .1ex}{1.5ex}
-\titlespacing*{\subsubsection}{0pt}{1.5ex plus .2ex minus .1ex}{1.5ex}
+\titlespacing*{\section}{0pt}{1.5ex plus .2ex minus .1ex}{1ex}
+\titlespacing*{\subsection}{0pt}{1.5ex plus .2ex minus .1ex}{1ex}
+\titlespacing*{\subsubsection}{0pt}{1.5ex plus .2ex minus .1ex}{1ex}
 \titlespacing*{\paragraph}{0pt}{1ex}{1em}
 
 % Section
 \titleformat{\section}
-  {\normalfont\large\centering}
-  {—~{\thesection}~—}
+  {\normalfont\large\bfseries}
+  {{\thesection}.}
   {1em}
   {#1}
 
 % Subsection
 \titleformat{\subsection}
-  {\normalfont\large\centering}
-  {—~\thesubsection~—}
+  {\normalfont\normalsize\bfseries}
+  {\thesubsection.}
   {1em}
   {#1}
 
-% Subsubsection (unnumbered, dashes around title, italic)
+% Subsubsection
 \titleformat{\subsubsection}
-  {\normalfont\normalsize\itshape\centering}
+  {\normalfont\normalsize\bfseries}
   {}
   {0pt}
-  {—~#1~—}
+  {#1}
 
-% Paragraph: italic, ends with dash
+% Paragraph
 \titleformat{\paragraph}[runin]
-  {\normalfont\itshape}
+  {\normalfont\bfseries}
   {}
   {0pt}
-  {—~#1}
-  [~—]
+  {#1}
+  [:]
 
-\pagestyle{ruled}
+\newpage
+
+\pagestyle{myruled}
 \setlrmarginsandblock{2cm}{2cm}{*}
 \setulmarginsandblock{2cm}{2cm}{*}
 \setheaderspaces{*}{4pt}{*}
 \checkandfixthelayout[fixed]
+%\DisableFootNotes
 
-\newpage
 \setcounter{tocdepth}{2}
 \pdfbookmark[1]{Contents}{Contents}
 \tableofcontents*
 
 %\DisableFootNotes
 %TC:endignore
-
+\setSpacing{0.95}
 \mainmatter
 
 \include{Introduction/introduction}

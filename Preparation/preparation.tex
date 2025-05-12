@@ -3,7 +3,7 @@
 In this chapter I present the technical background knowledge for this project: an introduction to the type theory for understanding Hazel's core semantics, an overview of Hazel implementation, and notes on non-determinism. Following this, I present my software engineering methodology.
 
 \section{Background Knowledge}\label{sec:BackgroundKnowledge}
-\subsection{Static Type Systems}\label{sec:TypeSystems}
+\subsection{Type Systems}\label{sec:TypeSystems}
 A \textit{type system} is a lightweight formal mathematical method which categorises values into \textit{types} and expressions into types that evaluate to values of the same type. It is effectively a static \textit{approximation} to the runtime behaviour of a language. The following sections expect basic knowledge formal methods of type systems in terms of judgements (\cref{sec:Judgements} reviews this). Note that I will use \textit{partial functions} to represent typing assumption contexts. 
 
 
@@ -166,9 +166,7 @@ The Hazel implementation has a complex evaluator abstraction (module type \code{
 \end{itemize}
 
 \subsection{Bounded Non-Determinism}\label{sec:Nondeterminism}
-Input generation for a witness search procedure \cite{SearchProc} a \textit{non-deterministic} algorithm \cite{NondeterministicAlgorithms}. 
-
-At a high level, non-determinism can be represented declaratively by two ideas:
+Input generation for a witness search procedure \cite{SearchProc} a \textit{non-deterministic} algorithm \cite{NondeterministicAlgorithms}. At a high level, non-determinism can be represented declaratively by two ideas:
 \begin{itemize}
 \item \textit{Choice} (\texttt{<||>}): Determines the search space, flipping a coin will return heads \textit{or} tails.
 \item \textit{Failure} (\texttt{fail}): The \textit{empty} result, no solutions to the algorithm.
@@ -283,12 +281,12 @@ Extensions with (*) were added post-evaluation and (**) after re-evaluation.
 \caption{Phases of development}
 \label{fig:Phases}
 \end{figure}
-\paragraph{Hazel Codebase \& Interaction} The Hazel codebase is extensive (65k lines), with much of it being undocumented. As such interaction with the Hazel development team was required to clarify workings. Equally, I found and raised issues on bugs throughout, some being fixed by myself and later merged into the main development branch. 
+\paragraph{Hazel Codebase \& Interaction} The Hazel codebase is extensive (65k lines), with much of it being undocumented. As such interaction with the Hazel development team was required to clarify workings. Equally, I found and raised issues on bugs throughout, some being fixed by myself and later merged into the main development branch. I re-use their existing build, formatting, and deployment systems and conform with their coding standards. 
 \paragraph{Version Control \& Merges} Git and GitHub were used for version control and backups. My project had various extensions and alternate implementations and improvements, for which multiple branches were created.
 
 Hazel is a very active research project, so many bugfixes (and bugs introduced) and new features were added over the course of developing this project. These updates were regularly merged into my project, often requiring extensive conflict resolution (Slicing touches almost the entire codebase). Included in this were two major merges for labelled tuples and a UI architecture rewrite. See \cref{sec:Merges} for a list of merges.
 \paragraph{Continuous Integration \& Deployment} The main branch of this project is integrated with Hazel's continuous integration and deployment system (using GitHub actions). As such, unit tests and coverage are performed automatically, and the main branch of this project can be accessed at \url{https://hazel.org/build/witnesses-type-slicing/}.\footnote{This is continuously deployed. New functionality implemented \textit{after} the deadline may also be present.}
 \paragraph{Testing} Hazel performs it's testing by listing code samples with errors labelled by comments. Or, more recently, shifting towards unit regression tests using the \textit{Alcotest} package \cite{AlcoTest}. I reuse these to ensure type checking and evaluation is not broken by my additions. However, as slicing involves random term IDs, unit testing is more difficult. Therefore, I use the earlier method of testing directly within the editor, querying the slicing UI to test for calculation errors.
-\paragraph{Tools} No new dependencies were introduced into Hazel, instead existing dependencies were used, e.g. \code{Js_of_ocaml} \cite{JSOO} for regex matching, Jane Street \code{Base.Sequence} \cite{Base} for streams. However, micro benchmarking of the search procedure was performed using \textit{Bechamel} \cite{Bechamel}
+\paragraph{Tools} No new dependencies were introduced into Hazel, instead existing dependencies were used, e.g. \code{Js_of_ocaml} \cite{JSOO} for regex matching, Jane Street \code{Base.Sequence} \cite{Base} for streams. However, micro benchmarking of the search procedure was performed using \textit{Bechamel} \cite{Bechamel}.
 
 \paragraph{Licences} Hazel is open-source available under an MIT licence. The source OCaml corpus of ill-typed programs \cite{OCamlCorpus} translated into Hazel is freely available under a Creative Commons Zero (CC0) licence. We again license the project with an MIT licence and the translated Hazel corpus with a CC0 licence.
