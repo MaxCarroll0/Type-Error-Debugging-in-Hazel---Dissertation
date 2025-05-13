@@ -473,8 +473,8 @@ The minimum analysis slice analysing $e$ in a checking context $\C^\F$ is an ana
 \begin{figure}[h]
 \fbox{$\analysisslice{\C}{e}{\tau}{\S}$}\ \ \ $e$ which analyses against type $\tau$ in minimally scoped checking context $\C$ and typing context $\Gamma$ has minimum type-indexed analysis slice $\S$.
 
-\[\inference[AAnnot]{\Gamma \vdash \cmark : \tau \text{ checks } e \text{ against } \tau}{\analysisslice{\cmark : \tau}{e}{\tau}{(\varsigma^\gamma \mapsto (\cmark : \varsigma)^\gamma)\ \$\ \widehat{\tau}}}\]
-\[\inference[AApp]{\Gamma \vdash e_1(\cmark) \text{ checks } e_2 \text{ against } \tau_2 & \synthesisslice{e_1}{\tau_1}{\S_1}\\ \S_1 \funmatch \p_2*\S_2 \to \p*\S}{\analysisslice{e_1(\cmark)}{e_2}{\tau_2}{(\varsigma^\gamma \mapsto (\varsigma(\cmark))^{\gamma' \mapsto \gamma' \sqcup \gamma})\ \$\ \p_2 \circ \S_2}}\]
+\[\inference[AAnnot]{\Gamma \vdash (\cmark : \tau)^\F \text{ checks } e \text{ against } \tau}{\analysisslice{(\cmark : \tau)^\F}{e}{\tau}{(\varsigma^\gamma \mapsto (\cmark : \varsigma)^\gamma)\ \$\ \widehat{\tau}}}\]
+\[\inference[AApp]{\Gamma \vdash (e_1(\cmark))^\F \text{ checks } e_2 \text{ against } \tau_2 & \synthesisslice[\F(\Gamma)]{e_1}{\tau_1}{\S_1}\\ \S_1 \funmatch \p_2*\S_2 \to \p*\S}{\analysisslice{(e_1(\cmark))^\F}{e_2}{\tau_2}{(\varsigma^\gamma \mapsto (\varsigma(\cmark))^{\gamma' \mapsto \gamma' \sqcup \gamma})\ \$\ \p_2 \circ \S_2}}\]
 \[\inference[AFun]{\Gamma(x) = \tau_1 & \analysisslice[\F_1(\Gamma)]{\C^{\F_2}}{\lambda x.\ e}{\tau_1 \to \tau_2}{\S} & \S \funmatch \p_1*\S_1 \to \p_2*\S_2}{\analysisslice[\Gamma]{\C^{\F_2} \circ (\lambda x.\ \cmark)^{\F_1}}{e}{\tau_2}{\p_2 \circ \S_2}}\]
 As composition has been defined \textbf{syntactically}, then $\C^{\F_2} \circ (\lambda x.\ \cmark)^{\F_1}$, is a valid way to pattern match upon contexts, hence contexts for AFun can be deconstructed uniformly in such a way.
 \caption{\textit{Minimum analysis slice} calculation}
