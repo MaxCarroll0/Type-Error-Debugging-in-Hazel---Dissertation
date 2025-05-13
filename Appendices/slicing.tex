@@ -26,16 +26,34 @@ Expression slices $\varsigma$:
 \[\inference{p' \sqsubseteq p & \varsigma' \sqsubseteq \varsigma}{\lambda p'.\ \varsigma' \sqsubseteq \lambda p.\ \varsigma} \qquad \inference{\varsigma_1' \sqsubseteq \varsigma_1 & \varsigma_2' \sqsubseteq \varsigma_2}{\varsigma_1'(\varsigma_2') \sqsubseteq \varsigma_1(\varsigma_2)} \qquad \inference{\varsigma' \sqsubseteq \varsigma & \upsilon' \sqsubseteq \upsilon}{\varsigma' : \upsilon' \sqsubseteq \varsigma : \upsilon}\]
 \end{definition}
 
-\begin{proposition}[Precision is a Partial Order]
+\begin{proposition}[Precision is a partial order]
 Term precision forms a partial order on term slices. That is:
 \[\inference{}{\varsigma \sqsubseteq \varsigma} \quad \inference{\varsigma_1 \sqsubseteq \varsigma_2 & \varsigma_2 \sqsubseteq \varsigma_1}{\varsigma_1 = \varsigma_2} \quad \inference{\varsigma_1 \sqsubseteq \varsigma_2 & \varsigma_2 \sqsubseteq \varsigma_3}{\varsigma_1 \sqsubseteq \varsigma_3}\]
 \end{proposition}
 \begin{proof}
-TODO typeset
+Trivial rule induction on the structure of $\sqsubseteq$.
 \end{proof}
 
 \subsubsection{Lattice Structure}
+\begin{definition}[Term Slice Joins] For all $t$:
+\[\gap \sqcup t = t = t \sqcup \gap \qquad t \sqcup t = t\]
+\[(\upsilon_1 \to \upsilon_2) \sqcup (\upsilon_1' \to \upsilon_2') = (\upsilon_1 \sqcup \upsilon_1') \to (\upsilon_2 \sqcup \upsilon_2')\]
+\[(\lambda p : \upsilon.\ \varsigma) \sqcup (\lambda p' : \upsilon'.\ \varsigma') = \lambda (p \sqcup p') : (\upsilon \sqcup \upsilon').\ (\varsigma \sqcup \varsigma') \qquad 
+(\lambda p.\ \varsigma) \sqcup (\lambda p'.\ \varsigma') = \lambda (p \sqcup p').\ (\varsigma \sqcup \varsigma')\]
+\[\varsigma_1(\varsigma_2) \sqcup \varsigma_1'(\varsigma_2') = (\varsigma_1 \sqcup \varsigma_1')(\varsigma_2 \sqcup \varsigma_2') \qquad (\varsigma : \upsilon) \sqcup (\varsigma' : \upsilon') = (\varsigma \sqcup \varsigma') : (\upsilon \sqcup \upsilon')\]
+\end{definition}
+\begin{definition}[Term Slice Meets] For all $t$, $t'$:
+\[\gap \sqcap t = \gap = t \sqcap \gap \qquad t \sqcap t = t\]
+\[(\upsilon_1 \to \upsilon_2) \sqcap (\upsilon_1' \to \upsilon_2') = (\upsilon_1 \sqcap \upsilon_1') \to (\upsilon_2 \sqcap \upsilon_2')\]
+\[(\lambda p : \upsilon.\ \varsigma) \sqcap (\lambda p' : \upsilon'.\ \varsigma') = \lambda (p \sqcap p') : (\upsilon \sqcap \upsilon').\ (\varsigma \sqcap \varsigma') \qquad 
+(\lambda p.\ \varsigma) \sqcap (\lambda p'.\ \varsigma') = \lambda (p \sqcap p').\ (\varsigma \sqcap \varsigma')\]
+\[\varsigma_1(\varsigma_2) \sqcap \varsigma_1'(\varsigma_2') = (\varsigma_1 \sqcap \varsigma_1')(\varsigma_2 \sqcap \varsigma_2') \qquad (\varsigma : \upsilon) \sqcap (\varsigma' : \upsilon') = (\varsigma \sqcap \varsigma') : (\upsilon \sqcap \upsilon')\]
+Otherwise:
+\[t \sqcap t' = \gap\]
+\end{definition}
+
 \begin{proposition}[Term Slice Bounded Lattice]
+\label{prop:TermLattice}
 For any term $t$, the set of slices $\varsigma_1$ and $\varsigma_2$ of $t$ forms a bounded lattice:
 \begin{itemize}
 \item The join, $\varsigma_1 \sqcup \varsigma_2$ exists , being an upper bound for $\varsigma_1, \varsigma_2$:
@@ -54,7 +72,7 @@ And idempotent laws:
 \end{itemize}
 \end{proposition}
 \begin{proof}
-TODO typeset
+Obvious but tedious. Requires proving the definitions above correctly make joins as least upper bounds and meets as greatest lower bounds. Existence follows from there always being a lower bound $\gap$ and every slice being of a complete term $t$.
 \end{proof}
 
 
@@ -73,11 +91,11 @@ A typing assumption slice $\gamma$ is a partial function from the set of variabl
 For typing assumption slices $\gamma_1, \gamma_2$. Where $\mathrm{dom}(f)$ is the set of variables for which a partial function $f$ is \textit{defined}:
 \[\gamma_1 \sqsubseteq \gamma_2 \iff \mathrm{dom}(\gamma_1) \subseteq \mathrm{dom}(\gamma_2) \text{ and } \forall x \in  \mathrm{dom}(\gamma_1).\ \gamma_1(x) \sqsubseteq \gamma_2(x)\]
 \end{definition}
-\begin{proposition}[Precision is a Partial Order]
+\begin{proposition}[Precision is a partial order]
 Typing assumption precision forms a partial order on typing assumption slices.
 \end{proposition}
 \begin{proof}
-\textbf{Typeseting TODO}
+Follows from $\subseteq$ and $\sqsubseteq$ being partial orders, and that logical conjunction distributes over forall quantifiers.
 \end{proof}
 \subsubsection{Lattice Structure}
 \begin{definition}[Typing Assumption Slice Joins and Meets]
@@ -90,10 +108,10 @@ For typing slices $\gamma_1, \gamma_2$, and any variable $x$:
 \end{definition}
 
 \begin{proposition}[Typing Assumption Slices form Bounded Lattices]
-For any typing assumptions $\Gamma$, the set of slices $\gamma$ of $\Gamma$ form a bounded lattice with bottom element of the empty function $\emptyset$ and top element $\Gamma$.
+For any typing assumptions $\Gamma$, the set of slices $\gamma$ of $\Gamma$ form a bounded lattice with bottom element of the empty partial function $\emptyset$ and top element $\Gamma$.
 \end{proposition}
 \begin{proof}
-Typsetting TODO
+$\gamma_1(x) \neq \bot \land \gamma_2(x) \neq \bot$ case follows from \cref{prop:TermLattice} and that logical conjunction distributes over forall quantifiers. The other cases follow from subsets of any set $X$ forming bounded lattices.
 \end{proof}
 \subsection{Expression Typing Slices}
 \begin{definition}[Expression Typing Slices]
@@ -109,7 +127,7 @@ For expression typing slices $\varsigma_1^{\gamma_1}$, $\varsigma_2^{\gamma_2}$:
 Expression typing precision forms a partial order on expression typing slices.
 \end{proposition}
 \begin{proof}
-\textbf{Typesetting TODO}
+Componentwise definitions preserve universal algebras.
 \end{proof}
 \subsubsection{Lattice Structure}
 
@@ -122,7 +140,9 @@ For expression typing slices $\varsigma_1^{\gamma_1}$, $\varsigma_2^{\gamma_2}$:
 \begin{proposition}[Expression Typing Slices for Bounded Lattices]
 For any expression $e$ and typing assumption $\Gamma$, the set of expression typing slices $\varsigma^{\gamma}$ of $e^{\Gamma}$ forms a bounded lattice with bottom element $\gap^{\emptyset}$ and top element $e^{\Gamma}$.
 \end{proposition}
-
+\begin{proof}
+Componentwise definitions preserve universal algebras.
+\end{proof}
 \subsubsection{Type Checking}
 \begin{definition}[Interpreting Term Slices as Terms]
 By replacing gaps in terms with holes, the dynamic type, or wildcard patterns, slices can be interpreted as terms. For gaps:
@@ -167,12 +187,13 @@ The input and output classes of contexts $\C$ will be notated $\C : \code{X} \to
 \begin{definition}[Context Composition]
 Defined analogously as context substitution, but substituting contexts syntactically, provided the input and output classes match. If $\C_1 : \code{X} \to \code{Y}$ and $\C_2 : \code{Y} \to \code{Z}$ then $\C_2\{C_1\} = \C_2 \circ \C_1 : \code{X} \to \code{Z}$. Equivalence of contexts can be defined syntactically and coincides exactly with an extensional definition.
 \end{definition}
+Composition could alternatively be defined pointwise, and we get the same result here, but it is later important we keep this syntactic to allow decomposition around the marks inside contexts.
 \begin{proposition}[Context composition is associative]
 For all $\C_1 : \code{X} \to \code{Y}$, $\C_2 : \code{Y} \to \code{Z}$, and $\C_3 : \code{Z} \to \code{W}$ then:
 \[(\C_3 \circ \C_2) \circ C_1 = \C_3 \circ (\C_2 \circ C_1)\]
 \end{proposition}
 \begin{proof}
-\textbf{Typesetting todo.}
+Trivial.
 \end{proof}
 
 \subsection{Context Slices}
@@ -186,12 +207,14 @@ If $\Cs : \code{X} \to \code{Y}$ and $\Cs' : \code{X} \to \code{Y}$ are context 
 Context precision forms a partial order on context slices.
 \end{proposition}
 \begin{proof}
-\textbf{Typesetting TODO}
+Follows from $\sqsubseteq$ on term slices being a partial order, and that logical conjunction distributes over forall quantifiers.
 \end{proof}
 \begin{proposition}[Context Filling Preserves Precision]
 For context slice $\Cs : \code{X} \to \code{Y}$ and term slice $\varsigma$ of class \code{X}. Then if we have slices $\varsigma' \sqsubseteq \varsigma$, $\Cs' \sqsubseteq \Cs$ then also $\Cs'\{\varsigma'\} \sqsubseteq \Cs\{\varsigma\}$.
 \end{proposition}
-
+\begin{proof}
+$\Cs'\{\varsigma\} \sqsubseteq \Cs\{\varsigma\}$ follows directly from definition of context precision. $\Cs\{\varsigma'\} \sqsubseteq \Cs\{\varsigma\}$ is due substituted contexts retaining their inputs as sub-terms.
+\end{proof}
 \subsubsection{Lattice Structure}
 \begin{definition}[Context Slice Joins \& Meets]
 For context slices $\Cs_1 : \code{X} \to \code{Y}$ and $\Cs_2 : \code{X} \to \code{Y}$ and any term $t$ of class \code{X}:
@@ -208,8 +231,9 @@ Least specific slices of some context, containing only gaps $\gap$ and the mark 
 For any context $\C$, the set of slices $\Cs$ of $\C$ form a bounded lattice with bottom element of the \textit{purely structural context} of $\C$ and top element $\C$.
 \end{proposition}
 \begin{proof}
-\textbf{Type Setting TODO}
+Follows smoothly as usual. Bottom element is different for each bounded lattice in this case.
 \end{proof}
+
 \subsection{Typing Assumption Contexts \& Context Slices}
 \begin{definition}[Typing Assumption Contexts \& Slices]
 A typing assumption context $\F$ is a function from typing assumption to typing assumptions. A typing assumption context slice $\f$ is a function from typing assumption slices to typing assumption slices.
@@ -222,7 +246,7 @@ If $\f'$ and $\f$ are typing assumption context slices, then $\f' \sqsubseteq \f
 Typing assumption context precision forms a partial order on typing assumption context slices.
 \end{proposition}
 \begin{proof}
-\textbf{Typesetting TODO}
+Pointwise definitions preserve this structure as before.
 \end{proof}
 \begin{proposition}[Function Application Preserves Precision]
 For typing assumption slice $\gamma$ and typing assumption context slice $\f$. Then if we have slices $\gamma' \sqsubseteq \gamma$, $f' \sqsubseteq f$ then also $f'(\gamma') \sqsubseteq f(\gamma)$.
@@ -234,13 +258,16 @@ For typing assumption slice $\gamma$ and typing assumption context slice $\f$. T
 \[(\f_1 \sqcap \f_2)(\gamma) = \f_1(\gamma) \sqcap \f_2(\gamma)\]
 \end{definition}
 
-\begin{conjecture}[Typing Assumption Context Slices form Bounded Lattices]
+\begin{proposition}[Typing Assumption Context Slices form Bounded Lattices]
 For any typing assumption context $\F$, the set of slices $\f$ of $\F$ form a bounded lattice with bottom element being the constant function to the empty typing assumption function and top element $\F$.
-\end{conjecture}
+\end{proposition}
+\begin{proof}
+Pointwise definitions preserve this structure as before.
+\end{proof}
 
 \subsection{Context Typing Slices}
 \begin{definition}[Expression Context Typing Slice]
-An expression context typing slice $\p$ is a pair $\Cs^\f$ of a context slice $\Cs$ and typing assumption context slice $\f$.
+An expression context typing slice $\p$ is a pair context slice with sub-contexts recursively tagged by typing assumption context slice $\f$. If $\f$ is omitted, then assume it is the identity.
 \end{definition}
 \subsubsection{Precision}
 \begin{definition}[Expression Context Typing Slice Precision]
@@ -250,20 +277,24 @@ For expression context typing slices $\Cs_1^{\f_1}$, $\Cs_2^{\f_2}$:
 Typing assumption context precision forms a partial order on typing assumption context slices.
 \end{proposition}
 \begin{proof}
-Analogous to expression typing slices.
+Componentwise definitions preserve universal algebras.
 \end{proof}
 \subsubsection{Composition}
-\begin{definition}[Expression Context Typing Slice Composition \& Application]
-For expression context typing slices $\Cs^{\f}$, $\Cs'^{\f'}$, and expression typing slices $\varsigma^{\gamma}$:
-\[\Cs^{\f} \circ \Cs'^{\f'} =  (\Cs \circ \Cs')^{\f \circ \f'}\]
-\[\Cs_1^{\f_1}\{\varsigma^{\gamma}\} =  \Cs_1\{\varsigma\}^{\f_1(\gamma)}\]
+\begin{definition}[Expression Context Typing Slice Composition]
+It is important that we define composition $\Cs_1^{\f_1} \circ \Cs_1^{\f_2}$ \textbf{syntactically}. That is, the same definition as context substitution but with each sub-context tagged with typing assumption contexts.
 \end{definition}\begin{proposition}[Expression Context Slice Composition is Associative]
 For all $\p_1$, $\p_2$, and $\p_3$ then:
 \[(\p_3 \circ \p_2) \circ p_1 = \p_3 \circ (\p_2 \circ p_1)\]
 \end{proposition}
 \begin{proof}
-\textbf{Typesetting TODO}
+Trivial.
 \end{proof}
+\begin{definition}[Expression Context Typing Slice Substitution]
+\label{def:ContextSliceSubstitution}
+\[\inference{}{\cmark^\F\{t^\gamma\} = t^{\F(\gamma)}}\]
+\[\inference{\C^\F_2\{e_2^{\gamma_2}\} = e_2'^{\gamma_2'}}{(e_1(\C^{\F_2}))^{\F_1}\{e_2^{\gamma_2}\} = (e_1(e_2'))^{\F_1\{\gamma_2'\}}} \qquad \inference{\C^\F_1\{e^\gamma\} = e'^{\gamma'}}{(\C^{\F_1} : \tau)^{\F_2}\{e^\gamma\} = (e' : \tau)^{\F_2\{\gamma'\}}}\]
+etc. (similarly extended to all terms)
+\end{definition}
 \subsubsection{Lattice Structure}
 \begin{definition}[Expression Context Typing Slice Joins and Meets]
 For expression typing slices $\Cs_1^{\f_1}$, $\Cs_2^{\f_2}$:
@@ -275,7 +306,7 @@ For expression typing slices $\Cs_1^{\f_1}$, $\Cs_2^{\f_2}$:
 For any expression context $\C$ and typing assumption context $\F$, the set of expression context typing slices $\Cs^{\f}$ of $\C^{\F}$ forms a bounded lattice with bottom element, the purely structural context and the function to the empty typing assumptions, and top element $e^{\Gamma}$.
 \end{proposition}
 \begin{proof}
-\textbf{typsetting TODO}
+Componentwise definitions preserve universal algebras.
 \end{proof}
 \subsubsection{Interpreting Context Typing Slices by Contexts and Typing Assumption Contexts}
 A $\type{\Cs}$ function can be analogously defined as to expressions, replacing the gaps by $\_, \dyn,\hole^u$.
@@ -303,7 +334,7 @@ For type-indexed slices $\S$ and $\S'$:
 \[\overline{\S \circ \S'} = \overline{\S} \circ \overline{\S'}\]
 \end{proposition}
 \begin{proof}
-\textbf{typsetting todo}
+Trivial induction on the structure of $\S$.
 \end{proof}
 \subsection{Type-Indexed Expression Typing Slices}
 (Overloading the $\S$ notation)
@@ -315,6 +346,11 @@ With any $\S$ only being valid if it has a full slice. The full slice of $\S$ is
 \[\overline{\p_1 * \S_1 \to \p_2 * \S_2} = \p_1 \{ \overline{\S_1}\} \sqcup \p_2 \{ \overline{S_2}\}\]
 \end{definition}
 We retain left incremental composition/application as before (but applying to leaves $\rho$) but do not retain global right composition.
+\subsection{Function Matching}
+\begin{definition}[Slice Function Matching]
+\[\p \funmatch \cmark * \p \to \cmark * \p \qquad \rho \funmatch \cmark * \rho \to \cmark * \rho\]
+\[\p_1 * \S_1 \to \p_2 * \S_2 \funmatch \p_1 * \S_1 \to \p_2 * \S_2\]
+\end{definition}
  
 \subsection{Global Application}
 \label{sec:GlobalApplication}
@@ -328,7 +364,7 @@ For an expressions slice $\rho$. Reverse application $\mid>$ converts type-index
 If $\S$ is a valid type indexed context typing slice. For all expression typing slices $\rho$, then $\rho \mid>\ \S$ is a valid type-indexed expression typing slice with the same structure as $\S$.
 \end{proposition}
 \begin{proof}
-\textbf{typsetting TODO}
+Trivial induction on the structure of $\S$.
 \end{proof}
 \label{def:Application}
 \begin{definition}[Application]
@@ -341,7 +377,7 @@ The contexts $\p_1, \p_2$ are eagerly applied down to the leaves $\rho$, to ensu
 If $\S$ is a valid type indexed expression typing slice. For all functions $f$ from expression slices to context slices, then $f\ \$\ \S$ is a valid type-indexed context typing slice with the same structure as $\S$.
 \end{proposition}
 \begin{proof}
-\textbf{typsetting TODO}
+Trivial induction on the structure of $\S$.
 \end{proof}
 
 \section{Checking Contexts}
@@ -361,8 +397,8 @@ For a derivation $\analysis[\Gamma]{e}{\tau}$, a minimally scoped expression che
 
 \begin{proposition}[Minimally Scoped Checking Contexts Forms]
 All minimally scoped contexts, have the following forms. Defined by a judgement: $\Gamma \vdash \C^\F$ checks $e$ against $\tau$. With the meaning: $\C^\F$ is a minimally scoped checking context for $\analysis{e}{\tau}$. Defined:
-\[\inference{\analysis{e}{\tau}}{\Gamma \vdash (\cmark : \tau)^{\mathrm{id}} \text{ checks } e \text{ against } \tau} \qquad \inference{\analysis{e_2}{\tau} & \synthesis{e_1}{\tau_1} & \tau_1 \funmatch \tau_2 \to \tau}{\Gamma \vdash (e_1(\cmark))^{\mathrm{id}} \text{ checks } e_2 \text{ against } \tau_2}\]
-\[\inference{\Gamma \vdash \C^\F \text{ checks } \lambda x.\ e \text{ against } \tau & \tau \funmatch \tau_1 \to \tau_2}{\Gamma, x:\tau_1 \vdash \C^\F \circ (\lambda x.\ \cmark)^{\Gamma \mapsto \Gamma\backslash x:\tau_1} \text{ checks } e \text{ against } \tau_2}\]
+\[\inference{\analysis{e}{\tau}}{\Gamma \vdash \cmark : \tau \text{ checks } e \text{ against } \tau} \qquad \inference{\synthesis{e_1}{\tau_1} & \tau_1 \funmatch \tau_2 \to \tau & \analysis{e_2}{\tau}}{\Gamma \vdash e_1(\cmark) \text{ checks } e_2 \text{ against } \tau_2}\]
+\[\inference{\Gamma(x) = \tau_1 & \Gamma\backslash x:\tau_1 \vdash \C^\F \text{ checks } \lambda x.\ e \text{ against } \tau_1 \to \tau_2}{\Gamma \vdash \C^\F \circ (\lambda x.\ \cmark)^{\Gamma \mapsto \Gamma\backslash x:\tau_1} \text{ checks } e \text{ against } \tau_2}\]
 \end{proposition}
 \begin{proof}
 Verify that each rule is a checking context, this follows very directly from the Hazel typing rules. No rule has a sub-context also being a checking context by induction, with the base cases being trivial: there is only one sub-context for the base case rules, $\cmark$, which is by definition not a checking context.
@@ -391,18 +427,22 @@ A minimum synthesis slice of $e^\Gamma$ is a synthesis slice $\rho$ such that an
 \begin{proof}
 Existence follows from bounded lattice structure, uniqueness follows from the uniqueness of typing in Hazel.
 \end{proof}
-
+\begin{definition}[Type-Indexed Slices of Types]
+\[\widehat{b} = b^\emptyset\]
+\[\widehat{\tau_1 \to \tau_2} = (\cmark \to \gap) * \hat(\tau_1) \to (\gap \to \cmark) * \widehat{\tau_2}\]
+\end{definition}
+\newcommand{\id}{\mathrm{id}}
 \begin{figure}[H]
 \fbox{$\synthesisslice{e}{\tau}{\S}$}\ \ \ $e$ synthesising type $\tau$ under context $\Gamma$ produces minimum type-indexed synthesis slice $\S$
+
 \[\inference[\tiny SConst]{}{\synthesisslice{c}{b}{c^\emptyset}} \quad
-\inference[\tiny SVar]{x : \tau \in \Gamma}{\synthesisslice{x}{\tau}{[x\mid x:\tau]}} \quad
-\inference[\tiny SVar?]{x : \dyn \in \Gamma}{\synthesisslice{x}{\tau}{[\gap\mid \emptyset]}}\]
-\[\inference[\tiny SFun]{\synthesisslice[\Gamma,x:\tau_1]{e}{\tau_2}{[\varsigma \mid \gamma, x : \tau_1]} }{\synthesisslice{\lambda x:\tau_1.\ e}{\tau_1 \to \tau_2}{[\lambda x : \tau_1.\ \varsigma \mid \gamma]}}\]
-\[\inference[\tiny SFunConst]{\synthesisslice[\Gamma,x:\tau_1]{e}{\tau_2}{[\varsigma \mid \gamma]} & x \not \in \mathrm{dom}(\gamma)}{\synthesisslice{\lambda x:\tau_1.\ e}{\tau_1 \to \tau_2}{[\lambda \gap : \tau_1.\ \varsigma \mid \gamma]}}\]
-\[\inference[\tiny SApp]{\synthesisslice{e_1}{\tau_1}{[\varsigma_1 \mid \gamma_1]}}{\synthesis{e_1(e_2)}{\tau}{[\varsigma_1(\gap) \mid \gamma_1]}} \quad 
-\inference[\tiny SEHole]{}{\synthesisslice{\hole^u}{\dyn}{[\gap \mid \emptyset]}}\]
-\[\inference[\tiny SNEHole]{\synthesisslice{e}{\tau}}{\synthesis{\hole[e]^u}{\dyn}{[\gap, \emptyset]}}\quad 
-\inference[\tiny SAsc]{\analysis{e}{\tau}}{\synthesisslice{e : \tau}{\tau}{[\gap : \tau \mid \emptyset]}}\]
+\inference[\tiny SVar]{x : \tau \in \Gamma}{\synthesisslice{x}{\tau}{x^{x:\tau}}} \quad
+\inference[\tiny SVar?]{x : \dyn \in \Gamma}{\synthesisslice{x}{\tau}{\gap^\emptyset}}\]
+\[\inference[\tiny SFun]{\synthesisslice[\Gamma,x:\tau_1]{e}{\tau_2}{\varsigma^{\gamma}}}{\synthesisslice{\lambda x:\tau_1.\ e}{\tau_1 \to \tau_2}{(\lambda \gap : \cmark.\ \gap)^{\gamma \mapsto \gamma\backslash x: \tau_1} * \widehat{\tau_1} \to (\lambda x : \tau_1.\ \cmark)^{\gamma \mapsto \gamma\backslash x: \tau_1} * \varsigma^\gamma}}\]
+\[\inference[\tiny SApp]{\synthesisslice{e_1}{\tau_1}{\S}}{\synthesisslice{e_1(e_2)}{\tau}{(\cmark(\gap)) \circ \S}} \quad 
+\inference[\tiny SEHole]{}{\synthesisslice{\hole^u}{\dyn}{\gap^\emptyset}}\]
+\[\inference[\tiny SNEHole]{\synthesis{e}{\tau}}{\synthesisslice{\hole[e]^u}{\dyn}{\gap^\emptyset}}\quad 
+\inference[\tiny SAsc]{\analysis{e}{\tau}}{\synthesisslice{e : \tau}{\tau}{(\gap : \cmark) \circ \widehat{\tau}}}\]
 
 \caption{\textit{Minimum synthesis slice} calculation}
 \label{fig:SynthesisSlices}
@@ -431,7 +471,12 @@ The minimum analysis slice analysing $e$ in a checking context $\C^\F$ is an ana
 \end{conjecture}
 
 \begin{figure}[h]
-TODO
+\fbox{$\analysisslice{\C}{e}{\tau}{\S}$}\ \ \ $e$ which analyses against type $\tau$ in minimally scoped checking context $\C$ and typing context $\Gamma$ has minimum type-indexed analysis slice $\S$.
+
+\[\inference[AAnnot]{\Gamma \vdash \cmark : \tau \text{ checks } e \text{ against } \tau}{\analysisslice{\cmark : \tau}{e}{\tau}{(\varsigma^\gamma \mapsto (\cmark : \varsigma)^\gamma)\ \$\ \widehat{\tau}}}\]
+\[\inference[AApp]{\Gamma \vdash e_1(\cmark) \text{ checks } e_2 \text{ against } \tau_2 & \synthesisslice{e_1}{\tau_1}{\S_1}\\ \S_1 \funmatch \p_2*\S_2 \to \p*\S}{\analysisslice{e_1(\cmark)}{e_2}{\tau_2}{(\varsigma^\gamma \mapsto (\varsigma(\cmark))^{\gamma' \mapsto \gamma' \sqcup \gamma})\ \$\ \p_2 \circ \S_2}}\]
+\[\inference[AFun]{\Gamma(x) = \tau_1 & \analysisslice[\F_1(\Gamma)]{\C^{\F_2}}{\lambda x.\ e}{\tau_1 \to \tau_2}{\S} & \S \funmatch \p_1*\S_1 \to \p_2*\S_2}{\analysisslice[\Gamma]{\C^{\F_2} \circ (\lambda x.\ \cmark)^{\F_1}}{e}{\tau_2}{\p_2 \circ \S_2}}\]
+As composition has been defined \textbf{syntactically}, then $\C^{\F_2} \circ (\lambda x.\ \cmark)^{\F_1}$, is a valid way to pattern match upon contexts, hence contexts for AFun can be deconstructed uniformly in such a way.
 \caption{\textit{Minimum analysis slice} calculation}
 \label{fig:AnalsisSlices}
 \end{figure}
@@ -458,12 +503,15 @@ The synthetic parts of these slices can be calculated in exactly the same way as
 The subsumption rule synthesises a type for some term, then checks consistency with the checked type. This is where the dynamic portions can be omitted, to give a contribution slice for the checked term. Representing contribution slices with the judgement $\contributionslice{e}{\tau}{\S}$ and $\contributionanalysisslice{\C}{e}{\tau}{\S_e}{\S_c}$, where $\S_e$ is the expression slice part and $\S_c$ is the contextual part:
 
 \[\inference{\contributionslice{e}{\tau}{\S_s} & \tau \sim \tau' & \analysisslice{\C}{e}{\tau'}{\S_c}}{\contributionanalysisslice{\C}{e}{\tau'}{\mathrm{static}(\S_c, \S_s)}{\S_c}}\]
-Where static is takes omits the \textit{right} (synthetic) slice parts where \textit{left} (analytic) slice is a leaf but the right is not. As the types are consistent, these leaves will be the unknown type. This means that portions of the synthetic part of the slice which match against $\dyn$ will be omitted: \textbf{SHOW A DIAGRAM}
+Where static is takes omits the \textit{right} (synthetic) slice parts where \textit{left} (analytic) slice is a leaf but the right is not. As the types are consistent, these leaves will be the unknown type. This means that portions of the synthetic part of the slice which match against $\dyn$ will be omitted:
 \[\mathrm{static}(\p, \p') = \p'\]
 \[\mathrm{static}(\p, \_ \to \_) = \gap^\emptyset\]
-\[\mathrm{static}(\Cs_1 * \S_1 \to Cs_2 * \S_2,\ \Cs_1' * \S_1' \to Cs_2' * \S_2') = \Cs_1 * \mathrm{static}(\S_1, \S_1') \to \Cs_2' * \mathrm{static}(\S_2, \S_2')\]
+\[\mathrm{static}(\Cs_1 * \S_1 \to \Cs_2 * \S_2,\ \Cs_1' * \S_1' \to \Cs_2' * \S_2') = \Cs_1 * \mathrm{static}(\S_1, \S_1') \to \Cs_2' * \mathrm{static}(\S_2, \S_2')\]
 
 
 \section{Elaboration}
 \label{sec:CastSlicingElaboration}
+For use in cast slicing. The below demonstrates using synthesis and analysis slices, but contribution slices could equally be used instead.
 
+\section{Dynamics}
+Final forms and hole substitution remain the same.

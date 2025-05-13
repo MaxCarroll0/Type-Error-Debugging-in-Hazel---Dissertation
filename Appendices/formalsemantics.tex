@@ -142,7 +142,7 @@ d &::= c \mid x \mid \lambda x : \tau d \mid d(d) \mid \hole^u_\sigma \mid \hole
 \inference[\tiny ITCastError]{\tau_1 \neq \tau_2 \\ \ground[\tau_1] & \ground[\tau_2]}{d\scastcast{\tau_1}{?}{\tau_2}\longrightarrow d\scasterror{\tau_1}{?}{\tau_2}}\]
 \[\inference[\tiny ITGround]{\tau \groundmatch \tau'}{d\scast{\tau}{?} \longrightarrow d\scastcast{\tau}{\tau'}{?}}\quad
 \inference[\tiny ITExpand]{\tau \groundmatch \tau'}{d\scast{?}{\tau} \longrightarrow d\scastcast{?}{\tau'}{\tau}}\]
-\caption{Instruction transitions}
+\caption{Instruction transitions (non-deterministic)}
 \label{fig:instructions}
 \end{figure}
 
