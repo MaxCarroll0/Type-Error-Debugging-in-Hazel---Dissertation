@@ -11,10 +11,9 @@ Supervisors: & \textbf{\supervisors}
 \end{tabularx}
 
 \section*{Original Aims of the Project}
-Aims Here. Concise summary of proposal description.
+Debugging programs takes a large proportion of time. This project seeks to explore ways to improve \textit{type error} debugging. Dynamic traces to dynamic type errors can provide better intuition to \textit{why} a static type errors was found. Additionally, dynamic errors do not often point directly back to source code, or do so only incompletely. This project aimed to create a source code highlighting system for dynamic errors and an automated search procedure which finds dynamic errors. The gradually typed Hazel language was chosen, which allows both static errors and dynamic errors, allowing this project to explore both and their interaction. Only a subset of Hazel was expected to be supported, but enough to demonstrate the methods' promise.
 
 \section*{Work Completed}
-Work completed by deadline.
-
+The project successfully supports \textit{almost all} of Hazel. Hazel is an intensely active research project so significant work went into keeping the project up to date and producing a corpus of Hazel programs. Four searching methods were implemented, the best failing to find existing dynamic errors for only 2\% of the corpus. Dynamic error highlighting had no prescribed basis to build upon. Therefore, a very significant part was devising \textit{novel} formalisations for type-directed highlighting systems which propagate information throughout evaluation; further extended to explain \textit{static} errors also. Both the dynamic and static error highlighting system implementations were found to be concise and demonstrated to be effective.
 \section*{Special Difficulties}
 None
