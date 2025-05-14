@@ -438,7 +438,8 @@ Existence follows from bounded lattice structure, uniqueness follows from the un
 \[\inference[\tiny SConst]{}{\synthesisslice{c}{b}{c^\emptyset}} \quad
 \inference[\tiny SVar]{x : \tau \in \Gamma}{\synthesisslice{x}{\tau}{x^{x:\tau}}} \quad
 \inference[\tiny SVar?]{x : \dyn \in \Gamma}{\synthesisslice{x}{\tau}{\gap^\emptyset}}\]
-\[\inference[\tiny SFun]{\synthesisslice[\Gamma,x:\tau_1]{e}{\tau_2}{\varsigma^{\gamma}}}{\synthesisslice{\lambda x:\tau_1.\ e}{\tau_1 \to \tau_2}{(\lambda \gap : \cmark.\ \gap)^{\gamma \mapsto \gamma\backslash x: \tau_1} * \widehat{\tau_1} \to (\lambda x : \tau_1.\ \cmark)^{\gamma \mapsto \gamma\backslash x: \tau_1} * \varsigma^\gamma}}\]
+\[\inference[\tiny SFun]{\synthesisslice[\Gamma,x:\tau_1]{e}{\tau_2}{\S_2} & \type{S_2} = \varsigma^\gamma & \gamma(x) = \tau_1'}{\synthesisslice{\lambda x:\tau_1.\ e}{\tau_1 \to \tau_2}{(\lambda \gap : \cmark.\ \gap)^{\gamma \mapsto \gamma\backslash x: \tau_1} * \widehat{\tau_1} \to (\lambda x : \tau_1'.\ \cmark)^{\gamma \mapsto \gamma\backslash x: \tau_1'} * \S_2}}\]
+\[\inference[\tiny SFunUnused]{\synthesisslice[\Gamma,x:\tau_1]{e}{\tau_2}{\S_2} & \type{S_2} = \varsigma^\gamma & \gamma(x) = \bot}{\synthesisslice{\lambda x:\tau_1.\ e}{\tau_1 \to \tau_2}{(\lambda \gap : \cmark.\ \gap)^{\gamma \mapsto \gamma\backslash x: \tau_1} * \widehat{\tau_1} \to (\lambda \gap : \gap.\ \cmark) * \S_2}}\]
 \[\inference[\tiny SApp]{\synthesisslice{e_1}{\tau_1}{\S}}{\synthesisslice{e_1(e_2)}{\tau}{(\cmark(\gap)) \circ \S}} \quad 
 \inference[\tiny SEHole]{}{\synthesisslice{\hole^u}{\dyn}{\gap^\emptyset}}\]
 \[\inference[\tiny SNEHole]{\synthesis{e}{\tau}}{\synthesisslice{\hole[e]^u}{\dyn}{\gap^\emptyset}}\quad 
@@ -475,11 +476,12 @@ The minimum analysis slice analysing $e$ in a checking context $\C^\F$ is an ana
 
 \[\inference[AAnnot]{\Gamma \vdash (\cmark : \tau)^\F \text{ checks } e \text{ against } \tau}{\analysisslice{(\cmark : \tau)^\F}{e}{\tau}{(\varsigma^\gamma \mapsto (\cmark : \varsigma)^\gamma)\ \$\ \widehat{\tau}}}\]
 \[\inference[AApp]{\Gamma \vdash (e_1(\cmark))^\F \text{ checks } e_2 \text{ against } \tau_2 & \synthesisslice[\F(\Gamma)]{e_1}{\tau_1}{\S_1}\\ \S_1 \funmatch \p_2*\S_2 \to \p*\S}{\analysisslice{(e_1(\cmark))^\F}{e_2}{\tau_2}{(\varsigma^\gamma \mapsto (\varsigma(\cmark))^{\gamma' \mapsto \gamma' \sqcup \gamma})\ \$\ \p_2 \circ \S_2}}\]
-\[\inference[AFun]{\Gamma(x) = \tau_1 & \analysisslice[\F_1(\Gamma)]{\C^{\F_2}}{\lambda x.\ e}{\tau_1 \to \tau_2}{\S} & \S \funmatch \p_1*\S_1 \to \p_2*\S_2}{\analysisslice[\Gamma]{\C^{\F_2} \circ (\lambda x.\ \cmark)^{\F_1}}{e}{\tau_2}{\p_2 \circ \S_2}}\]
+\[\inference[AFun]{\Gamma(x) = \tau_1 & \analysisslice[\F_1(\Gamma)]{\C^{\F_2}}{\lambda x.\ e}{\tau_1 \to \tau_2}{\S} & \S \funmatch \p_1*\S_1 \to \p_2*\S_2}{\analysisslice[\Gamma]{\C^{\F_2} \circ (\lambda x.\ \cmark)^{\F_1}}{e}{\tau_2}{\p_2 \circ \S_2 \circ (\lambda \gap.\ \cmark)^{\gamma \mapsto \gamma\backslash x:\tau_1}}}\]
 As composition has been defined \textbf{syntactically}, then $\C^{\F_2} \circ (\lambda x.\ \cmark)^{\F_1}$, is a valid way to pattern match upon contexts, hence contexts for AFun can be deconstructed uniformly in such a way.
 \caption{\textit{Minimum analysis slice} calculation}
 \label{fig:AnalsisSlices}
 \end{figure}
+Issues with checking equality of functions might arise in implementing this. But, typing assumption contexts can be made intensional by assuming finite domain. It is probably also possible to remove function equality checks entirely.
 
 \begin{conjecture}[Correctness]\label{conj:AnalysisSliceCorrectness}
 If $\C$ is a checking context for $e$ and $\analysis{e}{\tau}$. Then $\analysisslice{\C}{e}{\tau}{\S}$ and $\S$ is the minimum analysis slice of $e$.
@@ -502,16 +504,62 @@ The synthetic parts of these slices can be calculated in exactly the same way as
 
 The subsumption rule synthesises a type for some term, then checks consistency with the checked type. This is where the dynamic portions can be omitted, to give a contribution slice for the checked term. Representing contribution slices with the judgement $\contributionslice{e}{\tau}{\S}$ and $\contributionanalysisslice{\C}{e}{\tau}{\S_e}{\S_c}$, where $\S_e$ is the expression slice part and $\S_c$ is the contextual part:
 
-\[\inference{\contributionslice{e}{\tau}{\S_s} & \tau \sim \tau' & \analysisslice{\C}{e}{\tau'}{\S_c}}{\contributionanalysisslice{\C}{e}{\tau'}{\mathrm{static}(\S_c, \S_s)}{\S_c}}\]
-Where static is takes omits the \textit{right} (synthetic) slice parts where \textit{left} (analytic) slice is a leaf but the right is not. As the types are consistent, these leaves will be the unknown type. This means that portions of the synthetic part of the slice which match against $\dyn$ will be omitted:
-\[\mathrm{static}(\p, \p') = \p'\]
-\[\mathrm{static}(\p, \_ \to \_) = \gap^\emptyset\]
-\[\mathrm{static}(\Cs_1 * \S_1 \to \Cs_2 * \S_2,\ \Cs_1' * \S_1' \to \Cs_2' * \S_2') = \Cs_1 * \mathrm{static}(\S_1, \S_1') \to \Cs_2' * \mathrm{static}(\S_2, \S_2')\]
+\[\inference{\contributionslice{e}{\tau}{\S_s} & \tau \sim \tau' & \analysisslice{\C}{e}{\tau'}{\S_c}}{\contributionanalysisslice{\C}{e}{\tau'}{\mathrm{match}(\S_c, \S_s)}{\S_c}}\]
+Where match takes the matches the \textit{right} slice to have the same structure as the \textit{left slice}, expanding with funmatching if required:
+\[\mathrm{match}(\p, \p') = \p'\]
+\[\mathrm{match}(\p, \_ \to \_) = \gap^\emptyset\]
+\[\mathrm{match}(\_ \to \_, \p) = \cmark * \p \to \cmark * \p\]
+\[\mathrm{match}(\Cs_1 * \S_1 \to \Cs_2 * \S_2,\ \Cs_1' * \S_1' \to \Cs_2' * \S_2') = \Cs_1 * \mathrm{match}(\S_1, \S_1') \to \Cs_2 * \mathrm{match}(\S_2, \S_2')\]
 
+\section{Cast Syntax}
+\renewcommand{\A}{\mathdcal{A}}
+The below demonstrates inserting synthesis and analysis slices, but contribution slices could equally be used instead. Extend the cast syntax to casts between types and synthesis and or analysis slices. The pair of slices explain why the cast was enforced, and they will always match structurally with the annotated type.
+
+To avoid conflict, analysis (contextual) slices are now notated $\A$. Generally speaking a cast will be \textit{from} synthesised types \textit{to} analysed expectations.
+
+\[\scast{\tau_1 \mid \S_1 \mid \A_1}{\tau_2 \mid \A_2 \mid \S_2}\] If an analysis slice or synthesis slice are omitted, assume they are $\cmark^\emptyset$ or $\gap^\emptyset$ respectively.
 
 \section{Elaboration}
 \label{sec:CastSlicingElaboration}
-For use in cast slicing. The below demonstrates using synthesis and analysis slices, but contribution slices could equally be used instead.
+Nicely complements existing elaboration rules (\cref{fig:elaboration}). 
 
+Note that elaboration adds a new situation analysing left application parts. The ESApp rule is split explicitly into the cases when $\tau_1 = \dyn$, as the cast on $d_1$ need only be inserted in this case. We are effectively adding in a new analysis slice for $e_1$ in $\cmark(e_2)$ when $e_1$ synthesises $\dyn$. The fact it is a function is then derived from the outer context:
+\begin{definition}[Dynamic Synthesising Function Analysis Slice]
+\[\inference{\synthesis{e_1}{\dyn}}{\Gamma \vdash \cmark(e_2) \text{ checks } e_1 \text{ against } \tau_2 \to \tau}\]
+\[\inference[AFunDyn]{\Gamma \vdash (\cmark : \tau)^\F \text{ checks } e \text{ against } \tau}{\analysisslice{(\cmark(e_2))^\F}{e_1}{\tau_2 \to \tau}{\cmark * (\cmark(\gap))^\F \to \cmark * (\cmark(\gap))^\F}}\]
+\end{definition}
+
+\begin{figure}[H]
+\small
+\fbox{$\elaborationSynthesisSlice{e}{\tau}{\S}{d}{\Delta}$}\ \ \ $e$ synthesises type $\tau$ with synthesis slice $\S$ and elaborates to $d$ and hole context $\Delta$.
+\tiny
+\[\inference[\tiny ESConst]{}{\elaborationSynthesisSlice{c}{b}{c^\emptyset}{c}{\emptyset}} \quad 
+\inference[\tiny ESVar]{x : \tau \in \Gamma}{\elaborationSynthesisSlice{x}{\tau}{x^{x:\tau}}{x}{\emptyset}}\]
+\[\inference[\tiny ESFunUnused]{\elaborationSynthesisSlice[\Gamma,x:\tau_1]{e}{\tau_2}{\S_2}{d}{\Delta} & \type{S_2} = \varsigma^\gamma & \gamma(x) = \bot}{\elaborationSynthesisSlice{\lambda x:\tau_1.e}{\tau_1 \to \tau_2}{(\lambda \gap : \cmark.\ \gap)^{\gamma \mapsto \gamma\backslash x: \tau_1} * \widehat{\tau_1} \to (\lambda \gap : \gap.\ \cmark) * \S_2}{\lambda x:\tau_1. d}{\Delta}}\]\[\inference[\tiny ESFun]{\elaborationSynthesisSlice[\Gamma,x:\tau_1]{e}{\tau_2}{\S_2}{d}{\Delta} & \type{S_2} = \varsigma^\gamma & \gamma(x) = \tau_1'}{\elaborationSynthesisSlice{\lambda x:\tau_1.e}{\tau_1 \to \tau_2}{(\lambda \gap : \cmark.\ \gap)^{\gamma \mapsto \gamma\backslash x: \tau_1} * \widehat{\tau_1} \to (\lambda x : \tau_1'.\ \cmark)^{\gamma \mapsto \gamma\backslash x: \tau_1'} * \S_2}{\lambda x:\tau_1. d}{\Delta}}\]
+\[\inference[\tiny ESApp]{\synthesisslice{e_1}{\tau_1}{\S_1} & \tau_1 \funmatch \tau_2 \to \tau & \S_1 \funmatch \p_2 * \S_2 \to \p * \S \\ \elaborationAnalysisSlice{\cmark(e_2)}{e_1}{\tau_2 \to \tau}{\A_1}{d_1}{\tau_1'}{\S_1' \mid \A_1'}{\Delta_1} & \elaborationAnalysisSlice{e_1(\cmark)}{e_2}{\tau_2}{\A_2}{d_2}{\tau_2'}{\S_2' \mid \A_2'}{\Delta_2}}{\elaborationSynthesis{e_1(e_2)}{\tau}{(d_1\scast{\tau_1' \mid \S_1' \mid \A_1'}{\tau_2 \to \tau \mid \A_1  \mid \p_2 * \S_2 \to \p * \S})(d_2\scast{\tau_2' \mid \S_2' \mid \A_2'}{\tau_2 \mid \A_2})}{\Delta_1 \cup \Delta_2}}\]
+\[\inference[\tiny ESEHole]{}{\elaborationSynthesis{\hole^u}{\dyn}{\gap^\emptyset}{\hole^u_{\mathrm{id}(\Gamma)}}{u :: \hole[] [\Gamma]}}\]
+\[\inference[\tiny ESNEHole]{\elaborationSynthesisSlice{e}{\tau}{\S}{d}{\Delta}}{\elaborationSynthesisSlice{\hole[e]^u}{\dyn}{\gap^\emptyset}{\hole[d]^u_{\mathrm{id}(\Gamma)}}{\Delta, u :: \hole[] [\Gamma]}}\]
+\[\inference[\tiny ESAsc]{\elaborationAnalysisSlice{\cmark : \tau}{e}{\tau}{\A}{d}{\tau'}{\S' \mid \A'}{\Delta}}{\elaborationSynthesisSlice{e:\tau}{\tau}{(\gap : \cmark) \circ \widehat{\tau}}{d\scast{\tau' \mid \S' \mid \A'}{\tau \mid \A}}{\Delta}}\]
+\small
+\fbox{$\elaborationAnalysisSlice{\C^\F}{e}{\tau}{d}{\tau'}{\S' \mid \A'}{\Delta}$}\ \ \ $e$ in minimally scoped checking context $\C^\F$ analyses against type $\tau$ with analysis slice $\A$ and elaborates to $d$ of consistent type $\tau'$ which has synthesis slice part $\S'$ and analysis slice part $\A'$ (structurally matching the synthetic part).
+\tiny
+\[\inference[\tiny EAFun]{\analysisslice{\C}{\lambda x.\ e}{\tau}{\A} & \tau \funmatch \tau_1 \to \tau_2  & \A \funmatch \p_1 * \A_1 \to \p_2 * \A_2\\ \elaborationAnalysisSlice[\Gamma,x:\tau_1]{\C \circ (\lambda x.\ \cmark)^{\Gamma \mapsto \Gamma\backslash x: \tau_1}}{e}{\tau_2}{\A_2}{d}{\tau_2'}{\S_2' \mid \A_2'}{\Delta} \\ \type{\S_2'} = \varsigma ^ \gamma & \gamma(x) = \tau_1' & \A_2' = \A_2'' \circ (\lambda pt.\ \cmark)^\F}{\elaborationAnalysisSlice{\C}{\lambda x. e}{\tau}{\A}{\lambda x:\tau_1. d}{\tau_1 \to \tau_2'}{\cmark*\gap^\emptyset \to (\lambda x.\ \cmark)^{\gamma \to \gamma\backslash x : \tau_1'} *\S_2'\mid\p_1 * \A_1 \to \cmark * \A_2''}{\Delta}}\]\[\inference[\tiny EAFunUnused]{\analysisslice{\C}{\lambda x.\ e}{\tau}{\A} & \tau \funmatch \tau_1 \to \tau_2  & \A \funmatch \p_1 * \A_1 \to \p_2 * \A_2\\ \elaborationAnalysisSlice[\Gamma,x:\tau_1]{\C \circ (\lambda x.\ \cmark)^{\Gamma \mapsto \Gamma\backslash x: \tau_1}}{e}{\tau_2}{\A_2}{d}{\tau_2'}{\S_2' \mid \A_2'}{\Delta} \\ \type{\S_2'} = \varsigma ^ \gamma & \gamma(x) = \bot & \A_2' = \A_2'' \circ (\lambda pt.\ \cmark)^\F}{\elaborationAnalysisSlice{\C}{\lambda x. e}{\tau}{\A}{\lambda x:\tau_1. d}{\tau_1 \to \tau_2'}{\cmark*\gap^\emptyset \to (\lambda \gap.\ \cmark) *\S_2'\mid\p_1 * \A_1 \to \cmark * \A_2''}{\Delta}}\]
+\[\inference[\tiny EASubsume]{e \neq \hole^u & e \neq \hole[e']^u & \analysisslice{\C}{e}{\tau}{\A}\\ \elaborationSynthesisSlice{e}{\tau'}{\S'}{d}{\Delta} & \tau \sim \tau'}{\elaborationAnalysisSlice{\C}{e}{\tau}{\A}{d}{\tau'}{\S' \mid \mathrm{match}(\S', \A)}{\Delta}}\]
+\[\inference[\tiny EAEHole]{\analysisslice{\C}{\hole^u}{\tau}{\A}}{\elaborationAnalysisSlice{\C}{\hole^u}{\tau}{\A}{\hole^u_{\mathrm{id}(\Gamma)}}{\tau}{\mathrm{match}(\A, \gap^\emptyset) \mid \A}{u::\tau[\Gamma]}}\]
+\[\inference[\tiny EANEHole]{\elaborationSynthesisSlice{e}{\tau'}{\S'}{d}{\Delta} & \analysisslice{\C}{\hole[e]^u}{\tau}{\A}}{\elaborationAnalysisSlice{\C}{\hole[e]^u}{\tau}{\A}{\hole[d]^u_{\mathrm{id}(\Gamma)}}{\tau}{\mathrm{match}(\A, \gap^\emptyset)\mid \A}{u::\tau[\Gamma]}}\]
+
+\caption{Elaboration judgements} 
+\label{fig:elaboration}
+\end{figure}
+The inserted cast on $d_1$ in ESApp goes from the actual synthesised type for $d_1$ (which could be $\dyn$) to it's corresponding function type. Both the analysis part requiring it to be \textit{a function} (any function) and the parts specifying its component types if synthesised are retained. Analysis elaboration produces both synthesis and analysis slices as EAFun must retain the argument context slice to explain unannotated functions, while the synthesis part is determining unannotated functions' output type.
 \section{Dynamics}
-Final forms and hole substitution remain the same.
+Final forms, contextual dynamic, and hole substitution remain the same as the Hazel calculus. But the cast transitions need to work with cast slices. The only difference is that instruction transitions require the use of slice ground matching.
+
+\begin{figure}[H]
+\fbox{$S \groundmatch \S'$}\ \ \ $\S$ matches ground slices $\S'$
+\[\inference[\tiny]{\tau_1 \to \tau_2 \neq \dyn \to \dyn}{\parbox{0.8\textwidth}{\centering$\tau_1 \to \tau_2 \mid \p_1 * \S_1 \to \p_2 * \S_2 \mid \p_1' * \A_1 \to \p_2' * \A_2$ \\ $\groundmatch \dyn \to \dyn \mid \p_1 * \gap^\emptyset \to \p_2 * \gap^\emptyset \mid \p_1' * \mathrm{struct}(\type{\A_1}) \to \p_2' * \mathrm{struct}(\type{\A_2})$}}\]
+Where $\mathrm{struct}(\p)$ takes the \textit{purely structural} context slice of $\p$.
+\caption{Ground type matching for slices}
+\label{fig:groundmatch}
+\end{figure}
+\paragraph{Future Work} When type-indexed synthesis slices are converted to type-indexed analysis slices, they lose their incremental structure. A way to retain this would be beneficial. This could be done by pairing synthesis slices with a global two-hole context.

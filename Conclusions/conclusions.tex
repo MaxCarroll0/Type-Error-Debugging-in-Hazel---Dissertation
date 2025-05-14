@@ -12,11 +12,14 @@ During the holistic evaluation, various usability and UI improvements were consi
 Cast slicing propagates type slice information throughout evaluation. But, it provide no slicing on \textit{execution properties} of the program. Extended slicing methods could, for example, provide a minimal program which evaluates to the \textit{same} cast around the \textit{same} value. This could build on traditional \textit{dynamic slicing} methods \cite{DynProgSlice, FunctionalProgExplain}, and find use also in debugging \textit{semantic} errors.
 
 \subsection{Property Testing}
-A framework similar to SmallCheck \cite{SmallCheck} or QuickCheck \cite{QuickCheck} could be implemented via indeterminate evaluation. Additionally, execution properties could also be tested.
+Indeterminate evaluation provides a way to generate inputs to function. So, it could be used for
+property testing, generating inputs to functions and testing expressions. A framework similar
+to SmallCheck \cite{SmallCheck} or QuickCheck \cite{QuickCheck} could be implemented. Being part of the evaluator,
+intermediate expressions and execution properties could also be tested.
 
 \subsection{Non-determinism, Connections to Logic Programming}
 \label{sec:LogicProgramming}
-Non-deterministic evaluation could be harnessed to implement non-deterministic constructs (e.g. a choice operator) for Hazel. Treating holes as unknowns and instantiating lazily is reminiscent of \textit{free logic variables} in functional logic programming languages \cite{FunctionalLogicProgramming}, e.g. in \textit{Curry} \cite{CurryLang}. Adding unification \cite{UnificationSurvey} would allow full logic programming in Hazel. A needed-narrowing evaluation strategy \cite{NeededNarrowing} would be an significantly more efficient than the current lazy non-deterministic instantiation.
+Non-deterministic evaluation could be harnessed to implement non-deterministic constructs (e.g. a choice operator) for Hazel. Treating holes as unknowns and instantiating lazily is reminiscent of \textit{free logic variables} in functional logic programming languages \cite{FunctionalLogicProgramming}, e.g. in \textit{Curry} \cite{CurryLang}. Adding unification \cite{UnificationSurvey} would allow full logic programming in Hazel. A needed-narrowing evaluation strategy \cite{NeededNarrowing} would be a significantly more efficient than the current lazy non-deterministic instantiation.
 
 \subsection{Symbolic Execution}
 Use of symbolic Execution \cite{SymbolicExecutionSurvey} would improve the proportion of witnesses found by the search procedure by improving code coverage (\cref{sec:EvalHoleInstantiation}). Indeterminate evaluation can be considered a form of simple {symbolic execution}, only considering constraints enforced by casts. \Cref{sec:ExtendedPatternMatching} considered directing instantiation using patterns within match statements. 

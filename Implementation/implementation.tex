@@ -216,7 +216,7 @@ Notice that the only sub-terms which do not contribute have their type changed w
 These can be calculated mimicking the Hazel typing rules. During subsumption, remove the synthesis slice sub-part which match with dynamic parts of the analysing type. Contextual parts are found by passing context slices directly as inputs to type analysis rules.
 
 \section{Cast Slicing Theory}\label{sec:CastSlicingTheory}
-Cast slicing propagates type slice information during evaluation, by tagging casts types with type slices. A primary reason in formalising type-indexed slices was to make slices decomposable during evaluation, retaining only sub-slices relevant to the part of the type involved in the decomposed cast. This requires changing the syntax of casts to $\scast{\S}{\S}$ and inserting casts between slices during elaboration. The first two criteria work together during elaboration, analysis slices inserted when casting on a elaborated expression who had it's type \textit{analysed}, and the synthesised for synthesis slices. The rules are found in
+Cast slicing propagates type slice information during evaluation, by tagging casts types with type slices. A primary reason in formalising type-indexed slices was to make slices decomposable during evaluation, retaining only sub-slices relevant to the part of the type involved in the decomposed cast. The first two criteria work together during elaboration, analysis slices inserted when casting on a elaborated expression who had it's type \textit{analysed}, and the synthesised for synthesis slices. The rules are very involved, but build directly upon the Hazel calculus elaboration semantics; the rules are found in
 \cref{sec:CastSlicingElaboration}.
 
 \section{Type Slicing Implementation}\label{sec:TypeSlicingImplementation}
@@ -502,7 +502,7 @@ Type slices within casts can be selected from the evaluation result and displaye
 \centering
 \includegraphics[width=1\textwidth]{Media/Figures/simple_cast_error}
 \caption{A simple cast error blaming the plus operator for requiring the integer cast.}
-\end{subfigure}
+\end{subfigure}$\qquad$
 \begin{subfigure}{0.45\textwidth}
 \centering
 \includegraphics[width=1\textwidth]{Media/Figures/map_cast}

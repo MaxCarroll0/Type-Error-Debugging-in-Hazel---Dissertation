@@ -5,7 +5,7 @@ This is the complete formal semantics for the Hazel \textit{core calculus}. It i
 \section{Syntax}
 \begin{figure}[h]
 \begin{align*}
-\tau &::= b \mid \tau \to \tau \mid\  ?\\
+\tau &::= b \mid \tau \to \tau \mid\  \dyn\\
 e &::= c \mid x \mid \lambda x : \tau.e \mid \lambda x. e \mid e(e) \mid \hole^u \mid \hole[e]^u \mid e : \tau\\
 d &::= c \mid x \mid \lambda x : \tau d \mid d(d) \mid \hole^u_\sigma \mid \hole[d]^u_\sigma \mid d\scast{\tau}{\tau} \mid d\scasterror{\tau}{\tau}
 \end{align*}
@@ -21,7 +21,7 @@ d &::= c \mid x \mid \lambda x : \tau d \mid d(d) \mid \hole^u_\sigma \mid \hole
 \inference[\tiny SVar]{x : \tau \in \Gamma}{\synthesis{x}{\tau}} \quad 
 \inference[\tiny SFun]{\synthesis[\Gamma,x:\tau_1]{e}{\tau_2}}{\synthesis{\lambda x:\tau_1.\ e}{\tau_1 \to \tau_2}}\]
 \[\inference[\tiny SApp]{\synthesis{e_1}{\tau_1} & \tau_1 \funmatch \tau_2 \to \tau \\ \analysis{e_2}{\tau_2}}{\synthesis{e_1(e_2)}{\tau}} \quad 
-\inference[\tiny SEHole]{}{\synthesis{\hole^u}{?}} \quad \]
+\inference[\tiny SEHole]{}{\synthesis{\hole^u}{\dyn}} \quad \]
 \[\inference[\tiny SNEHole]{\synthesis{e}{\tau}}{\synthesis{\hole[e]^u}{\dyn}}\quad 
 \inference[\tiny SAsc]{\analysis{e}{\tau}}{\synthesis{e : \tau}{\tau}}\]
 \fbox{$\analysis{e}{\tau}$}\ \ \ $e$ analyses against type $\tau$ under context $\Gamma$
@@ -36,14 +36,14 @@ d &::= c \mid x \mid \lambda x : \tau d \mid d(d) \mid \hole^u_\sigma \mid \hole
 
 \begin{figure}[H]
 \fbox{$\tau_1 \sim \tau_2$}\ \ \ $\tau_1$ is consistent with $\tau_2$
-\[\inference[\tiny TCDyn1]{}{? \sim \tau} \quad \inference[\tiny TCDyn2]{}{\tau \sim ?} \quad \inference[\tiny TCRfl]{}{\tau \sim \tau} \quad \inference[\tiny TCFun]{\tau_1 \sim \tau_1' & \tau_2 \sim \tau_2'}{\tau_1 \to \tau_2 \sim \tau_1' \to \tau_2'}\]
+\[\inference[\tiny TCDyn1]{}{\dyn \sim \tau} \quad \inference[\tiny TCDyn2]{}{\tau \sim \dyn} \quad \inference[\tiny TCRfl]{}{\tau \sim \tau} \quad \inference[\tiny TCFun]{\tau_1 \sim \tau_1' & \tau_2 \sim \tau_2'}{\tau_1 \to \tau_2 \sim \tau_1' \to \tau_2'}\]
 \caption{Type consistency}
 \label{fig:consistency}
 \end{figure}
 
 \begin{figure}[h]
 \fbox{$\tau \funmatch \tau_1 \to \tau_2$}\ \ \ $\tau$ has arrow type $\tau_1 \to \tau_2$
-\[\inference[\tiny MADyn]{}{? \funmatch ? \to ?} \quad 
+\[\inference[\tiny MADyn]{}{\dyn \funmatch \dyn \to \dyn} \quad 
 \inference[\tiny MAFun]{}{\tau_1 \to \tau_2 \funmatch \tau_1 \to \tau_2}\]
 \caption{Type Matching}
 \label{fig:typematching}
@@ -57,9 +57,9 @@ d &::= c \mid x \mid \lambda x : \tau d \mid d(d) \mid \hole^u_\sigma \mid \hole
 \[\inference[\tiny ESConst]{}{\elaborationSynthesis{c}{b}{c}{\emptyset}} \quad 
 \inference[\tiny ESVar]{x : \tau \in \Gamma}{\elaborationSynthesis{x}{\tau}{x}{\emptyset}}\]
 \[\inference[\tiny ESFun]{\elaborationSynthesis[\Gamma,x:\tau_1]{e}{\tau_2}{d}{\Delta}}{\elaborationSynthesis{\lambda x:\tau_1.e}{\tau_1 \to \tau_2}{\lambda x:\tau_1. d}{\Delta}}\]
-\[\inference[\tiny ESApp]{\synthesis{e_1}{\tau_1} & \tau_1 \funmatch \tau_2 \to \tau \\ \elaborationAnalysis{e_1}{\tau_2 \to \tau}{d_1}{\tau_1'}{\Delta_1} & \elaborationAnalysis{e_1}{\tau_2}{d_2}{\tau_2'}{\Delta_2}}{\elaborationSynthesis{e_1(e_2)}{\tau}{(d_1\scast{\tau_1'}{\tau_2 \to \tau})(d_2\scast{\tau_2'}{\tau_2})}{\Delta_1 \cup \Delta_2}}\]
-\[\inference[\tiny ESEHole]{}{\elaborationSynthesis{\hole^u}{?}{\hole^u_{\mathrm{id}(\Gamma)}}{u :: \hole[] [\Gamma]}}\]
-\[\inference[\tiny ESNEHole]{\elaborationSynthesis{e}{\tau}{d}{\Delta}}{\elaborationSynthesis{\hole[e]^u}{?}{\hole[d]^u_{\mathrm{id}(\Gamma)}}{\Delta, u :: \hole[] [\Gamma]}}\]
+\[\inference[\tiny ESApp]{\synthesis{e_1}{\tau_1} & \tau_1 \funmatch \tau_2 \to \tau \\ \elaborationAnalysis{e_1}{\tau_2 \to \tau}{d_1}{\tau_1'}{\Delta_1} & \elaborationAnalysis{e_2}{\tau_2}{d_2}{\tau_2'}{\Delta_2}}{\elaborationSynthesis{e_1(e_2)}{\tau}{(d_1\scast{\tau_1'}{\tau_2 \to \tau})(d_2\scast{\tau_2'}{\tau_2})}{\Delta_1 \cup \Delta_2}}\]
+\[\inference[\tiny ESEHole]{}{\elaborationSynthesis{\hole^u}{\dyn}{\hole^u_{\mathrm{id}(\Gamma)}}{u :: \hole[] [\Gamma]}}\]
+\[\inference[\tiny ESNEHole]{\elaborationSynthesis{e}{\tau}{d}{\Delta}}{\elaborationSynthesis{\hole[e]^u}{\dyn}{\hole[d]^u_{\mathrm{id}(\Gamma)}}{\Delta, u :: \hole[] [\Gamma]}}\]
 \[\inference[\tiny ESAsc]{\elaborationAnalysis{e}{\tau}{d}{\tau'}{\Delta}}{\elaborationSynthesis{e:\tau}{\tau}{d\scast{\tau'}{\tau}}{\Delta}}\]
 \fbox{$\elaborationAnalysis{e}{\tau}{d}{\tau'}{\Delta}$}\ \ \ $e$ analyses against type $\tau$ and elaborates to $d$ of consistent type $\tau'$
 \[\inference[\tiny EAFun]{\tau \funmatch \tau_1 \to \tau_2 \\ \elaborationAnalysis[\Gamma,x:\tau_1]{e}{\tau_2}{d}{\tau_2'}{\Delta}}{\elaborationAnalysis{\lambda x. e}{\tau}{\lambda x:\tau_1. d}{\tau_1 \to \tau_2'}{\Delta}}\]
@@ -99,7 +99,7 @@ d &::= c \mid x \mid \lambda x : \tau d \mid d(d) \mid \hole^u_\sigma \mid \hole
 
 \begin{figure}[h]
 \fbox{$\tau$ ground}\ \ \ $\tau$ is a ground type
-\[\inference[\tiny GBase]{}{b\text{ ground}}\quad \inference[\tiny GDynFun]{}{? \to ?\text{ ground}}\]
+\[\inference[\tiny GBase]{}{b\text{ ground}}\quad \inference[\tiny GDynFun]{}{\dyn \to \dyn\text{ ground}}\]
 \caption{Ground types}
 \label{fig:groundtypes}
 \end{figure}
@@ -118,13 +118,13 @@ d &::= c \mid x \mid \lambda x : \tau d \mid d(d) \mid \hole^u_\sigma \mid \hole
 \fbox{$\boxedval$}\ \ \ $d$ is a boxed value
 \[\inference[\tiny BVVal]{\val}{\boxedval}\quad
 \inference[\tiny BVFunCast]{\tau \to \tau_2 \neq \tau_3 \to \tau_4 & \boxedval}{\boxedval[d\scast{\tau_1 \to \tau_2}{\tau_3 \to \tau_4}]}\]
-\[\inference[\tiny BVDynCast]{\boxedval & \ground}{\boxedval[d\scast{\tau}{?}]}\]
+\[\inference[\tiny BVDynCast]{\boxedval & \ground}{\boxedval[d\scast{\tau}{\dyn}]}\]
 \fbox{$\indet$}\ \ \ $d$ is indeterminate
 \[\inference[\tiny IEHole]{}{\indet[\hole^u_\sigma]}\quad
 \inference[\tiny INEHole]{\final}{\indet[{\hole[d]^u_\sigma}]}\quad
 \inference[\tiny IAp]{d_1 \neq d_1'\scast{\tau_1 \to \tau_2}{\tau_3 \to \tau_4} \\ \indet[d_1] & \final[d_2]}{\indet[d_1(d_2)]}\]
-\[\inference[\tiny ICastGD]{\indet & \ground}{\indet[d\scast{\tau}{?}]}\quad
-\inference[\tiny ICastDG]{d \neq d'\scast{\tau'}{?} & \indet & \ground}{\indet[d\scast{?}{\tau}]}\]
+\[\inference[\tiny ICastGD]{\indet & \ground}{\indet[d\scast{\tau}{\dyn}]}\quad
+\inference[\tiny ICastDG]{d \neq d'\scast{\tau'}{\dyn} & \indet & \ground}{\indet[d\scast{\dyn}{\tau}]}\]
 \[\inference[\tiny ICastFun]{\tau_1 \to \tau_2 \neq \tau_3 \to \tau_4 & \indet}{\indet[d\scast{\tau_1 \to \tau_2}{\tau_3 \to \tau_4}]}\quad
 \inference[\tiny ICastError]{\final & \ground[\tau_1] \\ \ground[\tau_2] & \tau_1 \neq \tau_2}{\indet[d\scasterror{\tau_1}{\tau_2}]}\]
 
@@ -138,18 +138,18 @@ d &::= c \mid x \mid \lambda x : \tau d \mid d(d) \mid \hole^u_\sigma \mid \hole
 \[\inference[\tiny ITFun]{}{(\lambda x:\tau. d_1)(d_2) \longrightarrow [d_2/x]d_1}\quad
 \inference[\tiny ITCastId]{}{d\scast{\tau}{\tau} \longrightarrow d}\]
 \[\inference[\tiny ITAppCast]{\tau_1 \to \tau_2 \neq \tau_1' \to \tau_2'}{d_1\scast{\tau_1 \to \tau_2}{\tau_1' \to \tau_2'}(d) \longrightarrow (d_1(d_2\scast{\tau_1'}{\tau_1}))\scast{\tau_2}{\tau_2'}}\]
-\[\inference[\tiny ITCast]{\ground}{d\scastcast{\tau}{?}{\tau} \longrightarrow d} \quad
-\inference[\tiny ITCastError]{\tau_1 \neq \tau_2 \\ \ground[\tau_1] & \ground[\tau_2]}{d\scastcast{\tau_1}{?}{\tau_2}\longrightarrow d\scasterror{\tau_1}{?}{\tau_2}}\]
-\[\inference[\tiny ITGround]{\tau \groundmatch \tau'}{d\scast{\tau}{?} \longrightarrow d\scastcast{\tau}{\tau'}{?}}\quad
-\inference[\tiny ITExpand]{\tau \groundmatch \tau'}{d\scast{?}{\tau} \longrightarrow d\scastcast{?}{\tau'}{\tau}}\]
-\caption{Instruction transitions (non-deterministic)}
+\[\inference[\tiny ITCast]{\ground}{d\scastcast{\tau}{\dyn}{\tau} \longrightarrow d} \quad
+\inference[\tiny ITCastError]{\tau_1 \neq \tau_2 \\ \ground[\tau_1] & \ground[\tau_2]}{d\scastcast{\tau_1}{\dyn}{\tau_2}\longrightarrow d\scasterror{\tau_1}{\tau_2}}\]
+\[\inference[\tiny ITGround]{\tau \groundmatch \tau'}{d\scast{\tau}{\dyn} \longrightarrow d\scastcast{\tau}{\tau'}{\dyn}}\quad
+\inference[\tiny ITExpand]{\tau \groundmatch \tau'}{d\scast{\dyn}{\tau} \longrightarrow d\scastcast{\dyn}{\tau'}{\tau}}\]
+\caption{Instruction transitions (non-deterministic version)}
 \label{fig:instructions}
 \end{figure}
 
 \subsection{Contextual Dynamics}
 \begin{figure}[H]
 \fbox{$\tau \groundmatch \tau'$}\ \ \ $\tau$ matches ground type $\tau'$
-\[\inference[\tiny]{\tau_1 \to \tau_2 \neq ? \to ?}{\tau_1 \to \tau_2 \groundmatch ? \to ?}\]
+\[\inference[\tiny]{\tau_1 \to \tau_2 \neq \dyn \to \dyn}{\tau_1 \to \tau_2 \groundmatch \dyn \to \dyn}\]
 \caption{Ground type matching}
 \label{fig:groundmatch}
 \end{figure}
@@ -166,7 +166,7 @@ Context syntax:
 \[\inference[\tiny ECCastError]{d=E[d']}{d\scasterror{\tau_1}{\tau_2} = E\scasterror{\tau_1}{\tau_2}[d']}\]
 \fbox{$d \mapsto d'$}\ \ \ $d$ steps to $d'$
 \[\inference[\tiny Step]{d_1=E[d_2] & d_2 \longrightarrow d_2' & d_1' = E[d_2']}{d_1 \mapsto d_1'}\]
-\caption{Contextual dynamics of the internal language}
+\caption{Contextual dynamics of the internal language (non-determinism version)}
 \label{fig:dynamics}
 \end{figure}
 
