@@ -268,7 +268,9 @@ However, for inconsistent branches, no direct cast failure occurs until a branch
 \begin{itemize}
 \item Pattern Cast Failure: Error within a pattern matching branch, making the branch unreachable. These are detectable by the extended pattern directed instantiation algorithm (\cref{sec:ExtendedPatternMatching}).\footnote{The inconsistent patterns would be attempted, and subsequently reduced to expression cast failures.}
 \item Unbound Constructor: Attemping to match an unbound constructor. Also detectable with the extended instantiation.
-\item Wildcards: Erroneous code bound to the inaccessible wildcard pattern: \code{let _ = ... in ...}.
+\item Wildcards: Erroneous code bound to the inaccessible wildcard pattern: 
+
+\code{let _ = ... in ...}.
 \item Non-Trivial: Less easily detectable. One example exhibited this, infinitely recursing for all inputs.
 \end{itemize}
 \item Hazel Bugs: Unboxing bugs present in the main branch (excluded from the statistics).

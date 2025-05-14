@@ -46,7 +46,7 @@ Hazel \cite{Hazel} is a functional, locally inferred, and gradually typed resear
 \includegraphics[width=0.75\textwidth]{Media/Figures/map_example_intro}
 
 Note: \code{?} represents a hole, an \textit{incomplete} part of the program.
-\caption{\textbf{Example:} Concatenation \code{@} has been used instead of cons \code{::}, but \code{f(x)} is incorrectly localised as the error. Type slicing will give a full context highlighting the terms involved in the error (the annotation, \code{f(x)} and \code{@} operator). The search procedure could find a witness (e.g. \code{[0]}) concretely evaluating to a dynamic error. The cast in the dynamic error will contain a slice highlighting= the source code that makes \code{@} take lists as input.}
+\caption{\textbf{Example:} Concatenation \code{@} has been used instead of cons \code{::}, but \code{f(x)} is incorrectly localised as the error. Type slicing will give a full context highlighting the terms involved in the error (the annotation, \code{f(x)} and \code{@} operator). The search procedure could find a witness (e.g. \code{[0]}) concretely evaluating to a dynamic error. The cast in the dynamic error will contain a slice highlighting the source code that makes \code{@} take lists as input. The results are demonstrated in the evaluation \cref{sec:EvalExamples}}.
 \end{figure}
 
 \section{Related Work}
