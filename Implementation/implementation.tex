@@ -2,9 +2,9 @@
 This section details the slicing theories developed and implementations of type slicing, cast slicing, and the search procedure.
 
 \section{Type Slicing Theory}\label{sec:TypeSlicingTheory}
-I developed a novel method, \textit{type slicing}, to aid programmers in understanding \textit{how} a bidirectional type system works. First I define typing slices. Then, three slicing criteria: synthesis, analysis, and contribution slices, each associate typing derivations with different explanatory slices. 
+I developed a novel method, \textit{type slicing}, to aid programmers in understanding \textit{how} a bidirectional type system works. First, I define typing slices. Then, three slicing criteria, each associating typing derivations with different explanatory slices. 
 
-The first two criteria give insight on the synthesised and analysed type contributions. The third completes a picture of code regions contributing in any way to a term's type.
+The first two criteria give insight on the synthesised and analysed type contributions. The third on any code contributing in any way to a term's type.
 
 The second and third criterion were \textit{very challenging} to formalise, requiring non-obvious mathematical machinery: \textit{context typing slices} (\cref{sec:ContextTypingSlices}), \textit{checking contexts} (\cref{sec:CheckingContexts}), and \textit{type-indexed slices} (\cref{sec:TypeIndexedSlices}). Only the basic definitions are given here, the full theory is found in \cref{sec:SlicingTheory}.
 
@@ -42,7 +42,7 @@ If $\gamma_1(x) = \bot$ then $(\gamma_1 \sqcup \gamma_2)(x) = \gamma_2(x)$ and $
 Again, slicing complete typing assumptions $\Gamma$ forms a bounded lattice. In general, some slices have no join: consider $x : \code{Int}$ and $x : \code{String}$.
 
 \subsubsection{Expression Typing Slices}
-Finally, an \textit{expression typing slice}, $\rho$, is a pair, $\varsigma^\gamma$, of a term slice and a typing slice. Precision, joins and meets, can be extended component to term typing slices with all the same properties.
+Finally, an \textit{expression typing slice}, $\rho$, is a pair, $\varsigma^\gamma$, of a term slice and a typing slice. Precision, joins and meets, can be extended componentwise to term typing slices with all the same properties.
 
 \paragraph{Typing} \textit{Expression slices} can be \textit{type checked} under the \textit{type assumption slices} by replacing gaps $\gap$ by: holes of any metavariable $\hole^u$ in \textit{expressions}, fresh variables in \textit{patterns}, and the dynamic type in \textit{types}. Notated by $\type{\cdot}$.
 
@@ -55,7 +55,7 @@ Next, some of an expression's type might be enforced by the surrounding \textit{
 
 \subsubsection{Contexts and Their Slices}
 \renewcommand{\C}{\mathdcal{C}}
-We represent these surrounding contexts by a \textit{term context} $\mathdcal{C}$, which marks \textit{exactly one} sub-term as $\cmark$. Where $\C\{t\}$ substitutes term $t$ for the mark $\cmark$ in $\C$, only allowed if the marked position expects a term of the same class as $t$ (pattern \code{Pat}, type \code{Typ}, or expression \code{Exp}). Notate the classes by $\C : \code{X} \to \code{Y}$. Contexts can be substituted into contexts if their classes match. It is \textit{crucial} that composition is defined \textit{syntactically}, and not pointwise, allowing syntactic deconstruction used in analysis slices (AFun rule in appendix \cref{fig:AnalsisSlices}).
+We represent these surrounding contexts by a \textit{term context} $\mathdcal{C}$, which marks \textit{exactly one} sub-term as $\cmark$. Where $\C\{t\}$ substitutes term $t$ for the mark $\cmark$ in $\C$, only allowed if the marked position expects a term of the same class as $t$ (pattern \code{Pat}, type \code{Typ}, or expression \code{Exp}). Notate the classes by $\C : \code{X} \to \code{Y}$. Context composition can be defined as substituting contexts into contexts if their classes match. It is \textit{crucial} that composition is defined \textit{syntactically}, and not pointwise, allowing syntactic deconstruction of contexts (used in AFun rule in appendix \cref{fig:AnalsisSlices}).
 
 
 \newcommand{\Cs}{\mathdcal{c}}
@@ -79,7 +79,7 @@ The accompanying typing notion can be represented by \textit{endomorphisms on ty
 \renewcommand{\F}{\mathdcal{F}}
 \newcommand{\f}{\mathdcal{f}}
 
-Precision, joins, and meets can be defined via pointwise, forming bounded lattices on complete functions as usual. The bottom element being the constant function to the empty typing assumptions. Again, such functions are monotone:
+Precision, joins, and meets can be defined pointwise, forming bounded lattices on complete functions as usual. The bottom element being the constant function to the empty typing assumptions. Again, such functions are monotone:
 \begin{proposition}[Function Application Preserves Precision]
 For typing assumption slice $\gamma$ and typing assumption context slice $\f$. Then if we have slices $\gamma' \sqsubseteq \gamma$, $f' \sqsubseteq f$ then also $f'(\gamma') \sqsubseteq f(\gamma)$.
 \end{proposition}
@@ -138,7 +138,7 @@ For a synthesising expression, $\synthesis{e}{\tau}$. A synthesis slice is an ex
 A minimum synthesis slice of $\synthesis{e}{\tau}$, under $\sqsubseteq$, exists and is unique.
 \end{proposition}
 
-These slices can be calculated via a typing judgement $\synthesisslice{e}{\tau}{\S}$, meaning $\S$ is the type-indexed synthesis slice of $e^\Gamma$ synthesising $\tau$. The judgement rules mimic Hazel's typing rules, giving an algorithm to calculate minimum synthesis slices (see \cref{sec:SynthesisSlicesJudgement}).
+These slices can be calculated via a typing judgement $\synthesisslice{e}{\tau}{\S}$, meaning $\S$ is the minimum type-indexed synthesis slice of $e^\Gamma$ synthesising $\tau$. The judgement rules mimic Hazel's typing rules, giving an algorithm to calculate minimum synthesis slices (see \cref{sec:SynthesisSlicesJudgement}).
 
 \subsection{Criterion 2: Analysis Slices}\label{sec:AnalysisSlices}
 A similar idea can be devised for type analysis, represented using \textit{context slices}. After all, it is the terms immediately \textit{around} the sub-term where the type checking is enforced. For example, when checking this annotated term:
@@ -146,7 +146,7 @@ A similar idea can be devised for type analysis, represented using \textit{conte
 The \textit{inner hole term} $\hole^u$ (underlined) is required to be consistent with \code{Int} due to the annotation and lambda constructor present in its context. The analysis slice will be:
 \[\hlcmaths[yellow!30]{(\lambda} x\hlcmaths[yellow!30]{.} \underline{\hole^u} \hlcmaths[yellow!30]{) : } \code{Bool} \hlcmaths[yellow!30]{\to \code{Int}}\]
 
-In other words, if the context slice was type checked, then the inner hole would \textit{still} be required to analyse against \code{Int}. However, the overall synthesised type may differ, this sliced example would synthesis $\dyn \to \code{Int}$ vs. the unsliced $\code{Bool} \to \code{Int}$.
+In other words, if the context slice was type checked, then the inner hole would \textit{still} be required to analyse against \code{Int}. However, the overall synthesised type of the whole context may differ, the above would synthesis $\dyn \to \code{Int}$ vs. the original $\code{Bool} \to \code{Int}$.
 
 
 \subsubsection{Checking Context}
@@ -181,7 +181,7 @@ A minimum analysis slice of $\analysis{e}{\tau}$ in a checking context $\C^\F$, 
 This can again be calculated by a judgement reading as, \textit{$e$ which type checks against $\tau$ in checking context $\C$ has (type-indexed) analysis slice $\S$}:
 \[\analysisslice{\C}{e}{\tau}{\p}\]
 
-The rules build upon rules defining minimally scoped checking contexts, and are more involved, making use of \textit{type-indexed} synthesis slices, see \cref{fig:AnalysisSliceApplication}. This requires an involved conversion of (indexed) expression slices to context slices (\cref{sec:GlobalApplication}).
+The rules build upon rules defining minimally scoped checking contexts, and are more complex, making use of \textit{type-indexed} synthesis slices, see \cref{fig:AnalysisSliceApplication}. This requires an involved conversion of (indexed) expression slices to context slices (\cref{sec:GlobalApplication}).
 \begin{figure}[h]
 \centering
 \begin{subfigure}{0.4\textwidth}
@@ -198,7 +198,7 @@ The rules build upon rules defining minimally scoped checking contexts, and are 
 \end{subfigure}$\qquad$
 \begin{subfigure}{0.4\textwidth}
 \[\hlcmaths[yellow!30]{(\lambda} x : \dyn\hlcmaths[yellow!30]{. \lambda} y \hlcmaths[yellow!30]{: \code{Int}.} y\hlcmaths[yellow!30]{)(}\code{true}\hlcmaths[yellow!30]{)(}\underline{1}\hlcmaths[yellow!30]{)}\]
-\caption{The analysis slice of the function's argument ($\underline{1}$) when applied. Uses synthesis slice \textbf{(c)}.}
+\caption{The analysis slice of the function's argument ($\underline{1}$) when applied. Uses the synthesis sub-slice from \textbf{(c)}.}
 \end{subfigure}
 \caption{Demonstration: Analysis slice application uses synthesis slices}
 \label{fig:AnalysisSliceApplication}
@@ -211,7 +211,7 @@ This criterion highlights all regions of code which \textit{contribute} to typin
 \[(\lambda f: \code{Int} \to \dyn.\ f(1))\underline{(\lambda x : \code{Int}.\ x)}\]
 Both contextual and synthetic parts (in dark yellow) contribute:
 \[\hlcmaths[yellow!30]{(\lambda} f\hlcmaths[yellow!30]{: \code{Int} \to \dyn}.\ f(1)\hlcmaths[yellow!30]{)}\underline{\hlcmaths[yellow!70]{(\lambda} x \hlcmaths[yellow!70]{: \code{Int}.}\ x\hlcmaths[yellow!70]{)}}\]
-Notice that the only sub-terms which do not contribute have their type changed without affecting the overall type must be dynamically annotated. Therefore, this criterion omits the dynamic code regions.
+Notice that sub-terms which do not contribute must be dynamically annotated. Therefore, this criterion omits the dynamic code regions.
 
 These can be calculated mimicking the Hazel typing rules. During subsumption, remove the synthesis slice sub-part which match with dynamic parts of the analysing type. Contextual parts are found by passing context slices directly as inputs to type analysis rules.
 
@@ -384,7 +384,7 @@ For basic type slices, when the same type information is available from multiple
 \label{fig:TypeJoins}
 \end{figure}
 
-This gets complex, requiring tracking all the data relating to which branches should be highlighted, and accumulating the inconsistent parts of failed joins for use in minimised error slices (demonstrated in \cref{sec:ErrorSlices}). I make use of custom OCaml let binding \cite{CustomLetOperators} to retain clarity while automatically combining branches in successful joins and combining inconsistencies in failed joins. For example, see \cref{fig:ArrowJoin}, where comments describe the logic abstracted by the custom bindings; note that all join-able type combinations use this same parallel binding logic to combine branches and inconsistencies.
+This gets complex, requiring tracking all the data relating to which branches should be highlighted, and accumulating the inconsistent parts of failed joins for use in minimised error slices (demonstrated in \cref{sec:ErrorSlices}). I define custom OCaml let bindings \cite{CustomLetOperators} to retain clarity while automatically combining branches in successful joins and combining inconsistencies in failed joins. For example, see \cref{fig:ArrowJoin}, where comments describe the logic abstracted by the custom bindings; note that all join-able type combinations use this same parallel binding logic to combine branches and inconsistencies.
 
 \begin{figure}[h]
 \small
@@ -424,7 +424,7 @@ Hazel is \textit{bidirectionally typed}, where the \textit{mode} (synthesis, ana
 \end{figure}
 
 \subsubsection{Self and Mode}
-Slicing logic relating to synthesis slices and analysis slices is factored into \code{Self.t} and \code{Mode.t} respectively, cleanly segregated from the type checking code. Although, doing this still required full understanding of the type checker implementation, ensuring the correct IDs are sliced.
+Slicing logic relating to synthesis slices and analysis slices is factored into \code{Self.t} and \code{Mode.t} respectively, cleanly segregated from the type checking code. Doing this still required full understanding of the type checker implementation, ensuring the correct IDs are sliced.
 
 \subsubsection{Typing (Co-)Context}
 The typing context and co-contexts are modified to use type slices. This deviates from the theoretical notion of an expression slice: the structural context in which the variable is used is untracked when passing through the context. Therefore, it requires using \textit{unstructured} code slices. It is useful in practice, allowing slices calculated during binding to be retrieved upon usage, see \cref{fig:VarSlice}.
@@ -525,7 +525,7 @@ This section creates a framework for non-deterministic evaluation of indetermina
 To model infinite non-determinism I create a monadic DSL with an explicitly tree/forest-based representation. The forest model allows for varying low-level search traversals. The module type of combinators is in \code{Nondeterminism.Search}; its underlying parametric type is \code{t('a)} with \code{'a} being the type of the solutions. \Cref{sec:SearchMethods} discusses the actual implementations of this interface, giving four searching procedures.
 
 
-In addition, the functions from \Cref{sec:Nondeterminism}, I add standard \code{map} and \code{join} functions, and various other functions, e.g. \code{ifte} modelled after Mercury's if-then-else construct \cite{Mercury}.
+In addition to the functions from \Cref{sec:Nondeterminism}, I add standard \code{map} and \code{join} functions, and various other functions, e.g. \code{ifte} modelled after Mercury's if-then-else construct \cite{Mercury}.
 
 \subsubsection{Abstracting Search Order: Forest Model}
 Typical stream-based models of non-determinism \cite{ListOfSuccess} only admit the possibility of depth-first search (DFS). Stream concatenation provides no way of remembering choice points and backtracking before finishing a computation. 
@@ -780,7 +780,7 @@ We can collect each of these possible types from the elaborated casts inserted o
 An interesting extension was partially implemented which improves code coverage and additionally detects errors within patterns. It instantiates holes in a match expression according also to the \textit{structure} of each pattern, allowing the instantiation to prioritise searching along each branch. We instantiate the scrutinee with the least specific versions which match the patterns on each branch, e.g. \dyn\code{::}\dyn\ for \code{x::xs}. However, difficulties come when the scrutinee is a compound term, or when least specific matches only indeterminately match earlier branches. Further details addressing these issues can be found in \cref{sec:extendedmatching}.
 
 \section{Search Procedure}\label{sec:SearchProcedure}
-Now that a framework for indeterminate evaluation has been specified, the DSL implementations and cast error search logic can be addressed. The search procedure can be switched on via a toggle in the settings.
+Now that a framework for indeterminate evaluation has been specified, the DSL implementations and cast error search logic can be addressed. The error search procedure can be switched on via a toggle in the settings.
 
 \subsection{Detecting Relevant Cast Errors}
 \label{sec:CastFailureDetection}

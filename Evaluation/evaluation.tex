@@ -1,5 +1,5 @@
 \chapter{Evaluation}\label{chap:Evaluation}
-This section evaluates how successfully and effectively the implemented features achieve the goals stated in the introduction.
+This section evaluates how successfully and effectively the implemented features achieve the goals stated in the introduction. Supplementary results are found in \cref{sec:results}.
 
 \section{Success}
 As demonstrated below, the type witness search procedure and slicing features exceeds all core goals (\cref{sec:RequirementAnalysis}). All extensions except for the \textit{usability} extensions were attempted, with extended pattern instantiation (\cref{sec:ExtendedPatternMatching}) only partially implemented.
@@ -45,7 +45,7 @@ I made several hypotheses and investigated each. The evidence and implications b
 
 \paragraph{Search method space requirements} The space requirements for DFS and Bounded DFS are expected to be lower than that of BFS and interleaved DFS.
 
-\paragraph{Type Slices are larger than Cast Slices} Casts are deconstructed during elaboration and evaluation, so cast slices are expected to be smaller than the original type slices, and therefore more directly explain why errors occur. 
+\paragraph{Type Slices are larger than Cast Slices in Errors} Casts are deconstructed during elaboration and evaluation, so cast slices are expected to be smaller than the original type slices, and therefore more directly explain why errors occur. 
 
 \paragraph{The Small Scope Hypothesis}
 \label{sec:SmallScopeHypothesis} This hypothesis \cite{SmallScopeHypothesisOrigination} states that a high proportion of errors can be found by generating only \textit{small} inputs. Evidence that this hypothesis holds has been provided for Java data-structures \cite{SmallScopeHypothesis} and answer-set programs \cite{SmallScopeHypothesisAnswerSet}. Does it also hold for finding dynamic type errors from small \textit{hole instantiations}?
@@ -69,7 +69,7 @@ The program corpus contains \textbf{698} small programs, \textbf{294} were annot
 
 \section{Performance Analysis}\label{sec:PerformanceAnalysis}
 \subsection{Slicing}
-The type and cast slicing mechanisms do not increase the time complexity of the type checker nor evaluator. Hence, they are still as performant as the original, capable of interactive use to medium sized programs.
+The type and cast slicing mechanisms do not increase the time complexity of the type checker nor evaluator. Hence, they are still as performant as the original, capable of interactive use for medium sized programs.
 
 \subsection{Search Procedure}
 Only the annotated ill-typed corpus containing inconsistency errors are used in evaluating the search procedure. After all, any well-typed program cannot have a dynamic type error.
@@ -99,9 +99,9 @@ The performance ratios between each implementation as compared to DFS on only th
 \subsection{Slicing}
 \textit{Type slice} sizes (amount of highlighting) were calculated over the entire corpus. While \textit{cast slice} sizes were calculated over the resulting elaborated expressions.
 
-\Cref{fig:TypeSlicingEffectiveness} shows that both type and cast slices are generally small. In particular, the proportion of the context\footnote{Calculated by close approximation by the \textit{program size}. As each program in the corpus is just one definition. Calculating the context itself is non-trivial.} highlighted is very low, generally less than 5\% for dynamic code and 10\% for annotated code. Therefore, they concisely explain the types.
+\Cref{fig:TypeSlicingEffectiveness} shows that type are generally small. In particular, the proportion of the context\footnote{Calculated by close approximation by the \textit{program size}. As each program in the corpus is just one definition. Calculating the context itself is non-trivial.} highlighted is very low, generally less than 5\% for dynamic code and 10\% for annotated code. Therefore, they concisely explain the expressions' type on average.
 
-Additionally, for errors, there will be multiple inconsistent slices involved. \Cref{sec:SlicingAnalysis} describes how these slices can be summarised to only report the inconsistent parts. We find that these \textit{minimised} error slices are significantly (3x) smaller than directly \textit{combining} the slices.
+Additionally, for errors, there are multiple inconsistent slices involved. \Cref{sec:SlicingAnalysis} describes how these slices can be summarised to only report the inconsistent parts. We find that these \textit{minimised} error slices are significantly (3x) smaller than directly \textit{combining} the slices.
 
 \begin{figure}[h]
   \centering
